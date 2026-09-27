@@ -6,6 +6,7 @@ namespace SprintIllustrations\Tests\Unit\Security;
 use PHPUnit\Framework\TestCase;
 use SprintIllustrations\Security\SanitizationException;
 use SprintIllustrations\Security\Sanitizer;
+use SprintIllustrations\Svg\SvgDom;
 
 final class SanitizerTest extends TestCase {
 
@@ -94,5 +95,71 @@ final class SanitizerTest extends TestCase {
 	public function test_throws_on_garbage(): void {
 		$this->expectException( SanitizationException::class );
 		$this->sanitizer->sanitize( 'not an svg' );
+	}
+
+	/**
+	 * These three payloads were confirmed, via a throwaway script instantiating
+	 * `SprintIllustrations\Vendor\enshrined\svgSanitize\Sanitizer` directly with
+	 * `removeRemoteReferences( true )`, to survive the vendor engine untouched.
+	 * Only our own hardening pass in `Sanitizer::harden()` strips them, so these
+	 * exercise that pass rather than the vendor allowlist.
+	 *
+	 * Note: the same payloads on a `<use>` element do not qualify, because the
+	 * vendor engine already deletes the whole `<use>` element whenever its href
+	 * does not start with `#` (`isUseTagDirty()`), regardless of our hardening.
+	 */
+	public function test_strips_root_relative_href_not_caught_by_vendor(): void {
+		$clean = $this->sanitizer->sanitize( self::OPEN . '<rect href="/x.svg#a" width="1" height="1"/></svg>' );
+
+		$this->assertStringNotContainsString( 'href', $clean );
+	}
+
+	public function test_strips_data_image_href_not_caught_by_vendor(): void {
+		$clean = $this->sanitizer->sanitize( self::OPEN . '<rect href="data:image/png;base64,AAAA" width="1" height="1"/></svg>' );
+
+		$this->assertStringNotContainsString( 'href', $clean );
+	}
+
+	public function test_strips_relative_url_target_not_caught_by_vendor(): void {
+		$clean = $this->sanitizer->sanitize( self::OPEN . '<rect fill="url(x.svg#a)" width="1" height="1"/></svg>' );
+
+		$this->assertStringNotContainsString( 'url(', $clean );
+	}
+
+	/**
+	 * Exercises `Sanitizer::harden()` directly via reflection, on a document
+	 * built with `SvgDom::parse()` rather than run through the vendor engine
+	 * first. This proves the hardening pass itself removes each dangerous
+	 * construct, independent of whatever the vendor allowlist already caught.
+	 */
+	public function test_harden_removes_blocked_elements_dangerous_attributes_and_nodes(): void {
+		$doc = SvgDom::parse(
+			'<svg xmlns="http://www.w3.org/2000/svg">'
+			. '<!-- secret -->'
+			. '<?xml-stylesheet type="text/xsl" href="x.xsl"?>'
+			. '<script>alert(1)</script>'
+			. '<foreignObject><div>x</div></foreignObject>'
+			. '<style>@import url(evil.css);</style>'
+			. '<rect onload="alert(1)" style="fill:red" width="1" height="1"/>'
+			. '<rect fill="url(#g)" width="1" height="1"/>'
+			. '<use href="#c"/>'
+			. '</svg>'
+		);
+
+		$harden = new \ReflectionMethod( Sanitizer::class, 'harden' );
+		$harden->setAccessible( true );
+		$harden->invoke( $this->sanitizer, $doc );
+
+		$xml = (string) $doc->saveXML( $doc->documentElement );
+
+		$this->assertStringNotContainsString( 'secret', $xml );
+		$this->assertStringNotContainsString( 'xml-stylesheet', $xml );
+		$this->assertStringNotContainsString( '<script', $xml );
+		$this->assertStringNotContainsStringIgnoringCase( 'foreignObject', $xml );
+		$this->assertStringNotContainsString( '<style', $xml );
+		$this->assertStringNotContainsString( 'onload', $xml );
+		$this->assertStringNotContainsString( 'style=', $xml );
+		$this->assertStringContainsString( 'fill="url(#g)"', $xml );
+		$this->assertStringContainsString( 'href="#c"', $xml );
 	}
 }
