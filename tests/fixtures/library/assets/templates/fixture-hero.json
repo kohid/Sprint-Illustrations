@@ -1,0 +1,94 @@
+{
+    "id": "fixture-hero",
+    "label": "Fixture hero",
+    "canvas": [
+        400,
+        300
+    ],
+    "unit": 1,
+    "tags": [
+        "hero",
+        "person"
+    ],
+    "slots": [
+        {
+            "name": "bg",
+            "category": "backgrounds",
+            "box": [
+                0,
+                0,
+                400,
+                300
+            ],
+            "fit": "contain",
+            "z": 0,
+            "required": true
+        },
+        {
+            "name": "subject",
+            "category": "characters",
+            "box": [
+                40,
+                60,
+                160,
+                240
+            ],
+            "align": "bottom",
+            "scale": [
+                0.9,
+                1.1
+            ],
+            "z": 30,
+            "required": true
+        },
+        {
+            "name": "prop",
+            "category": "objects",
+            "attach": {
+                "to": "subject",
+                "anchor": "hold"
+            }
+        },
+        {
+            "name": "side",
+            "category": "objects",
+            "box": [
+                260,
+                180,
+                100,
+                100
+            ],
+            "prefer": [
+                "plant"
+            ],
+            "require_tags": [
+                "floor"
+            ],
+            "z": 20
+        },
+        {
+            "name": "decor",
+            "category": "decor",
+            "box": [
+                0,
+                0,
+                400,
+                300
+            ],
+            "count": [
+                2,
+                3
+            ],
+            "scatter": true,
+            "avoid": [
+                [
+                    40,
+                    60,
+                    160,
+                    240
+                ]
+            ],
+            "z": 5
+        }
+    ]
+}

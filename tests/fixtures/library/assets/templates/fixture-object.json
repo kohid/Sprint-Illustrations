@@ -1,0 +1,40 @@
+{
+    "id": "fixture-object",
+    "label": "Fixture object",
+    "canvas": [
+        200,
+        200
+    ],
+    "tags": [
+        "coffee",
+        "drink",
+        "break"
+    ],
+    "slots": [
+        {
+            "name": "bg",
+            "category": "backgrounds",
+            "box": [
+                0,
+                0,
+                200,
+                200
+            ],
+            "fit": "contain",
+            "required": true
+        },
+        {
+            "name": "hero",
+            "category": "objects",
+            "box": [
+                50,
+                50,
+                100,
+                100
+            ],
+            "fit": "contain",
+            "align": "center",
+            "required": true
+        }
+    ]
+}

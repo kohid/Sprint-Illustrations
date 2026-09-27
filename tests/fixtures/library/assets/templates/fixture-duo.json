@@ -1,0 +1,52 @@
+{
+    "id": "fixture-duo",
+    "label": "Fixture duo",
+    "canvas": [
+        400,
+        300
+    ],
+    "tags": [
+        "team"
+    ],
+    "slots": [
+        {
+            "name": "left",
+            "category": "characters",
+            "box": [
+                20,
+                60,
+                160,
+                240
+            ],
+            "required": true
+        },
+        {
+            "name": "left-prop",
+            "category": "objects",
+            "attach": {
+                "to": "left",
+                "anchor": "hold"
+            }
+        },
+        {
+            "name": "right",
+            "category": "characters",
+            "box": [
+                220,
+                60,
+                160,
+                240
+            ],
+            "flip": true,
+            "required": true
+        },
+        {
+            "name": "right-prop",
+            "category": "objects",
+            "attach": {
+                "to": "right",
+                "anchor": "hold"
+            }
+        }
+    ]
+}

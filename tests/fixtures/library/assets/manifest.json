@@ -1,0 +1,242 @@
+{
+    "version": 7,
+    "pieces": [
+        {
+            "id": "char-stick",
+            "label": "Stick person",
+            "category": "characters",
+            "file": "pieces/characters/stick.svg",
+            "tags": [
+                "person",
+                "standing"
+            ],
+            "viewBox": [
+                0,
+                0,
+                100,
+                200
+            ],
+            "size": [
+                100,
+                200
+            ],
+            "z": 30,
+            "anchors": {
+                "hold": [
+                    80,
+                    110
+                ],
+                "ground": [
+                    50,
+                    200
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "primary",
+                "skin"
+            ],
+            "hash": "fixture"
+        },
+        {
+            "id": "char-runner",
+            "label": "Runner",
+            "category": "characters",
+            "file": "pieces/characters/runner.svg",
+            "tags": [
+                "person",
+                "running",
+                "sport"
+            ],
+            "viewBox": [
+                0,
+                0,
+                100,
+                200
+            ],
+            "size": [
+                100,
+                200
+            ],
+            "z": 30,
+            "anchors": {
+                "hold": [
+                    20,
+                    110
+                ],
+                "ground": [
+                    50,
+                    200
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "secondary",
+                "skin",
+                "hair"
+            ],
+            "hash": "fixture"
+        },
+        {
+            "id": "obj-mug",
+            "label": "Mug",
+            "category": "objects",
+            "file": "pieces/objects/mug.svg",
+            "tags": [
+                "coffee",
+                "drink"
+            ],
+            "viewBox": [
+                0,
+                0,
+                20,
+                20
+            ],
+            "size": [
+                20,
+                20
+            ],
+            "z": 20,
+            "anchors": {
+                "grip": [
+                    4,
+                    12
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "handheld": "grip"
+            },
+            "slots": [
+                "accent"
+            ],
+            "hash": "fixture"
+        },
+        {
+            "id": "obj-plant",
+            "label": "Plant",
+            "category": "objects",
+            "file": "pieces/objects/plant.svg",
+            "tags": [
+                "plant",
+                "nature",
+                "floor"
+            ],
+            "viewBox": [
+                0,
+                0,
+                40,
+                80
+            ],
+            "size": [
+                40,
+                80
+            ],
+            "z": 20,
+            "anchors": {
+                "base": [
+                    20,
+                    80
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "surface": "base"
+            },
+            "slots": [
+                "primary",
+                "secondary"
+            ],
+            "hash": "fixture"
+        },
+        {
+            "id": "obj-orb",
+            "label": "Orb",
+            "category": "objects",
+            "file": "pieces/objects/orb.svg",
+            "tags": [
+                "orb",
+                "magic",
+                "floor"
+            ],
+            "viewBox": [
+                0,
+                0,
+                40,
+                40
+            ],
+            "size": [
+                40,
+                40
+            ],
+            "z": 20,
+            "anchors": {},
+            "accepts": {},
+            "mounts": {},
+            "slots": [
+                "accent"
+            ],
+            "hash": "fixture"
+        },
+        {
+            "id": "bg-blob",
+            "label": "Blob",
+            "category": "backgrounds",
+            "file": "pieces/backgrounds/blob.svg",
+            "tags": [
+                "blob"
+            ],
+            "viewBox": [
+                0,
+                0,
+                200,
+                150
+            ],
+            "size": [
+                200,
+                150
+            ],
+            "z": 0,
+            "anchors": {},
+            "accepts": {},
+            "mounts": {},
+            "slots": [
+                "background"
+            ],
+            "hash": "fixture"
+        },
+        {
+            "id": "decor-dot",
+            "label": "Dot",
+            "category": "decor",
+            "file": "pieces/decor/dot.svg",
+            "tags": [
+                "dot"
+            ],
+            "viewBox": [
+                0,
+                0,
+                10,
+                10
+            ],
+            "size": [
+                10,
+                10
+            ],
+            "z": 5,
+            "anchors": {},
+            "accepts": {},
+            "mounts": {},
+            "slots": [
+                "accent"
+            ],
+            "hash": "fixture"
+        }
+    ]
+}
