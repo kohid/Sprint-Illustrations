@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<ruleset name="Sprint Illustrations">
+	<description>WordPress Coding Standards, adapted for a PSR-4 codebase.</description>
+
+	<file>sprint-illustrations.php</file>
+	<file>src</file>
+	<file>bin</file>
+	<file>tests</file>
+
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/vendor-prefixed/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/build/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg value="sp"/>
+
+	<config name="minimum_supported_wp_version" value="6.4"/>
+	<config name="testVersion" value="8.1-"/>
+
+	<rule ref="WordPress">
+		<!-- PSR-4 file names (Composer autoloading) instead of class-foo.php. -->
+		<exclude name="WordPress.Files.FileName"/>
+		<!-- Short array syntax is allowed project-wide. -->
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+	</rule>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="sprint-illustrations"/>
+			</property>
+		</properties>
+	</rule>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="SprintIllustrations"/>
+				<element value="sprint_illustrations"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!--
+	The composition core (Library, Compose, Palette, Security, Selection, Svg, Dev, Cli) is
+	framework-free PHP that also runs from bin/ scripts and PHPUnit without WordPress loaded.
+	It may use native filesystem functions and throws exceptions whose messages are never
+	echoed unescaped (WordPress-facing callers escape on output).
+	-->
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<exclude-pattern>/src/(Library|Compose|Palette|Security|Selection|Svg|Dev|Cli)/*</exclude-pattern>
+		<exclude-pattern>/bin/*</exclude-pattern>
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Security.EscapeOutput.ExceptionNotEscaped">
+		<exclude-pattern>/src/(Library|Compose|Palette|Security|Selection|Svg|Dev|Cli)/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Security.EscapeOutput">
+		<exclude-pattern>/bin/*</exclude-pattern>
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<!-- DOM extension exposes camelCase properties (documentElement, nodeName, ...). -->
+	<rule ref="WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase">
+		<severity>0</severity>
+	</rule>
+	<!-- Tests: PHPUnit method naming and fixtures. -->
+	<rule ref="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Generic.Commenting.DocComment.MissingShort">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+</ruleset>

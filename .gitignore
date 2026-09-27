@@ -3,3 +3,4 @@
 /build/
 /vendor-prefixed/
 .phpunit.result.cache
+.phpunit.cache/

@@ -1,0 +1,52 @@
+{
+    "name": "sprint/sprint-illustrations",
+    "description": "Composes brand-coloured flat illustrations from SVG pieces.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1",
+        "ext-dom": "*",
+        "ext-libxml": "*"
+    },
+    "require-dev": {
+        "enshrined/svg-sanitize": "^1.0",
+        "brianhenryie/strauss": "0.26.4",
+        "phpunit/phpunit": "^10.5",
+        "wp-coding-standards/wpcs": "^3.1",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SprintIllustrations\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SprintIllustrations\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "strauss": {
+            "target_directory": "vendor-prefixed",
+            "namespace_prefix": "SprintIllustrations\\Vendor\\",
+            "classmap_prefix": "SprintIllustrations_Vendor_",
+            "packages": [
+                "enshrined/svg-sanitize"
+            ],
+            "delete_vendor_packages": false
+        }
+    },
+    "scripts": {
+        "prefix": "@php vendor/bin/strauss",
+        "test": "@php vendor/bin/phpunit",
+        "lint": "@php vendor/bin/phpcs",
+        "lint:fix": "@php vendor/bin/phpcbf"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}
