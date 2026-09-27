@@ -103,8 +103,8 @@ Attachment model:
 
 ### 4.3 Library locations
 
-- Bundled pieces: `assets/pieces/` with `assets/manifest.json`.
-- User pieces: `uploads/sprint-illustrations/pieces/` with their own `manifest.json`, so they survive plugin updates.
+- Bundled pieces: sources in `assets/pieces-src/<category>/`, built into `assets/pieces/<category>/` plus `assets/manifest.json`.
+- User pieces: sources dropped into `uploads/sprint-illustrations/inbox/<category>/`, built into `uploads/sprint-illustrations/pieces/<category>/` plus `uploads/sprint-illustrations/manifest.json`, so they survive plugin updates.
 - The `sprint_illustrations_library_paths` filter adds more paths.
 - `Manifest` merges all sources. IDs must be globally unique; a duplicate ID is a load error that is logged, and the later entry is skipped.
 
@@ -245,14 +245,14 @@ All three call `Render\Renderer::render(array $args): string`.
 
 ## 15. Manifest builder and import flow
 
-- Run with `php bin/build-manifest.php [--source=<dir>] [--target=<dir>] [--non-interactive]` or `wp sprint-illustrations build-manifest` (it defaults to user pieces in uploads).
+- Run with `php bin/build-manifest.php [--source=<dir>] [--target=<dir>] [--non-interactive]`. The defaults are the bundled library: `assets/pieces-src` to `assets`. Or run `wp sprint-illustrations build-manifest`, which defaults to `uploads/sprint-illustrations/inbox` to `uploads/sprint-illustrations`.
 - Flow:
-  1. Drop SVGs into `<target>/_inbox/<category>/`.
-  2. The builder parses each file, detects `slot-*` classes, and reads `id="anchor-*"` markers (circle `cx`/`cy`, or rect centre, or ellipse centre, all resolved through the marker's ancestor transforms). It removes the markers.
-  3. It warns about literal colours, disallowed elements and non-slot strokes, then sanitizes.
-  4. It prompts for tags, z, `accepts` for each anchor, and `mounts`. Existing entries prefill the answers.
-  5. It writes the cleaned SVG to `<target>/<category>/`, updates `manifest.json` (hash, version + 1), and moves the original to `_inbox/_processed/`.
-- `--non-interactive` uses the filename for tags (`plant-tall` becomes `plant, tall`) and defaults for the rest. Useful for batch imports.
+  1. Drop SVGs into `<source>/<category>/`.
+  2. The builder parses each file. It reads `data-si-*` metadata, detects `slot-*` classes, and reads `id="anchor-*"` markers (circle or ellipse centre, or rect centre, resolved through the marker's ancestor transforms). It removes the markers and the metadata.
+  3. It warns about literal colours, disallowed elements and shapes that have no slot class, then sanitizes.
+  4. It prompts for tags, z, `accepts` and `mounts`. Metadata, then the existing manifest entry, then the filename provide the defaults.
+  5. It writes the cleaned SVG to `<target>/pieces/<category>/` and merges the entry into `<target>/manifest.json` (hash, version + 1). Entries whose source is gone are kept. Sources are never moved, and rebuilding is idempotent.
+- `--non-interactive` accepts the defaults: metadata, otherwise filename parts as tags (`plant-tall` becomes `plant, tall`). Useful for batch imports and CI.
 - The steps are documented in `docs/importing-pieces.md`, including the Figma/Illustrator export settings (layer names exported as IDs, outline strokes at 2px).
 
 ## 16. Starter asset pack
@@ -288,7 +288,7 @@ All pieces are drawn from scratch in code for this project, not traced from anyt
 
 ## 18. Build phases
 
-1. **Core**: scaffold (Composer, Strauss, PHPCS, PHPUnit), manifest and template schemas, starter pack, Library + Compose + Sanitizer, a default palette (hard-coded), manifest builder, Test page, WP-CLI `compose`.
+1. **Core**: scaffold (Composer, Strauss, PHPCS, PHPUnit), manifest and template schemas, starter pack, Library + Compose + Sanitizer, `Palette` + `Color` (the default palette, variant derivation), `Keywords` + `RulesSelector`, manifest builder, contact sheet (`bin/` and the admin Test page), WP-CLI `compose` and `build-manifest`.
 2. **Palette and cache**: Palette, Tints, presets, Settings page, ElementorColors (3.x Kit and 4.x Variables), SvgCache + CacheVersion + cron + purge.
 3. **Builder**: REST controllers, CPT, React builder, Media export (SVG and PNG), Library browser.
 4. **Placement**: Renderer, block, shortcode, Elementor widget.
@@ -296,7 +296,23 @@ All pieces are drawn from scratch in code for this project, not traced from anyt
 
 Each phase ends with test instructions and a list of open questions.
 
-## 19. Out of scope (YAGNI)
+## 19. Amendments from phase 1 prototyping (2026-09-28)
+
+Phase 1 was prototyped and tested before the plan was written. These points refine or override the sections above:
+
+- **Dependencies:** `enshrined/svg-sanitize` (^1.0) sits in `require-dev`. Strauss **0.26.4** (pinned, because 0.30 fails on Windows paths) copies it into `vendor-prefixed/` with `delete_vendor_packages: false`, which means no class aliases are generated. A release runs `composer install --no-dev` and ships `vendor/` (our PSR-4 autoloader only) plus `vendor-prefixed/`. The unprefixed library never ships.
+- **Template fields** added:
+  - `unit`: piece-units to canvas-units for `fit: "natural"` slots, which is the default. It keeps characters and props at one consistent world scale. `fit: "contain"` fills the box, for backgrounds and hero objects.
+  - `flip`: mirrors a box slot, and its attached children inherit the mirror.
+  - `avoid`: rectangles that scattered pieces keep their centres out of.
+- **Anchor convention:** characters expose `hold`, which accepts `handheld` (standing poses) or `lap` (seated poses), and `ground`. Objects declare `mounts` from `handheld`, `lap` or `surface` to one of their own anchors. A slot with `attach` whose parent lacks the anchor is skipped silently.
+- **Per-slot seeds:** every slot draws from `Seed("<seed>|<template>|<slot>")`. Locking or picking one slot never changes the others, which is the basis for the builder's lock-and-shuffle.
+- **Piece metadata:** source SVGs may carry `data-si-label`, `data-si-tags`, `data-si-z`, `data-si-accepts` and `data-si-mounts` on the root element. The builder uses these as prompt defaults and removes them, so non-interactive builds are fully reproducible.
+- **Tags** are single, singular, lower-case tokens (for example `document`, not `documents`). `Keywords::tokenize()` singularizes content, so tags have to match its output. `StarterPackTest` enforces this.
+- **Malformed input:** a malformed `template` value (one failing `^[a-z0-9][a-z0-9-]*$`) is dropped by `SceneSpec`, and the selector then auto-picks. A well-formed but unknown ID raises `CompositionException`.
+- **Palette:** the phase 1 `Palette` already derives `-light`/`-dark` (±0.18 HSL lightness), and explicit variants such as `primary-dark` override the derived value. Phase 2 adds presets, settings, Elementor import and the contrast warning on top of it.
+
+## 20. Out of scope (YAGNI)
 
 - Animation, and editing individual paths in the browser.
 - Free-form drag positioning in the builder. Positions come from templates. A per-slot nudge may come later if needed.
