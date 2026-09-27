@@ -75,7 +75,7 @@ final class Palette {
 		$colors  = $default->colors;
 
 		foreach ( $data as $key => $value ) {
-			if ( ! is_string( $key ) || ! is_string( $value ) || ! preg_match( '/^(' . implode( '|', self::SLOTS ) . ')(-(light|dark))?$/', $key ) ) {
+			if ( ! is_string( $key ) || ! is_string( $value ) || ! preg_match( '/^(' . implode( '|', self::SLOTS ) . ')(-(light|dark))?$/D', $key ) ) {
 				continue;
 			}
 			$hex = Color::normalize_hex( $value );

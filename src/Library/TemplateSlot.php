@@ -65,7 +65,7 @@ final class TemplateSlot {
 	 */
 	public static function from_array( array $data, string $template_id ): self {
 		$name = (string) ( $data['name'] ?? '' );
-		if ( ! preg_match( '/^[a-z][a-z0-9_-]*$/', $name ) ) {
+		if ( ! preg_match( '/^[a-z][a-z0-9_-]*$/D', $name ) ) {
 			throw new LibraryException( sprintf( 'Template "%s" has a slot with an invalid name.', $template_id ) );
 		}
 

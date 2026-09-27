@@ -23,11 +23,11 @@ final class Color {
 	public static function normalize_hex( string $hex ): ?string {
 		$hex = ltrim( trim( $hex ), '#' );
 
-		if ( preg_match( '/^[0-9a-f]{3}$/i', $hex ) ) {
+		if ( preg_match( '/^[0-9a-f]{3}$/iD', $hex ) ) {
 			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
 		}
 
-		return preg_match( '/^[0-9a-f]{6}$/i', $hex ) ? '#' . strtolower( $hex ) : null;
+		return preg_match( '/^[0-9a-f]{6}$/iD', $hex ) ? '#' . strtolower( $hex ) : null;
 	}
 
 	/**

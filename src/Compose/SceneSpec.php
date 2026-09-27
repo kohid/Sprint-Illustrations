@@ -45,7 +45,7 @@ final class SceneSpec {
 	 * @return self
 	 */
 	public static function from_array( array $data ): self {
-		$template = isset( $data['template'] ) && is_string( $data['template'] ) && preg_match( '/^[a-z0-9][a-z0-9-]*$/', $data['template'] )
+		$template = isset( $data['template'] ) && is_string( $data['template'] ) && preg_match( '/^[a-z0-9][a-z0-9-]*$/D', $data['template'] )
 			? $data['template']
 			: null;
 
@@ -128,7 +128,7 @@ final class SceneSpec {
 			return array_filter( $palette, static fn( $value, $key ) => is_string( $key ) && ( is_string( $value ) || is_array( $value ) ), ARRAY_FILTER_USE_BOTH );
 		}
 
-		if ( is_string( $palette ) && preg_match( '/^(site|default|preset:[a-z0-9-]+)$/', $palette ) ) {
+		if ( is_string( $palette ) && preg_match( '/^(site|default|preset:[a-z0-9-]+)$/D', $palette ) ) {
 			return $palette;
 		}
 
@@ -175,9 +175,9 @@ final class SceneSpec {
 		}
 
 		$clean = [];
-		$is_id = static fn( $id ) => is_string( $id ) && preg_match( '/^[a-z0-9][a-z0-9-]*$/', $id );
+		$is_id = static fn( $id ) => is_string( $id ) && preg_match( '/^[a-z0-9][a-z0-9-]*$/D', $id );
 		foreach ( $picks as $slot => $value ) {
-			if ( ! is_string( $slot ) || ! preg_match( '/^[a-z][a-z0-9_-]*$/', $slot ) ) {
+			if ( ! is_string( $slot ) || ! preg_match( '/^[a-z][a-z0-9_-]*$/D', $slot ) ) {
 				continue;
 			}
 			if ( $is_id( $value ) ) {

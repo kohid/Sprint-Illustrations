@@ -42,7 +42,7 @@ final class Template {
 	 */
 	public static function from_array( array $data ): self {
 		$id = (string) ( $data['id'] ?? '' );
-		if ( ! preg_match( '/^[a-z0-9][a-z0-9-]*$/', $id ) ) {
+		if ( ! preg_match( '/^[a-z0-9][a-z0-9-]*$/D', $id ) ) {
 			throw new LibraryException( 'Template has a missing or invalid "id".' );
 		}
 

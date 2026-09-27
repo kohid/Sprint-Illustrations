@@ -62,11 +62,11 @@ final class TemplateRepositoryTest extends TestCase {
 		];
 
 		return [
-			'bad id'           => [ [ 'id' => 'Bad ID' ] + $base ],
-			'bad canvas'       => [ [ 'canvas' => [ 100 ] ] + $base ],
-			'no slots'         => [ [ 'slots' => [] ] + $base ],
-			'duplicate slot'   => [ [ 'slots' => [ $slot, $slot ] ] + $base ],
-			'box and attach'   => [
+			'bad id'                 => [ [ 'id' => 'Bad ID' ] + $base ],
+			'bad canvas'             => [ [ 'canvas' => [ 100 ] ] + $base ],
+			'no slots'               => [ [ 'slots' => [] ] + $base ],
+			'duplicate slot'         => [ [ 'slots' => [ $slot, $slot ] ] + $base ],
+			'box and attach'         => [
 				[
 					'slots' => [
 						$slot + [
@@ -78,8 +78,8 @@ final class TemplateRepositoryTest extends TestCase {
 					],
 				] + $base,
 			],
-			'neither'          => [ [ 'slots' => [ array_diff_key( $slot, [ 'box' => 1 ] ) ] ] + $base ],
-			'attach to later'  => [
+			'neither'                => [ [ 'slots' => [ array_diff_key( $slot, [ 'box' => 1 ] ) ] ] + $base ],
+			'attach to later'        => [
 				[
 					'slots' => [
 						[
@@ -94,8 +94,10 @@ final class TemplateRepositoryTest extends TestCase {
 					],
 				] + $base,
 			],
-			'unknown category' => [ [ 'slots' => [ [ 'category' => 'monsters' ] + $slot ] ] + $base ],
-			'zero-size box'    => [ [ 'slots' => [ [ 'box' => [ 0, 0, 0, 10 ] ] + $slot ] ] + $base ],
+			'unknown category'       => [ [ 'slots' => [ [ 'category' => 'monsters' ] + $slot ] ] + $base ],
+			'zero-size box'          => [ [ 'slots' => [ [ 'box' => [ 0, 0, 0, 10 ] ] + $slot ] ] + $base ],
+			'id with newline'        => [ [ 'id' => "t\n" ] + $base ],
+			'slot name with newline' => [ [ 'slots' => [ [ 'name' => "a\n" ] + $slot ] ] + $base ],
 		];
 	}
 }

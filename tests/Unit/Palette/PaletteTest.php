@@ -54,6 +54,13 @@ final class PaletteTest extends TestCase {
 		$this->assertSame( Palette::default()->to_array()['skin'], $palette->to_array()['skin'] );
 	}
 
+	public function test_keys_with_trailing_newline_are_ignored(): void {
+		$palette = Palette::from_array( [ "primary\n" => '#000000' ] );
+
+		$this->assertSame( '#5b5bd6', $palette->resolve( 'primary' ) );
+		$this->assertArrayNotHasKey( "primary\n", $palette->to_array() );
+	}
+
 	public function test_round_trip_and_hash(): void {
 		$palette = Palette::from_array( [ 'accent' => '#00ff00' ] );
 

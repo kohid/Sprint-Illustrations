@@ -73,6 +73,23 @@ final class SceneSpecTest extends TestCase {
 		$this->assertSame( SceneSpec::MAX_SEED, SceneSpec::from_array( [ 'seed' => PHP_INT_MAX ] )->seed );
 	}
 
+	public function test_trailing_newlines_are_rejected(): void {
+		$spec = SceneSpec::from_array(
+			[
+				'template' => "hero\n",
+				'palette'  => "site\n",
+				'picks'    => [
+					'subject' => "char-a\n",
+					"slot\n"  => 'char-b',
+				],
+			]
+		);
+
+		$this->assertNull( $spec->template );
+		$this->assertSame( 'default', $spec->palette );
+		$this->assertSame( [], $spec->picks );
+	}
+
 	public function test_withers_and_round_trip(): void {
 		$spec = SceneSpec::from_array(
 			[
