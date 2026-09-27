@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 200" data-si-label="Hero pose" data-si-tags="person, Standing ,hero" data-si-z="31" data-si-accepts="hold:handheld,ghost:handheld">
+  <rect class="slot-primary" x="30" y="60" width="40" height="140"/>
+  <circle class="slot-skin" cx="50" cy="30" r="25"/>
+  <g transform="translate(10 20)">
+    <g transform="scale(2)">
+      <circle id="anchor-hold" cx="30" cy="40" r="2"/>
+    </g>
+  </g>
+  <rect id="anchor-ground" x="45" y="195" width="10" height="10"/>
+</svg>
