@@ -40,7 +40,7 @@ final class Recolorer {
 		}
 
 		$variant = '';
-		if ( preg_match( '/^(.+)-(light|dark)$/', $rest, $match ) ) {
+		if ( preg_match( '/^(.+)-(light|dark)$/D', $rest, $match ) ) {
 			$rest    = $match[1];
 			$variant = $match[2];
 		}

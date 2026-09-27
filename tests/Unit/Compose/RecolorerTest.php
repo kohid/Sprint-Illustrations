@@ -19,7 +19,7 @@ final class RecolorerTest extends TestCase {
 
 	public static function tokens(): array {
 		return [
-			'fill'         => [
+			'fill'             => [
 				'slot-primary',
 				[
 					'prop'    => 'fill',
@@ -27,7 +27,7 @@ final class RecolorerTest extends TestCase {
 					'variant' => '',
 				],
 			],
-			'fill variant' => [
+			'fill variant'     => [
 				'slot-primary-dark',
 				[
 					'prop'    => 'fill',
@@ -35,7 +35,7 @@ final class RecolorerTest extends TestCase {
 					'variant' => 'dark',
 				],
 			],
-			'stroke'       => [
+			'stroke'           => [
 				'slot-stroke-accent',
 				[
 					'prop'    => 'stroke',
@@ -43,7 +43,7 @@ final class RecolorerTest extends TestCase {
 					'variant' => '',
 				],
 			],
-			'stroke var.'  => [
+			'stroke var.'      => [
 				'slot-stroke-neutral-light',
 				[
 					'prop'    => 'stroke',
@@ -51,7 +51,7 @@ final class RecolorerTest extends TestCase {
 					'variant' => 'light',
 				],
 			],
-			'outline'      => [
+			'outline'          => [
 				'slot-outline',
 				[
 					'prop'    => 'stroke',
@@ -59,7 +59,7 @@ final class RecolorerTest extends TestCase {
 					'variant' => '',
 				],
 			],
-			'skin'         => [
+			'skin'             => [
 				'slot-skin-dark',
 				[
 					'prop'    => 'fill',
@@ -67,8 +67,9 @@ final class RecolorerTest extends TestCase {
 					'variant' => 'dark',
 				],
 			],
-			'unknown slot' => [ 'slot-banana', null ],
-			'not a slot'   => [ 'hero', null ],
+			'unknown slot'     => [ 'slot-banana', null ],
+			'not a slot'       => [ 'hero', null ],
+			'trailing newline' => [ "slot-primary-dark\n", null ],
 		];
 	}
 
