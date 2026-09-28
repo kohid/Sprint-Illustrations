@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 320" data-si-label="Cleo with an idea" data-si-tags="person,woman,pointing,presenting,idea,standing" data-si-accepts="hold:handheld">
+  <ellipse class="slot-neutral" cx="80" cy="311" rx="40" ry="6" opacity="0.12"/>
+  <path class="slot-stroke-neutral" d="M70 200 V296 M90 200 V296" fill="none" stroke-width="18" stroke-linecap="round"/>
+  <rect class="slot-neutral-dark" x="59" y="298" width="23" height="12" rx="6"/>
+  <rect class="slot-neutral-dark" x="81" y="298" width="23" height="12" rx="6"/>
+  <path class="slot-hair" d="M56 46 C56 16 104 16 104 46 L106 90 Q106 94 102 94 H58 Q54 94 54 90 Z"/>
+  <rect class="slot-skin-dark" x="73" y="62" width="14" height="20" rx="4"/>
+  <path class="slot-secondary" d="M56 96 Q56 82 72 82 H88 Q104 82 104 96 L108 200 Q108 204 104 204 H56 Q52 204 52 200 Z"/>
+  <rect class="slot-secondary-dark" x="70" y="74" width="20" height="12" rx="5"/>
+  <path class="slot-stroke-secondary-dark" d="M60 94 L48 140 L52 180" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="slot-skin" cx="52" cy="186" r="8"/>
+  <path class="slot-stroke-secondary-dark" d="M100 94 L116 66 L120 32" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="slot-skin" cx="121" cy="26" r="8"/>
+  <circle class="slot-skin" cx="80" cy="44" r="22"/>
+  <path class="slot-hair" d="M58 46 C56 28 68 20 82 20 C96 20 106 30 104 46 C94 42 84 36 78 28 C74 36 66 42 58 46 Z"/>
+  <path class="slot-stroke-accent" d="M108 12 L103 7 M134 12 L139 7 M121 9 V2" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <circle id="anchor-hold" cx="52" cy="186" r="3"/>
+  <circle id="anchor-ground" cx="80" cy="310" r="3"/>
+</svg>

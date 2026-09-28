@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 320" data-si-label="Dev waving" data-si-tags="person,man,waving,hello,welcome,standing" data-si-accepts="hold:handheld">
+  <ellipse class="slot-neutral" cx="80" cy="311" rx="48" ry="6" opacity="0.12"/>
+  <path class="slot-stroke-neutral" d="M68 212 V296 M92 212 V296" fill="none" stroke-width="18" stroke-linecap="round"/>
+  <rect class="slot-neutral-dark" x="58" y="298" width="24" height="12" rx="6"/>
+  <rect class="slot-neutral-dark" x="84" y="298" width="24" height="12" rx="6"/>
+  <circle class="slot-hair" cx="62" cy="54" r="10"/>
+  <circle class="slot-hair" cx="68" cy="44" r="11"/>
+  <circle class="slot-hair" cx="80" cy="38" r="12"/>
+  <circle class="slot-hair" cx="92" cy="44" r="11"/>
+  <circle class="slot-hair" cx="99" cy="54" r="9"/>
+  <rect class="slot-skin-dark" x="73" y="80" width="14" height="20" rx="4"/>
+  <path class="slot-secondary" d="M50 116 Q50 96 70 96 H90 Q110 96 110 116 L116 208 Q116 214 110 214 H50 Q44 214 44 208 Z"/>
+  <path class="slot-secondary-dark" d="M62 96 Q80 88 98 96 L94 106 Q80 112 66 106 Z"/>
+  <path class="slot-stroke-accent" d="M74 108 V126 M86 108 V126" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <path class="slot-outline" d="M62 178 H98 L94 198 H66 Z" fill="none" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+  <path class="slot-stroke-secondary-dark" d="M56 110 L46 156 L52 194" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="slot-skin" cx="53" cy="200" r="8"/>
+  <path class="slot-stroke-secondary-dark" d="M104 108 L128 96 L134 60" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="slot-skin" cx="134" cy="52" r="8"/>
+  <circle class="slot-skin" cx="80" cy="62" r="22"/>
+  <path class="slot-hair" d="M60 58 C60 44 70 38 80 38 C92 38 100 46 100 56 C92 50 86 48 80 50 C72 52 66 54 60 58 Z"/>
+  <path class="slot-stroke-accent" d="M150 40 Q156 48 152 58 M118 32 Q114 40 116 48" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <circle id="anchor-hold" cx="53" cy="200" r="3"/>
+  <circle id="anchor-ground" cx="80" cy="310" r="3"/>
+</svg>

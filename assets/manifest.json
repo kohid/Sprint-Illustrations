@@ -1,5 +1,5 @@
 {
-    "version": 1,
+    "version": 2,
     "pieces": [
         {
             "id": "bg-blob",
@@ -30,6 +30,53 @@
                 "primary"
             ],
             "hash": "d62a7f31d5a5f091dda45806a62c147d9097c70c"
+        },
+        {
+            "id": "char-ava-sit",
+            "label": "Ava sitting",
+            "category": "characters",
+            "file": "pieces/characters/ava-sit.svg",
+            "tags": [
+                "person",
+                "woman",
+                "sitting",
+                "work",
+                "laptop",
+                "remote"
+            ],
+            "viewBox": [
+                0,
+                0,
+                200,
+                300
+            ],
+            "size": [
+                200,
+                300
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    104,
+                    293
+                ],
+                "hold": [
+                    128,
+                    197
+                ]
+            },
+            "accepts": {
+                "hold": "lap"
+            },
+            "mounts": {},
+            "slots": [
+                "hair",
+                "neutral",
+                "outline",
+                "primary",
+                "skin"
+            ],
+            "hash": "71ef1f0fe2abbd7b97adc7deaf6f54650d54e9c2"
         },
         {
             "id": "char-ava-wave",
@@ -79,6 +126,288 @@
                 "skin"
             ],
             "hash": "b1dbc43da6003369c7966c4b26b8f86ff053a9b5"
+        },
+        {
+            "id": "char-ben-hold",
+            "label": "Ben holding something",
+            "category": "characters",
+            "file": "pieces/characters/ben-hold.svg",
+            "tags": [
+                "person",
+                "man",
+                "standing",
+                "holding"
+            ],
+            "viewBox": [
+                0,
+                0,
+                160,
+                320
+            ],
+            "size": [
+                160,
+                320
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    80,
+                    310
+                ],
+                "hold": [
+                    143,
+                    126
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "outline",
+                "primary",
+                "skin"
+            ],
+            "hash": "f81e1ae5852718b7fa902f2b6e7bbda003a3efcf"
+        },
+        {
+            "id": "char-ben-point",
+            "label": "Ben pointing",
+            "category": "characters",
+            "file": "pieces/characters/ben-point.svg",
+            "tags": [
+                "person",
+                "man",
+                "pointing",
+                "presenting",
+                "explain",
+                "standing"
+            ],
+            "viewBox": [
+                0,
+                0,
+                160,
+                320
+            ],
+            "size": [
+                160,
+                320
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    80,
+                    310
+                ],
+                "hold": [
+                    51,
+                    188
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "outline",
+                "primary",
+                "skin"
+            ],
+            "hash": "d238a06dc4af9655dc3deb8a4df8d058d8f56496"
+        },
+        {
+            "id": "char-cleo-point",
+            "label": "Cleo with an idea",
+            "category": "characters",
+            "file": "pieces/characters/cleo-point.svg",
+            "tags": [
+                "person",
+                "woman",
+                "pointing",
+                "presenting",
+                "idea",
+                "standing"
+            ],
+            "viewBox": [
+                0,
+                0,
+                160,
+                320
+            ],
+            "size": [
+                160,
+                320
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    80,
+                    310
+                ],
+                "hold": [
+                    52,
+                    186
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "secondary",
+                "skin"
+            ],
+            "hash": "a0bf25e490262cf2493ad85c97e4663951782354"
+        },
+        {
+            "id": "char-cleo-sit",
+            "label": "Cleo sitting",
+            "category": "characters",
+            "file": "pieces/characters/cleo-sit.svg",
+            "tags": [
+                "person",
+                "woman",
+                "sitting",
+                "work",
+                "laptop"
+            ],
+            "viewBox": [
+                0,
+                0,
+                200,
+                300
+            ],
+            "size": [
+                200,
+                300
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    104,
+                    293
+                ],
+                "hold": [
+                    128,
+                    197
+                ]
+            },
+            "accepts": {
+                "hold": "lap"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "secondary",
+                "skin"
+            ],
+            "hash": "72181b0149c65a6e3a4596d84e2c3afa3510f604"
+        },
+        {
+            "id": "char-dev-hold",
+            "label": "Dev holding something",
+            "category": "characters",
+            "file": "pieces/characters/dev-hold.svg",
+            "tags": [
+                "person",
+                "man",
+                "standing",
+                "holding",
+                "support"
+            ],
+            "viewBox": [
+                0,
+                0,
+                160,
+                320
+            ],
+            "size": [
+                160,
+                320
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    80,
+                    310
+                ],
+                "hold": [
+                    141,
+                    144
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "outline",
+                "secondary",
+                "skin"
+            ],
+            "hash": "d4c9f0758b16fead7b90b8413d93a0cca2775364"
+        },
+        {
+            "id": "char-dev-wave",
+            "label": "Dev waving",
+            "category": "characters",
+            "file": "pieces/characters/dev-wave.svg",
+            "tags": [
+                "person",
+                "man",
+                "waving",
+                "hello",
+                "welcome",
+                "standing"
+            ],
+            "viewBox": [
+                0,
+                0,
+                160,
+                320
+            ],
+            "size": [
+                160,
+                320
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    80,
+                    310
+                ],
+                "hold": [
+                    53,
+                    200
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "outline",
+                "secondary",
+                "skin"
+            ],
+            "hash": "4e0c8794c5691555e400ebf7374f4bd1676691ad"
         },
         {
             "id": "decor-sparkle",

@@ -90,6 +90,18 @@ final class StarterPackTest extends TestCase {
 		}
 	}
 
+	public function test_pack_is_complete(): void {
+		$count = static fn( string $category ) => count( self::$services->manifest->by_category( $category ) );
+
+		$this->assertGreaterThanOrEqual( 8, $count( 'characters' ) );
+		$this->assertGreaterThanOrEqual( 10, $count( 'objects' ) );
+		$this->assertGreaterThanOrEqual( 3, $count( 'backgrounds' ) );
+		$this->assertGreaterThanOrEqual( 6, $count( 'decor' ) );
+
+		$lap = array_filter( self::$services->manifest->by_category( 'objects' ), static fn( $p ) => isset( $p->mounts['lap'] ) );
+		$this->assertNotEmpty( $lap, 'Seated poses need at least one lap-mountable object.' );
+	}
+
 	public function test_template_tags_and_synonyms_use_token_forms(): void {
 		$keywords = new Keywords();
 		$synonyms = json_decode( file_get_contents( self::ROOT . '/assets/keywords/synonyms.json' ), true );

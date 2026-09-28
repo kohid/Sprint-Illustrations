@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" data-si-label="Ava sitting" data-si-tags="person,woman,sitting,work,laptop,remote" data-si-accepts="hold:lap">
+  <ellipse class="slot-neutral" cx="104" cy="292" rx="82" ry="6" opacity="0.12"/>
+  <rect class="slot-neutral-light" x="34" y="204" width="96" height="84" rx="10"/>
+  <path class="slot-outline" d="M42 220 H122" fill="none" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+  <path class="slot-stroke-neutral" d="M70 198 H136 V282 M76 206 H152 V282" fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect class="slot-neutral-dark" x="128" y="282" width="28" height="12" rx="6"/>
+  <rect class="slot-neutral-dark" x="144" y="282" width="28" height="12" rx="6"/>
+  <circle class="slot-hair" cx="58" cy="46" r="11"/>
+  <rect class="slot-skin-dark" x="71" y="78" width="14" height="22" rx="4"/>
+  <path class="slot-primary" d="M52 112 Q52 96 68 96 H88 Q104 96 104 112 L108 204 Q108 208 104 208 H52 Q48 208 48 204 Z"/>
+  <path class="slot-outline" d="M70 96 L78 106 L86 96" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+  <path class="slot-stroke-primary-dark" d="M56 110 L50 156 L74 184" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="slot-skin" cx="80" cy="186" r="8"/>
+  <path class="slot-stroke-primary-dark" d="M100 110 L110 160 L134 180" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="slot-skin" cx="138" cy="182" r="8"/>
+  <circle class="slot-skin" cx="78" cy="62" r="22"/>
+  <path class="slot-hair" d="M56.5 68 C52 46 68 36 82 40 C94 42 102 52 100 62 C92 54 78 52 68 58 C62 62 60 68 56.5 68 Z"/>
+  <circle id="anchor-hold" cx="128" cy="197" r="3"/>
+  <circle id="anchor-ground" cx="104" cy="293" r="3"/>
+</svg>
