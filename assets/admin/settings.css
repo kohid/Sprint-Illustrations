@@ -1,0 +1,60 @@
+/* Sprint Illustrations: Settings page. Native WP admin; colour comes only from the user's palette. */
+.si-settings__layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;margin-top:16px}
+.si-settings__main{min-width:0}
+.si-stage{order:-1}
+@media (min-width:960px){
+	.si-settings__layout{grid-template-columns:minmax(0,1fr) minmax(320px,400px)}
+	.si-stage{order:0;position:sticky;top:48px}
+}
+
+.si-panel{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px 20px 20px;margin:0 0 20px;min-width:0}
+.si-panel__title{font-size:14px;font-weight:600;line-height:1.4;margin:0;padding:0 4px}
+fieldset.si-panel>.si-panel__title{float:left;width:100%;padding:0;margin-bottom:12px}
+fieldset.si-panel>.si-panel__title+*{clear:both}
+h2.si-panel__title{margin-bottom:12px;padding:0}
+
+.si-source__option{display:inline-flex;align-items:center;gap:6px;margin:0 20px 8px 0}
+
+.si-presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px}
+.si-preset{position:relative;display:flex;flex-direction:column;border:1px solid #c3c4c7;border-radius:4px;background:#fff;cursor:pointer;overflow:hidden}
+.si-preset__input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.si-preset__art{display:block;aspect-ratio:4/3;background:#f6f7f7}
+.si-preset__art svg{display:block;width:100%;height:100%}
+.si-preset__name{padding:6px 10px;font-weight:500}
+.si-preset:hover{border-color:#8c8f94}
+.si-preset:has(.si-preset__input:checked){border-color:#2271b1;box-shadow:0 0 0 1px #2271b1}
+.si-preset:has(.si-preset__input:checked) .si-preset__name{color:#2271b1}
+.si-preset:has(.si-preset__input:focus-visible){outline:2px solid #2271b1;outline-offset:2px}
+
+.si-slots{display:grid;gap:10px}
+.si-slot{display:grid;grid-template-columns:36px 112px 104px auto;justify-content:start;grid-template-areas:"picker label hex chips" ". warning warning warning";align-items:center;column-gap:10px}
+.si-slot__picker{grid-area:picker;width:36px;height:30px;padding:0;border:1px solid #8c8f94;border-radius:4px;background:none;cursor:pointer}
+.si-slot__label{grid-area:label;font-weight:500}
+.si-slot__hex{grid-area:hex;width:104px}
+.si-slot__chips{grid-area:chips;display:inline-flex;gap:4px}
+.si-chip{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.si-slot__warning{grid-area:warning;margin:0;color:#996800;font-size:12px}
+.si-slot__warning:empty{display:none}
+
+.si-tones{margin-top:12px}
+.si-tones__label{display:block;font-weight:500;margin-bottom:6px}
+.si-tones__list{display:grid;grid-template-columns:repeat(3,max-content);gap:8px 16px}
+.si-tone{display:inline-flex;align-items:center;gap:4px}
+.si-tone .si-slot__picker{width:30px;height:30px}
+.si-tone__hex{width:88px}
+
+.si-map th{text-align:left;font-weight:500;padding:6px 16px 6px 0;width:110px}
+.si-map td{padding:6px 0}
+.si-map select{min-width:260px;max-width:100%}
+.si-sync{display:inline-flex;align-items:center;gap:6px;margin-top:12px}
+
+.si-stage{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px}
+.si-stage__title{font-size:14px;font-weight:600;margin:0 0 12px}
+.si-stage__art{max-width:480px;aspect-ratio:4/3;border-radius:2px;background:#f6f7f7 radial-gradient(#dcdcde 1px,transparent 1.5px) 0 0/16px 16px;display:grid;place-items:center;overflow:hidden}
+.si-stage__art svg{display:block;width:100%;height:100%}
+.si-stage__bar{display:flex;align-items:center;gap:12px;margin-top:12px}
+.si-stage__status{margin:0;color:#646970;font-size:12px}
+.si-stage.is-updating .si-stage__art{opacity:.6}
+@media (prefers-reduced-motion:no-preference){.si-stage__art{transition:opacity .15s}}
+
+.si-cache__form p{margin:0 0 12px}
