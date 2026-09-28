@@ -25,3 +25,19 @@ export const saveIllustration = ( { id, title, spec } ) =>
 		method: id ? 'PUT' : 'POST',
 		data: { title, spec },
 	} );
+
+export const exportSvg = ( { spec, illustrationId, title } ) =>
+	apiFetch( {
+		path: `${ NS }/media/svg`,
+		method: 'POST',
+		data: { spec, illustration_id: illustrationId || 0, title },
+	} );
+
+export const exportPng = ( blob, { illustrationId, title, alt } ) => {
+	const body = new window.FormData();
+	body.append( 'file', blob, 'illustration.png' );
+	body.append( 'illustration_id', String( illustrationId || 0 ) );
+	body.append( 'title', title || '' );
+	body.append( 'alt', alt || '' );
+	return apiFetch( { path: `${ NS }/media/png`, method: 'POST', body } );
+};

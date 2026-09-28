@@ -61,3 +61,8 @@
 .si-b-error{color:#d63638}
 .si-b-warning{color:#996800}
 .si-b-loading{display:grid;place-items:center;min-height:240px}
+
+/* Export menu: two-line items (label + hint). */
+.si-b-export__menu .components-menu-item__button{height:auto;min-height:40px;padding-top:8px;padding-bottom:8px;text-align:left}
+.si-b-export__menu .components-menu-item__info-wrapper{align-items:flex-start}
+.si-b-export__menu .components-menu-item__info{margin-top:2px}

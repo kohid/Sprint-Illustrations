@@ -1,11 +1,19 @@
 /**
- * Builder root: state, the debounced compose loop, open and save.
+ * Builder root: state, the debounced compose loop, open, save and export.
  */
 import { __ } from '@wordpress/i18n';
-import { useEffect, useReducer, useRef } from '@wordpress/element';
+import { useEffect, useReducer, useRef, useState } from '@wordpress/element';
 import { Notice, Spinner } from '@wordpress/components';
 import { addQueryArgs } from '@wordpress/url';
-import { compose, getIllustration, getLibrary, saveIllustration } from './api';
+import {
+	compose,
+	exportPng,
+	exportSvg,
+	getIllustration,
+	getLibrary,
+	saveIllustration,
+} from './api';
+import { svgToPngBlob } from './exportPng';
 import { initialState, reducer, specBody } from './state';
 import TopBar from './TopBar';
 import TemplatePicker from './TemplatePicker';
@@ -15,8 +23,11 @@ import SidePanel from './SidePanel';
 
 const config = window.sprintIllustrationsBuilder || {};
 
+const SOCIAL_SIZE = [ 1200, 630 ];
+
 export default function App() {
 	const [ state, dispatch ] = useReducer( reducer, initialState );
+	const [ exporting, setExporting ] = useState( false );
 	const latest = useRef( 0 );
 	const body = specBody( state );
 	const bodyKey = JSON.stringify( body );
@@ -153,6 +164,86 @@ export default function App() {
 			);
 	};
 
+	// Export the scene on the stage; the illustration is linked as the source only once saved.
+	const exportAs = async ( format ) => {
+		const result = state.result;
+		if ( ! result?.svg || exporting ) {
+			return;
+		}
+		const spec = result.spec || body;
+		const title = state.name.trim() || result.template?.label || '';
+		const alt = spec.decorative
+			? ''
+			: spec.title || result.template?.label || '';
+		const meta = { illustrationId: state.id, title, alt };
+
+		setExporting( true );
+		try {
+			let media;
+			if ( 'svg' === format ) {
+				media = await exportSvg( { ...meta, spec } );
+			} else {
+				const canvas = result.template?.canvas || [ 800, 600 ];
+				let blob;
+				try {
+					blob =
+						'social' === format
+							? await svgToPngBlob(
+									result.svg,
+									canvas,
+									SOCIAL_SIZE,
+									result.background || '#ffffff'
+							  )
+							: await svgToPngBlob( result.svg, canvas, [
+									canvas[ 0 ] * 2,
+									canvas[ 1 ] * 2,
+							  ] );
+				} catch ( error ) {
+					throw new Error(
+						__(
+							'The PNG couldn’t be created in this browser.',
+							'sprint-illustrations'
+						)
+					);
+				}
+				media = await exportPng( blob, meta );
+			}
+			dispatch( {
+				type: 'NOTICE',
+				notice: {
+					status: 'success',
+					text: __(
+						'Saved to Media Library.',
+						'sprint-illustrations'
+					),
+					actions: media.edit_url
+						? [
+								{
+									label: __( 'Edit', 'sprint-illustrations' ),
+									url: media.edit_url,
+								},
+						  ]
+						: [],
+				},
+			} );
+		} catch ( error ) {
+			dispatch( {
+				type: 'NOTICE',
+				notice: {
+					status: 'error',
+					text:
+						error.message ||
+						__(
+							'The export couldn’t be saved to the Media Library.',
+							'sprint-illustrations'
+						),
+				},
+			} );
+		} finally {
+			setExporting( false );
+		}
+	};
+
 	if ( ! state.library ) {
 		return 'failed' === state.status ? (
 			<Notice status="error" isDismissible={ false }>
@@ -176,11 +267,14 @@ export default function App() {
 				dispatch={ dispatch }
 				onOpen={ open }
 				onSave={ save }
+				onExport={ exportAs }
+				exporting={ exporting }
 			/>
 			{ state.notice && (
 				<Notice
 					className="si-b-notice"
 					status={ state.notice.status }
+					actions={ state.notice.actions }
 					onRemove={ () =>
 						dispatch( { type: 'NOTICE', notice: null } )
 					}

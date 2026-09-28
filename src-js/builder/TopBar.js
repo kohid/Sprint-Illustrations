@@ -1,5 +1,5 @@
 /**
- * Open / Name / Save / Save as new / Copy shortcode.
+ * Open / Name / Save / Save as new / Copy shortcode / Export.
  */
 import { __, sprintf } from '@wordpress/i18n';
 import { useEffect, useState } from '@wordpress/element';
@@ -82,7 +82,80 @@ function OpenMenu( { onOpen } ) {
 	);
 }
 
-export default function TopBar( { state, dispatch, onOpen, onSave } ) {
+const EXPORTS = [
+	{
+		format: 'svg',
+		label: __( 'SVG to Media Library', 'sprint-illustrations' ),
+		info: __( 'Sharp at any size', 'sprint-illustrations' ),
+	},
+	{
+		format: 'png',
+		label: __( 'PNG, 2× canvas', 'sprint-illustrations' ),
+		info: __( 'Transparent background', 'sprint-illustrations' ),
+	},
+	{
+		format: 'social',
+		label: __(
+			'PNG for social sharing, 1200 × 630',
+			'sprint-illustrations'
+		),
+		info: __( 'On the palette background', 'sprint-illustrations' ),
+	},
+];
+
+function ExportMenu( { canExport, exporting, onExport } ) {
+	return (
+		<Dropdown
+			className="si-b-export"
+			contentClassName="si-b-export__menu"
+			popoverProps={ { placement: 'bottom-end' } }
+			renderToggle={ ( { isOpen, onToggle } ) => (
+				<Button
+					variant="secondary"
+					onClick={ onToggle }
+					aria-expanded={ isOpen }
+					aria-haspopup="true"
+					isBusy={ exporting }
+					disabled={ ! canExport || exporting }
+				>
+					{ exporting
+						? __( 'Exporting…', 'sprint-illustrations' )
+						: __( 'Export', 'sprint-illustrations' ) }
+				</Button>
+			) }
+			renderContent={ ( { onClose } ) => (
+				<MenuGroup
+					label={ __(
+						'Save to Media Library',
+						'sprint-illustrations'
+					) }
+				>
+					{ EXPORTS.map( ( item ) => (
+						<MenuItem
+							key={ item.format }
+							info={ item.info }
+							onClick={ () => {
+								onClose();
+								onExport( item.format );
+							} }
+						>
+							{ item.label }
+						</MenuItem>
+					) ) }
+				</MenuGroup>
+			) }
+		/>
+	);
+}
+
+export default function TopBar( {
+	state,
+	dispatch,
+	onOpen,
+	onSave,
+	onExport,
+	exporting,
+} ) {
 	const [ copied, setCopied ] = useState( false );
 	const shortcode = state.id
 		? `[sprint_illustration id="${ state.id }"]`
@@ -173,6 +246,11 @@ export default function TopBar( { state, dispatch, onOpen, onSave } ) {
 					? __( 'Copied', 'sprint-illustrations' )
 					: __( 'Copy shortcode', 'sprint-illustrations' ) }
 			</Button>
+			<ExportMenu
+				canExport={ !! state.result?.svg }
+				exporting={ exporting }
+				onExport={ onExport }
+			/>
 		</div>
 	);
 }
