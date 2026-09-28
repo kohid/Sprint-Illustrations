@@ -1,0 +1,28 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "sprint-illustrations/illustration",
+	"version": "0.3.0",
+	"title": "Sprint Illustration",
+	"category": "media",
+	"icon": "art",
+	"description": "A flat illustration composed in your brand palette.",
+	"keywords": [ "illustration", "svg", "hero", "image" ],
+	"textdomain": "sprint-illustrations",
+	"attributes": {
+		"template": { "type": "string", "default": "" },
+		"keywords": { "type": "string", "default": "" },
+		"seed": { "type": "number", "default": 1 },
+		"palette": { "type": "string", "default": "site" },
+		"title": { "type": "string", "default": "" },
+		"decorative": { "type": "boolean", "default": false }
+	},
+	"supports": {
+		"html": false,
+		"align": [ "left", "center", "right", "wide", "full" ],
+		"spacing": { "margin": true }
+	},
+	"editorScript": "file:./editor.js",
+	"style": "sprint-illustrations",
+	"render": "file:./render.php"
+}
