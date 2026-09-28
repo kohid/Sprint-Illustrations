@@ -1,6 +1,8 @@
 /**
  * Builder state. `picks` holds only locked slots: they survive Shuffle; every other slot re-resolves.
  */
+import { __ } from '@wordpress/i18n';
+
 export const initialState = {
 	library: null,
 	spec: {
@@ -147,6 +149,29 @@ export function reducer( state, action ) {
 				name: action.item.title,
 				dirty: false,
 				notice: { status: 'success', text: action.text },
+			};
+		case 'SUGGESTED':
+			return {
+				...state,
+				spec: {
+					...state.spec,
+					template: action.suggestion.template || state.spec.template,
+					keywords: ( action.suggestion.keywords || [] ).join( ', ' ),
+					title: action.suggestion.title || state.spec.title,
+				},
+				picks: {},
+				dirty: true,
+				notice: {
+					status:
+						'ai' === action.suggestion.source ? 'success' : 'info',
+					text:
+						'ai' === action.suggestion.source
+							? __(
+									'Suggested by Claude.',
+									'sprint-illustrations'
+							  )
+							: action.suggestion.message,
+				},
 			};
 		case 'NOTICE':
 			return { ...state, saving: false, notice: action.notice };

@@ -1,19 +1,67 @@
 /**
- * Palette, variation and accessibility controls.
+ * Suggest, palette, variation and accessibility controls.
  */
 import { __ } from '@wordpress/i18n';
+import { useState } from '@wordpress/element';
 import {
 	Button,
 	RadioControl,
+	TextareaControl,
 	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
 
-export default function SidePanel( { state, dispatch, presets, settingsUrl } ) {
+export default function SidePanel( {
+	state,
+	dispatch,
+	presets,
+	settingsUrl,
+	aiReady,
+	suggesting,
+	onSuggest,
+} ) {
 	const set = ( spec ) => dispatch( { type: 'SET_SPEC', spec } );
+	const [ describe, setDescribe ] = useState( '' );
 
 	return (
 		<div className="si-b-side">
+			<section className="si-b-panel" aria-labelledby="si-b-suggest">
+				<h2 className="si-b-panel__title" id="si-b-suggest">
+					{ __( 'Suggest', 'sprint-illustrations' ) }
+				</h2>
+				<TextareaControl
+					__nextHasNoMarginBottom
+					label={ __( 'Describe it', 'sprint-illustrations' ) }
+					help={ __(
+						'What is the page or section about? Suggest picks a template, keywords and alt text.',
+						'sprint-illustrations'
+					) }
+					rows={ 3 }
+					value={ describe }
+					onChange={ setDescribe }
+				/>
+				<div className="si-b-suggest__bar">
+					<Button
+						variant="secondary"
+						__next40pxDefaultSize
+						isBusy={ suggesting }
+						disabled={ suggesting || ! describe.trim() }
+						onClick={ () => onSuggest( describe ) }
+					>
+						{ suggesting
+							? __( 'Suggesting…', 'sprint-illustrations' )
+							: __( 'Suggest', 'sprint-illustrations' ) }
+					</Button>
+					<span className="si-b-muted">
+						{ aiReady
+							? __( 'Uses Claude.', 'sprint-illustrations' )
+							: __(
+									'Uses keyword matching.',
+									'sprint-illustrations'
+							  ) }
+					</span>
+				</div>
+			</section>
 			<section className="si-b-panel" aria-labelledby="si-b-palette">
 				<h2 className="si-b-panel__title" id="si-b-palette">
 					{ __( 'Palette', 'sprint-illustrations' ) }
@@ -93,12 +141,12 @@ export default function SidePanel( { state, dispatch, presets, settingsUrl } ) {
 						) }
 						showTooltip
 					>
-						{ __( 'Suggest', 'sprint-illustrations' ) }
+						{ __( 'Match', 'sprint-illustrations' ) }
 					</Button>
 				</div>
 				<p className="si-b-muted si-b-help">
 					{ __(
-						'Keywords steer which pieces appear, e.g. “coffee, laptop”. Suggest picks the template too.',
+						'Keywords steer which pieces appear, e.g. “coffee, laptop”. Match picks the template too.',
 						'sprint-illustrations'
 					) }
 				</p>
