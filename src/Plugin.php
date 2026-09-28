@@ -16,6 +16,7 @@ use SprintIllustrations\Cache\SvgCache;
 use SprintIllustrations\Cli\CacheCommand;
 use SprintIllustrations\Cli\Command;
 use SprintIllustrations\Compose\ComposesSvg;
+use SprintIllustrations\Compose\SceneSpec;
 use SprintIllustrations\Integrations\Block;
 use SprintIllustrations\Integrations\Elementor\ColorSource;
 use SprintIllustrations\Integrations\Elementor\Loader as ElementorLoader;
@@ -25,7 +26,12 @@ use SprintIllustrations\Palette\Palette;
 use SprintIllustrations\Palette\PaletteSettings;
 use SprintIllustrations\Palette\PresetRepository;
 use SprintIllustrations\Render\Renderer;
+use SprintIllustrations\Rest\ComposeController;
+use SprintIllustrations\Rest\IllustrationsController;
+use SprintIllustrations\Rest\LibraryController;
 use SprintIllustrations\Settings\SitePalette;
+use SprintIllustrations\Storage\IllustrationPostType;
+use SprintIllustrations\Storage\IllustrationRepository;
 
 /**
  * Singleton that owns the service container and registers hooks.
@@ -95,6 +101,13 @@ final class Plugin {
 	 * @var Renderer|null
 	 */
 	private ?Renderer $renderer = null;
+
+	/**
+	 * Saved illustrations.
+	 *
+	 * @var IllustrationRepository|null
+	 */
+	private ?IllustrationRepository $illustrations = null;
 
 	/**
 	 * Boot on plugins_loaded.
@@ -187,8 +200,18 @@ final class Plugin {
 				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 					error_log( 'Sprint Illustrations: ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debug only.
 				}
-			}
+			},
+			fn( int $id ): ?SceneSpec => $this->illustrations()->find_published( $id )?->spec
 		);
+	}
+
+	/**
+	 * Saved illustrations.
+	 *
+	 * @return IllustrationRepository
+	 */
+	public function illustrations(): IllustrationRepository {
+		return $this->illustrations ??= new IllustrationRepository();
 	}
 
 	/**
@@ -201,7 +224,7 @@ final class Plugin {
 	/**
 	 * Template and palette choices for the block and widget controls.
 	 *
-	 * @return array{templates: array<array{label: string, value: string}>, presets: array<array{label: string, value: string}>}
+	 * @return array{templates: array<array{label: string, value: string}>, presets: array<array{label: string, value: string}>, illustrations: array<array{label: string, value: int}>}
 	 */
 	public function editor_choices(): array {
 		$templates = [];
@@ -221,9 +244,18 @@ final class Plugin {
 			];
 		}
 
+		$illustrations = [];
+		foreach ( $this->illustrations()->list( 1, 100 )['items'] as $item ) {
+			$illustrations[] = [
+				'label' => '' !== $item->title ? $item->title : sprintf( '#%d', (int) $item->id ),
+				'value' => (int) $item->id,
+			];
+		}
+
 		return [
-			'templates' => $templates,
-			'presets'   => $presets,
+			'templates'     => $templates,
+			'presets'       => $presets,
+			'illustrations' => $illustrations,
 		];
 	}
 
@@ -289,6 +321,10 @@ final class Plugin {
 	 */
 	private function register_hooks(): void {
 		( new Sync( $this->site_palette(), new ColorSource() ) )->register();
+		( new IllustrationPostType() )->register();
+		( new ComposeController( $this ) )->register();
+		( new LibraryController( $this ) )->register();
+		( new IllustrationsController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
 		( new Shortcode( $this ) )->register();
 		( new Block( $this ) )->register();

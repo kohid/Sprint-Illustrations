@@ -30,6 +30,18 @@
 						PanelBody,
 						{ title: __( 'Illustration', 'sprint-illustrations' ) },
 						el( SelectControl, {
+							label: __( 'Saved illustration', 'sprint-illustrations' ),
+							help: attributes.illustrationId ? __( 'Uses the saved design. Only the accessibility settings apply.', 'sprint-illustrations' ) : __( 'Or design one here with the settings below.', 'sprint-illustrations' ),
+							value: String( attributes.illustrationId || 0 ),
+							options: [ { label: __( 'None (design here)', 'sprint-illustrations' ), value: '0' } ].concat( ( choices.illustrations || [] ).map( function ( item ) {
+								return { label: item.label, value: String( item.value ) };
+							} ) ),
+							onChange: function ( value ) {
+								setAttributes( { illustrationId: parseInt( value, 10 ) || 0 } );
+							},
+							__nextHasNoMarginBottom: true,
+						} ),
+						el( SelectControl, {
 							label: __( 'Template', 'sprint-illustrations' ),
 							value: attributes.template,
 							options: [ { label: __( 'Automatic (from keywords)', 'sprint-illustrations' ), value: '' } ].concat( choices.templates ),
