@@ -637,3 +637,26 @@ final class MediaController {
 - [ ] Update `CLAUDE.md` (media routes, the Library page, the SVG-allowed-once rule, and browser-drawn PNG because there's no Imagick) and add execution notes to this plan.
 - [ ] Send a feature-dev code-reviewer agent over the branch, and fix confirmed findings.
 - [ ] Run `composer test`, `composer lint`, `npm run lint:js` and `npm run build` (no diff), then push and open a PR with the logged-in checklist.
+
+## Execution notes
+
+- **Task 1** went as written: 9 new tests, and `Media` was added to the pure-path groups in `phpcs.xml.dist`.
+- **Task 2:** `verify-3b.php` (scratch, `wp eval-file`) found that a file with a valid PNG signature and IHDR but a garbage body passed `getimagesize()` and `wp_check_filetype_and_ext()`, which both read only the header. `PngCheck::problem()` now also takes the file's last 12 bytes and requires the IEND trailer, with a new unit test. After that, all 33 checks passed:
+  - The permission matrix: 401, 403 and 201.
+  - MIME type, width/height metadata, alt text (spec title, template-label fallback, none when decorative), and source meta (not linked for an unknown ID).
+  - svg is absent from `get_allowed_mime_types()` after the call.
+  - A real GD PNG gives 201 with thumbnails.
+  - Fake, incomplete, over-5 MB and missing PNGs give 400.
+  - `/compose` returns `background`.
+  - Every attachment is cleaned up.
+- **Task 3** was checked by rendering every tab, a search, a no-match search and an invalid tab through `wp --user eval`, each in 30 ms or less. The static screenshots at 1440 and 782 px led to three changes:
+  - `overflow:hidden` on the art well, so tall characters keep the square ratio.
+  - A "Slots:" prefix on template cards.
+  - A "No templates match" message for an empty Templates search.
+- **Task 4** was checked on a static review page with the real bundle, the real `/library` and `/compose` data, and `wp.apiFetch` mocked:
+  - SVG sends the resolved spec.
+  - PNG 2× is 1600 × 1200 with a transparent corner.
+  - Social is 1200 × 630 with the corner equal to the palette background `#eef0ff`.
+  - Each option shows "Saved to Media Library." with Edit, and `?template=` preselects that template.
+  - The export menu's two-line items needed `height:auto` (`.si-b-export__menu`).
+- **Not automated (needs a login):** real exports from the Builder into Media, and the Library page inside the real admin chrome.
