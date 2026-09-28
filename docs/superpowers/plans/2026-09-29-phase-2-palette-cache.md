@@ -3751,4 +3751,17 @@ git commit -m "docs: phase 2 commands and architecture in CLAUDE.md"
 1. **Hair colour per character** (from phase 1) is still drawn from the seed.
 2. **Same person twice** in `two-people-collaborating` is planned for phase 3, with a `person` field on character pieces.
 3. **Keep synced** re-reads Elementor on every Kit save, even when only typography changed. That's cheap, but if it becomes noisy, compare `system_colors` and `custom_colors` in `$data['settings']` before re-reading.
-4. **Preview cards cost six compositions** on a cold cache when the Settings page first loads. After that they're cache hits. Measure the cold load in Task 9 Step 6 and record it here.
+4. **Preview cards cost six compositions** on a cold cache when the Settings page first loads. Measured during execution: the whole page render took 0.09 s cold through WP-CLI and wrote six entries. Not a concern.
+5. **Elementor V4 Variables were not exercised live.** This site has the `e_variables` and `e_atomic_elements` experiments stored as `inactive`, so `ColorSource::variables_available()` correctly returns false and only Kit colours import. The Variables read path follows Elementor's own `Variables_Provider`, but it is untested on real data. Turn the experiments on (Elementor → Settings → Features) in a test site to verify it.
+6. **Logged-in browser checks were not automated.** Minting auth cookies for a browser was refused as credential materialization. The Settings page layout and client-side behaviour were checked on a static render of the real markup. The live preview AJAX, saving through `options.php`, Purge, and the Elementor editor sync round-trip need a manual pass (see test instructions).
+
+## Execution notes
+
+- Found and fixed: `core.autocrlf=true` had rewritten the working copy to CRLF, which PHPCS rejects. `.gitattributes` now pins LF.
+- Found and fixed: PHPCS rejected the empty `catch` in `CachingComposer`. Re-sanitizing moved into a `resanitize()` helper that returns null.
+- The design review of Task 9 changed the CSS:
+  - Colour rows are compact.
+  - Tones sit in a 3-column grid.
+  - Elementor selects are at least 260 px wide.
+  - The stage is capped at 480 px when stacked.
+  - The divider above the preset name was removed.
