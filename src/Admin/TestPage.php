@@ -52,7 +52,7 @@ final class TestPage {
 		$all_ids   = $services->templates->ids();
 		$templates = in_array( $template, $all_ids, true ) ? [ $template ] : $all_ids;
 		$seeds     = range( $first_seed, $first_seed + $count - 1 );
-		$sheet     = new ContactSheet( $services->composer );
+		$sheet     = new ContactSheet( $this->plugin->composer() );
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'Sprint Illustrations — Test page', 'sprint-illustrations' ) . '</h1>';
 
@@ -76,7 +76,9 @@ final class TestPage {
 		);
 
 		// SVG markup is sanitized by the Composer's allowlist sanitizer; all text is escaped by ContactSheet.
-		echo $sheet->render( $templates, $seeds, ContactSheet::review_palettes(), '' === $keywords ? [] : explode( ',', $keywords ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$palettes = [ __( 'Site palette', 'sprint-illustrations' ) => $this->plugin->site_palette()->palette() ] + ContactSheet::review_palettes();
+
+		echo $sheet->render( $templates, $seeds, $palettes, '' === $keywords ? [] : explode( ',', $keywords ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 		echo '</div>';
 	}
@@ -93,7 +95,7 @@ final class TestPage {
 	private function render_filters( array $all_ids, string $template, int $first_seed, int $count, string $keywords ): void {
 		?>
 		<form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:16px 0">
-			<input type="hidden" name="page" value="<?php echo esc_attr( Menu::SLUG ); ?>">
+			<input type="hidden" name="page" value="<?php echo esc_attr( Menu::TEST_SLUG ); ?>">
 			<label><?php esc_html_e( 'Template', 'sprint-illustrations' ); ?><br>
 				<select name="template">
 					<option value=""><?php esc_html_e( 'All templates', 'sprint-illustrations' ); ?></option>

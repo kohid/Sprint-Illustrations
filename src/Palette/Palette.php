@@ -30,6 +30,11 @@ final class Palette {
 	public const VARIANT_DELTA = 0.18;
 
 	/**
+	 * Slots checked for contrast against the background.
+	 */
+	public const CONTRAST_SLOTS = [ 'primary', 'secondary', 'accent', 'neutral', 'outline' ];
+
+	/**
 	 * Constructor. Use from_array() or default() instead.
 	 *
 	 * @param array<string, string> $colors Slot (or "slot-variant") => hex.
@@ -116,6 +121,26 @@ final class Palette {
 		}
 
 		return Color::adjust_lightness( $base, 'light' === $variant ? self::VARIANT_DELTA : -self::VARIANT_DELTA );
+	}
+
+	/**
+	 * Base slots that are hard to see against the background.
+	 *
+	 * @return array<string, string> Slot => message.
+	 */
+	public function warnings(): array {
+		$background = (string) $this->resolve( 'background' );
+		$warnings   = [];
+
+		foreach ( self::CONTRAST_SLOTS as $slot ) {
+			$ratio = Contrast::ratio( (string) $this->resolve( $slot ), $background );
+
+			if ( $ratio < Contrast::MIN_RATIO ) {
+				$warnings[ $slot ] = sprintf( 'Low contrast against background (%s:1).', number_format( $ratio, 1 ) );
+			}
+		}
+
+		return $warnings;
 	}
 
 	/**

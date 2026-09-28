@@ -1,0 +1,5 @@
+# Keep LF in the working copy on Windows too (PHPCS enforces 
+).
+* text=auto eol=lf
+*.png binary
+*.jpg binary

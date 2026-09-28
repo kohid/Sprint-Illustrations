@@ -1,0 +1,8 @@
+{
+    "sprint": { "label": "Sprint", "primary": "#5b5bd6", "secondary": "#ffb224", "accent": "#ff6b6b", "neutral": "#2b2d42", "background": "#eef0ff", "outline": "#2b2d42" },
+    "forest": { "label": "Forest", "primary": "#2f7d5b", "secondary": "#f2c14e", "accent": "#f25c54", "neutral": "#233038", "background": "#e8f3ee", "outline": "#233038" },
+    "night": { "label": "Night", "primary": "#8b5cf6", "secondary": "#22d3ee", "accent": "#f472b6", "neutral": "#1e1b4b", "background": "#ede9fe", "outline": "#1e1b4b" },
+    "ocean": { "label": "Ocean", "primary": "#0e7490", "secondary": "#fbbf24", "accent": "#f43f5e", "neutral": "#1e293b", "background": "#e0f2fe", "outline": "#1e293b" },
+    "sunset": { "label": "Sunset", "primary": "#e8590c", "secondary": "#7048e8", "accent": "#fcc419", "neutral": "#2d1e2f", "background": "#fff4e6", "outline": "#2d1e2f" },
+    "mono": { "label": "Mono", "primary": "#495057", "secondary": "#868e96", "accent": "#fa5252", "neutral": "#212529", "background": "#f1f3f5", "outline": "#212529" }
+}

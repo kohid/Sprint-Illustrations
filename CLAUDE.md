@@ -1,0 +1,65 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+A WordPress plugin (PHP 8.1+, WP 6.4+) that composes flat, brand-coloured SVG illustrations from a library of SVG "pieces" placed into JSON scene templates. Output is deterministic per seed, sanitized, accessible, and needs no front-end JS.
+
+- Design spec: `docs/superpowers/specs/2026-09-28-sprint-illustrations-design.md`. **§19 (amendments) overrides earlier sections.** §18 lists the build phases (1 core → 2 palette/cache → 3 REST/React builder → 4 block/shortcode/Elementor → 5 AI selector).
+- Phase plans: `docs/superpowers/plans/2026-09-28-phase-1-core.md` (done), `docs/superpowers/plans/2026-09-29-phase-2-palette-cache.md` (spec: `docs/superpowers/specs/2026-09-29-phase-2-palette-cache-design.md`).
+- The plugin lives inside a Local (by Flywheel) site (`aberdeen-taxi-knowledge`). Run all commands from the plugin root.
+
+## Commands
+
+```sh
+composer install && composer prefix   # first setup; `prefix` runs Strauss → vendor-prefixed/
+composer test                         # all unit tests (PHPUnit 10.5, no WordPress)
+composer test -- tests/Unit/Compose   # one folder or file
+composer test -- --filter test_name   # one test
+composer lint                         # PHPCS (WPCS + PHPCompatibilityWP); must be zero errors and warnings
+composer lint:fix                     # PHPCBF
+
+php bin/build-manifest.php --non-interactive      # rebuild assets/pieces + assets/manifest.json from assets/pieces-src
+php bin/contact-sheet.php [--seeds=1,2] [--templates=a,b] [--keywords=x,y] > sheet.html   # visual review without WP
+```
+
+WP-CLI (in Local's "Open site shell"): `wp sprint-illustrations compose --template=<id> --seed=<n> [--keywords=..] [--palette=site|default|preset:<id>] [--no-cache] [--out=file.svg]`, `wp sprint-illustrations cache stats|purge`, and `wp sprint-illustrations build-manifest [--source] [--target] [--non-interactive]` (defaults to `uploads/sprint-illustrations/inbox` → `uploads/sprint-illustrations`). The admin Test page (Sprint Illustrations menu) renders a contact sheet in WordPress.
+
+Outside Local's site shell (e.g. from an agent's Bash), set the site's env and call the phar directly; `wp.bat` routes through cmd and mangles quoted arguments. The site id is `K0O3LRE-P` (from `%APPDATA%/Local/sites.json`): `PHPRC=/c/Users/Admin/AppData/Roaming/Local/run/K0O3LRE-P/conf/php`, PHP from `%APPDATA%/Local/lightning-services/php-8.2.29+0/bin/win64`, then `php "/c/Program Files (x86)/Local/resources/extraResources/bin/wp-cli/wp-cli.phar" <args>` from `app/public`. The site must be running in Local. Elementor 4.2.4 and Elementor Pro 4.2.3 are installed.
+
+Both `vendor/autoload.php` **and** `vendor-prefixed/autoload.php` must exist; the plugin, `bin/` scripts and `tests/bootstrap.php` all require both.
+
+## Architecture
+
+**Boundary rule.** `Library`, `Compose`, `Palette`, `Security`, `Selection`, `Svg`, `Dev`, `Cache` and `Cli` (except `Cli\Command`, `Cli\CacheCommand`) are pure PHP with **no WordPress calls**. They run from PHPUnit and `bin/` scripts, and `phpcs.xml.dist` relaxes filesystem/escaping sniffs only for those paths. WordPress-facing code (`Plugin`, `Admin\*`, `Settings\*`, `Integrations\*`, the two CLI command classes) gets services from `Plugin` (`services()`, `composer()`, `site_palette()`, `presets()`, `cache()`).
+
+**Wiring.** `Services::create( $root, $extra_manifests, $extra_template_dirs )` builds the whole core from a library root (`<root>/assets/{manifest.json,templates/,keywords/synonyms.json}`). Tests use it with `tests/fixtures/library`; `Plugin` uses it with the plugin dir plus user manifests from the `sprint_illustrations_library_paths` filter (default `uploads/sprint-illustrations/manifest.json`).
+
+**Compose pipeline** (`Compose\Composer::compose( SceneSpec, Palette ): ComposedSvg`):
+1. `SceneSpec::from_array()` normalizes input (a malformed template ID is dropped so the selector picks; an unknown well-formed ID throws `CompositionException`).
+2. `Selection\RulesSelector` chooses a template from keywords when none is given (tokenize → synonyms → tag scoring, ties broken by seed).
+3. `SceneResolver` turns template + manifest + seed into `Placement`s. **Every slot draws from its own PRNG stream** `Seed("<seed>|<template>|<slot>")` (mulberry32), so picking/locking one slot never changes others. Placement is `box` (fit `natural` uses template `unit`; `contain` fills) or `attach` to a parent anchor via the parent's `accepts` type and child's `mounts`.
+4. `PieceLoader` loads + sanitizes piece markup; `Recolorer` replaces `slot-*` classes with explicit `fill`/`stroke` (no `<style>` in output); `IdScoper` rewrites ids/refs to a `__SIID__` placeholder that `ComposedSvg::with_instance_id()` fills at output time so cached markup stays shareable.
+5. `Security\Sanitizer` (allowlist via prefixed `enshrined/svg-sanitize` plus a hardening pass) runs on the result; the wrapper adds `role="img"` + title/desc or `aria-hidden` when decorative.
+
+**Palettes.** `Palette\PaletteSettings` (pure) normalizes the `sprint_illustrations_palette` option (`source` preset|custom|elementor, resolved `colors`/`skin`/`hair`, Elementor `map` + `sync`) and resolves SceneSpec palette refs `site` / `default` / `preset:<id>` / inline array; `Settings\SitePalette` is its WordPress wrapper. Presets live in `assets/palettes/presets.json` (`ContactSheet::review_palettes()` reads sprint/forest/night from it). `Palette::warnings()` flags base slots under 1.3:1 contrast against `background`.
+
+**Cache.** `Plugin::composer()` is a `Cache\CachingComposer` over the plain `Composer`, backed by `SvgCache` (`uploads/sprint-illustrations/cache/<sha1>.json`). Keys = spec (sorted) + palette hash + manifest version + plugin version, so nothing needs explicit invalidation. Only warning-free results are stored, every hit is re-sanitized, and a hit touches the file (mtime = last use) for the daily `sprint_illustrations_cache_gc` cron (30 days).
+
+**Elementor.** `Integrations\Elementor\ColorSource` reads Kit `system_colors`/`custom_colors` and V4 colour Variables through Elementor's own classes (Variables only when the `e_variables` + `e_atomic_elements` experiments are active — on this site they are set inactive). `Palette\ElementorMapping` (pure) suggests and applies slot mappings. `Sync` re-applies the stored map on `elementor/document/after_save` for the active Kit and on `_elementor_global_variables` meta changes (Variables fire no Elementor action).
+
+**Settings page.** `Admin\SettingsPage` (Settings API form + `wp_ajax_sprint_illustrations_preview` live stage, uncached) with plain `assets/admin/settings.{css,js}` (no build step). It is the menu's landing page; the Test page is the `sprint-illustrations-test` submenu.
+
+**Piece library.** Author sources in `assets/pieces-src/<category>/` (characters, objects, backgrounds, decor). `Cli\ManifestBuilder` reads `data-si-*` root metadata and `id="anchor-<name>"` marker shapes (resolved through transforms), strips them, sanitizes, and writes `assets/pieces/` + `assets/manifest.json` (both generated but committed). Colour comes only from `slot-<name>`, `slot-<name>-light/-dark`, `slot-stroke-<name>`, `slot-outline` classes; literal colours other than `none`/`transparent` are warnings.
+
+## Conventions and gotchas
+
+- Every PHP file starts with `declare( strict_types=1 );`. WPCS style (tabs, spaces inside parens, Yoda conditions), `snake_case` methods/variables, short arrays allowed, PSR-4 filenames. Globals prefixed `sprint_illustrations`/`SprintIllustrations`; text domain `sprint-illustrations`.
+- Reference the sanitizer library only as `SprintIllustrations\Vendor\enshrined\svgSanitize\…`. It is `require-dev`; releases ship `composer install --no-dev` output plus `vendor-prefixed/`.
+- Strauss is pinned to **0.26.4** (0.30 fails on Windows paths). Don't bump it.
+- Tags (pieces, templates, synonyms) must be single, singular, lower-case tokens that `Keywords::tokenize()` returns unchanged.
+- `tests/Unit/StarterPackTest.php` gates the bundled library: sources must build with zero warnings, the committed `assets/manifest.json` must match a fresh build (rerun `php bin/build-manifest.php --non-interactive` after editing `pieces-src`), characters need `ground` and `hold` anchors, and every template × review palette × seeds 1–8 must compose with no warnings.
+- WordPress-facing classes aren't covered by PHPUnit; verify them in the Local site (activate plugin, admin Test page, WP-CLI). Server-rendered admin markup can be checked with `wp --user=<admin> eval '… ->render();'`; browser checks of logged-in pages need the user to log in (don't mint auth cookies).
+- `.gitattributes` pins LF. With `core.autocrlf=true`, older checkouts can still carry CRLF, which PHPCS rejects; `git add --renormalize .` fixes the index view.
+- Git Bash's `sed -i` may miss lines in CRLF files; prefer the Edit tool for exact edits. `python` on this machine is the Windows Store stub (hangs on stdin); use `php -r` for scripting.

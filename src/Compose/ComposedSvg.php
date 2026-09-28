@@ -47,4 +47,31 @@ final class ComposedSvg {
 
 		return str_replace( self::ID_TOKEN, $instance_id, $this->markup );
 	}
+
+	/**
+	 * Export for storage.
+	 *
+	 * @return array{markup: string, spec: array<string, mixed>, warnings: array<string>}
+	 */
+	public function to_array(): array {
+		return [
+			'markup'   => $this->markup,
+			'spec'     => $this->spec->to_array(),
+			'warnings' => $this->warnings,
+		];
+	}
+
+	/**
+	 * Import from storage.
+	 *
+	 * @param array<string, mixed> $data Output of to_array().
+	 * @return self|null Null when the shape is wrong.
+	 */
+	public static function from_array( array $data ): ?self {
+		if ( ! isset( $data['markup'], $data['spec'], $data['warnings'] ) || ! is_string( $data['markup'] ) || ! is_array( $data['spec'] ) || ! is_array( $data['warnings'] ) ) {
+			return null;
+		}
+
+		return new self( $data['markup'], SceneSpec::from_array( $data['spec'] ), array_values( array_filter( $data['warnings'], 'is_string' ) ) );
+	}
 }
