@@ -21,7 +21,7 @@ use SprintIllustrations\Svg\SvgDom;
 /**
  * Pipeline: select template → resolve slots → import pieces → recolour → scope IDs → wrap → sanitize.
  */
-final class Composer {
+final class Composer implements ComposesSvg {
 
 	/**
 	 * Recolorer.
