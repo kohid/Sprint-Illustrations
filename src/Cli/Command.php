@@ -11,7 +11,6 @@ namespace SprintIllustrations\Cli;
 
 use SprintIllustrations\Compose\CompositionException;
 use SprintIllustrations\Compose\SceneSpec;
-use SprintIllustrations\Palette\Palette;
 use SprintIllustrations\Plugin;
 
 /**
@@ -43,16 +42,25 @@ final class Command {
 	 * [--keywords=<csv>]
 	 * : Comma-separated keywords.
 	 *
+	 * [--palette=<ref>]
+	 * : "site", "default" or "preset:<id>".
+	 * ---
+	 * default: site
+	 * ---
+	 *
+	 * [--[no-]cache]
+	 * : Use the illustration cache (default). --no-cache always recomposes.
+	 *
 	 * [--out=<file>]
 	 * : Write to a file instead of STDOUT.
 	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp sprint-illustrations compose --template=hero-left-character --seed=7
-	 *     wp sprint-illustrations compose --keywords="remote team" --out=hero.svg
+	 *     wp sprint-illustrations compose --keywords="remote team" --palette=preset:ocean --out=hero.svg
 	 *
-	 * @param array<int, string>    $args       Positional args.
-	 * @param array<string, string> $assoc_args Options.
+	 * @param array<int, string>         $args       Positional args.
+	 * @param array<string, string|bool> $assoc_args Options.
 	 */
 	public function compose( array $args, array $assoc_args ): void {
 		$spec = SceneSpec::from_array(
@@ -60,11 +68,16 @@ final class Command {
 				'template' => $assoc_args['template'] ?? null,
 				'seed'     => $assoc_args['seed'] ?? 1,
 				'keywords' => $assoc_args['keywords'] ?? '',
+				'palette'  => $assoc_args['palette'] ?? 'site',
 			]
 		);
 
+		$composer = \WP_CLI\Utils\get_flag_value( $assoc_args, 'cache', true )
+			? $this->plugin->composer()
+			: $this->plugin->services()->composer;
+
 		try {
-			$result = $this->plugin->services()->composer->compose( $spec, Palette::default() );
+			$result = $composer->compose( $spec, $this->plugin->site_palette()->resolve( $spec->palette ) );
 		} catch ( CompositionException $e ) {
 			\WP_CLI::error( $e->getMessage() );
 		}
@@ -76,7 +89,7 @@ final class Command {
 		$svg = $result->with_instance_id( 'si-cli' );
 
 		if ( isset( $assoc_args['out'] ) ) {
-			file_put_contents( $assoc_args['out'], $svg . "\n" );
+			file_put_contents( (string) $assoc_args['out'], $svg . "\n" );
 			\WP_CLI::success( sprintf( 'Wrote %s (template %s, seed %d).', $assoc_args['out'], (string) $result->spec->template, $result->spec->seed ) );
 			return;
 		}

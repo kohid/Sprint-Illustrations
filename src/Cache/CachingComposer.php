@@ -49,12 +49,10 @@ final class CachingComposer implements ComposesSvg {
 		$key = CacheKey::make( $spec, $palette, $this->manifest_version, $this->plugin_version );
 		$hit = $this->cache->get( $key );
 
-		if ( null !== $hit ) {
-			try {
-				return new ComposedSvg( $this->sanitizer->sanitize( $hit->markup ), $hit->spec, $hit->warnings );
-			} catch ( SanitizationException ) {
-				// Unreadable entry: fall through, recompose and overwrite it.
-			}
+		$markup = null === $hit ? null : $this->resanitize( $hit->markup );
+
+		if ( null !== $hit && null !== $markup ) {
+			return new ComposedSvg( $markup, $hit->spec, $hit->warnings );
 		}
 
 		$result = $this->inner->compose( $spec, $palette );
@@ -64,5 +62,19 @@ final class CachingComposer implements ComposesSvg {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Sanitize cached markup again (files on disk may have been tampered with).
+	 *
+	 * @param string $markup Cached markup.
+	 * @return string|null Null when unreadable, so the entry is recomposed and overwritten.
+	 */
+	private function resanitize( string $markup ): ?string {
+		try {
+			return $this->sanitizer->sanitize( $markup );
+		} catch ( SanitizationException ) {
+			return null;
+		}
 	}
 }

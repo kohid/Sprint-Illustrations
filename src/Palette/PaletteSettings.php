@@ -96,7 +96,7 @@ final class PaletteSettings {
 	/**
 	 * Resolve a SceneSpec palette reference: "site", "default", "preset:<id>" or an inline array.
 	 *
-	 * @param string|array<string, mixed>                                                      $ref      Reference.
+	 * @param string|array<string, mixed>                                                    $ref      Reference.
 	 * @param array{colors: array<string, string>, skin: array<string>, hair: array<string>} $settings Normalized settings for "site".
 	 * @return Palette
 	 */

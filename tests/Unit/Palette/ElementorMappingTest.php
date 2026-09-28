@@ -10,11 +10,31 @@ final class ElementorMappingTest extends TestCase {
 
 	private function kit(): array {
 		return [
-			[ 'id' => 'kit:primary', 'label' => 'Primary', 'value' => '#6EC1E4' ],
-			[ 'id' => 'kit:secondary', 'label' => 'Secondary', 'value' => '#54595F' ],
-			[ 'id' => 'kit:text', 'label' => 'Text', 'value' => '#7A7A7A' ],
-			[ 'id' => 'kit:accent', 'label' => 'Accent', 'value' => '#61CE70' ],
-			[ 'id' => 'kit:a1b2c3', 'label' => 'Page background', 'value' => '#F4F6FF' ],
+			[
+				'id'    => 'kit:primary',
+				'label' => 'Primary',
+				'value' => '#6EC1E4',
+			],
+			[
+				'id'    => 'kit:secondary',
+				'label' => 'Secondary',
+				'value' => '#54595F',
+			],
+			[
+				'id'    => 'kit:text',
+				'label' => 'Text',
+				'value' => '#7A7A7A',
+			],
+			[
+				'id'    => 'kit:accent',
+				'label' => 'Accent',
+				'value' => '#61CE70',
+			],
+			[
+				'id'    => 'kit:a1b2c3',
+				'label' => 'Page background',
+				'value' => '#F4F6FF',
+			],
 		];
 	}
 
@@ -35,9 +55,21 @@ final class ElementorMappingTest extends TestCase {
 	public function test_variables_named_after_slots_override_and_win_background(): void {
 		$items = array_merge(
 			[
-				[ 'id' => 'var:e-gv-1', 'label' => 'Primary', 'value' => '#4F46E5' ],
-				[ 'id' => 'var:e-gv-2', 'label' => 'brand-bg', 'value' => '#FAFAFF' ],
-				[ 'id' => 'var:e-gv-3', 'label' => 'accent', 'value' => 'var(--e-gv-1)' ],
+				[
+					'id'    => 'var:e-gv-1',
+					'label' => 'Primary',
+					'value' => '#4F46E5',
+				],
+				[
+					'id'    => 'var:e-gv-2',
+					'label' => 'brand-bg',
+					'value' => '#FAFAFF',
+				],
+				[
+					'id'    => 'var:e-gv-3',
+					'label' => 'accent',
+					'value' => 'var(--e-gv-1)',
+				],
 			],
 			$this->kit()
 		);
@@ -78,7 +110,15 @@ final class ElementorMappingTest extends TestCase {
 	}
 
 	public function test_choices_mark_unimportable_items(): void {
-		$choices = ( new ElementorMapping( [ [ 'id' => 'var:e-gv-3', 'label' => 'Link', 'value' => 'var(--x)' ] ] ) )->choices();
+		$choices = ( new ElementorMapping(
+			[
+				[
+					'id'    => 'var:e-gv-3',
+					'label' => 'Link',
+					'value' => 'var(--x)',
+				],
+			]
+		) )->choices();
 
 		$this->assertSame(
 			[

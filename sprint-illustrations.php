@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Sprint Illustrations
  * Description:       Composes flat, brand-coloured illustrations from a library of SVG pieces.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Sprint
@@ -17,7 +17,7 @@ declare( strict_types=1 );
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SPRINT_ILLUSTRATIONS_VERSION', '0.1.0' );
+define( 'SPRINT_ILLUSTRATIONS_VERSION', '0.2.0' );
 define( 'SPRINT_ILLUSTRATIONS_FILE', __FILE__ );
 
 /**
@@ -46,5 +46,8 @@ if ( ! is_readable( __DIR__ . '/vendor/autoload.php' ) || ! is_readable( __DIR__
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/vendor-prefixed/autoload.php';
+
+register_activation_hook( __FILE__, [ \SprintIllustrations\Plugin::class, 'activate' ] );
+register_deactivation_hook( __FILE__, [ \SprintIllustrations\Plugin::class, 'deactivate' ] );
 
 add_action( 'plugins_loaded', [ \SprintIllustrations\Plugin::class, 'boot' ] );

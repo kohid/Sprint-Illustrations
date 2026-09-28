@@ -10,12 +10,30 @@ declare( strict_types=1 );
 namespace SprintIllustrations;
 
 use SprintIllustrations\Admin\Menu;
+use SprintIllustrations\Admin\Notices;
+use SprintIllustrations\Cache\CachingComposer;
+use SprintIllustrations\Cache\SvgCache;
+use SprintIllustrations\Cli\CacheCommand;
 use SprintIllustrations\Cli\Command;
+use SprintIllustrations\Compose\ComposesSvg;
+use SprintIllustrations\Palette\PaletteSettings;
+use SprintIllustrations\Palette\PresetRepository;
+use SprintIllustrations\Settings\SitePalette;
 
 /**
  * Singleton that owns the service container and registers hooks.
  */
 final class Plugin {
+
+	/**
+	 * Daily cache clean-up event.
+	 */
+	public const CRON_HOOK = 'sprint_illustrations_cache_gc';
+
+	/**
+	 * Entries unused for this long are deleted.
+	 */
+	public const CACHE_MAX_AGE = 30 * DAY_IN_SECONDS;
 
 	/**
 	 * Instance.
@@ -30,6 +48,34 @@ final class Plugin {
 	 * @var Services|null
 	 */
 	private ?Services $services = null;
+
+	/**
+	 * Presets.
+	 *
+	 * @var PresetRepository|null
+	 */
+	private ?PresetRepository $presets = null;
+
+	/**
+	 * Site palette option.
+	 *
+	 * @var SitePalette|null
+	 */
+	private ?SitePalette $site_palette = null;
+
+	/**
+	 * Disk cache.
+	 *
+	 * @var SvgCache|null
+	 */
+	private ?SvgCache $cache = null;
+
+	/**
+	 * Caching composer.
+	 *
+	 * @var ComposesSvg|null
+	 */
+	private ?ComposesSvg $composer = null;
 
 	/**
 	 * Boot on plugins_loaded.
@@ -65,6 +111,71 @@ final class Plugin {
 		}
 
 		return $this->services;
+	}
+
+	/**
+	 * Bundled presets.
+	 *
+	 * @return PresetRepository
+	 */
+	public function presets(): PresetRepository {
+		return $this->presets ??= PresetRepository::bundled();
+	}
+
+	/**
+	 * Site palette option.
+	 *
+	 * @return SitePalette
+	 */
+	public function site_palette(): SitePalette {
+		return $this->site_palette ??= new SitePalette( new PaletteSettings( $this->presets() ) );
+	}
+
+	/**
+	 * Disk cache in uploads/sprint-illustrations/cache.
+	 *
+	 * @return SvgCache
+	 */
+	public function cache(): SvgCache {
+		return $this->cache ??= new SvgCache( $this->user_library_dir() . '/cache' );
+	}
+
+	/**
+	 * Composer that serves repeats from the cache.
+	 *
+	 * @return ComposesSvg
+	 */
+	public function composer(): ComposesSvg {
+		return $this->composer ??= new CachingComposer(
+			$this->services()->composer,
+			$this->cache(),
+			$this->services()->sanitizer,
+			$this->services()->manifest->version(),
+			SPRINT_ILLUSTRATIONS_VERSION
+		);
+	}
+
+	/**
+	 * Schedule the daily cache clean-up (idempotent; also runs on init for sites activated before phase 2).
+	 */
+	public static function activate(): void {
+		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Remove the scheduled clean-up.
+	 */
+	public static function deactivate(): void {
+		wp_clear_scheduled_hook( self::CRON_HOOK );
+	}
+
+	/**
+	 * Cron callback.
+	 */
+	public function collect_garbage(): void {
+		$this->cache()->collect_garbage( self::CACHE_MAX_AGE );
 	}
 
 	/**
@@ -105,12 +216,17 @@ final class Plugin {
 	 * Register hooks.
 	 */
 	private function register_hooks(): void {
+		add_action( 'init', [ self::class, 'activate' ] );
+		add_action( self::CRON_HOOK, [ $this, 'collect_garbage' ] );
+
 		if ( is_admin() ) {
 			( new Menu( $this ) )->register();
+			( new Notices() )->register();
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			\WP_CLI::add_command( 'sprint-illustrations', new Command( $this ) );
+			\WP_CLI::add_command( 'sprint-illustrations cache', new CacheCommand( $this ) );
 		}
 	}
 }
