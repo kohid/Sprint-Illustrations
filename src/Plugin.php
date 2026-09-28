@@ -16,6 +16,7 @@ use SprintIllustrations\Cache\SvgCache;
 use SprintIllustrations\Cli\CacheCommand;
 use SprintIllustrations\Cli\Command;
 use SprintIllustrations\Compose\ComposesSvg;
+use SprintIllustrations\Integrations\Block;
 use SprintIllustrations\Integrations\Elementor\ColorSource;
 use SprintIllustrations\Integrations\Elementor\Sync;
 use SprintIllustrations\Integrations\Shortcode;
@@ -289,6 +290,7 @@ final class Plugin {
 		( new Sync( $this->site_palette(), new ColorSource() ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
 		( new Shortcode( $this ) )->register();
+		( new Block( $this ) )->register();
 		add_action( 'init', [ self::class, 'activate' ] );
 		add_action( self::CRON_HOOK, [ $this, 'collect_garbage' ] );
 

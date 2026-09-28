@@ -5,6 +5,7 @@
 	<file>sprint-illustrations.php</file>
 	<file>src</file>
 	<file>bin</file>
+	<file>blocks</file>
 	<file>tests</file>
 
 	<exclude-pattern>*.asset.php</exclude-pattern>
