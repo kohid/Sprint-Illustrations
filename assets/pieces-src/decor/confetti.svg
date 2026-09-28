@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" data-si-label="Confetti" data-si-tags="confetti,celebration">
+  <rect class="slot-accent" x="6" y="8" width="10" height="5" rx="2" transform="rotate(-25 11 10.5)"/>
+  <rect class="slot-primary" x="28" y="4" width="10" height="5" rx="2" transform="rotate(30 33 6.5)"/>
+  <circle class="slot-secondary" cx="50" cy="14" r="4"/>
+  <rect class="slot-secondary" x="12" y="27" width="10" height="5" rx="2" transform="rotate(20 17 29.5)"/>
+  <circle class="slot-accent" cx="36" cy="30" r="3"/>
+  <rect class="slot-primary" x="45" y="29" width="9" height="5" rx="2" transform="rotate(-35 49.5 31.5)"/>
+</svg>

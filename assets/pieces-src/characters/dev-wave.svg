@@ -12,7 +12,6 @@
   <path class="slot-secondary" d="M50 116 Q50 96 70 96 H90 Q110 96 110 116 L116 208 Q116 214 110 214 H50 Q44 214 44 208 Z"/>
   <path class="slot-secondary-dark" d="M62 96 Q80 88 98 96 L94 106 Q80 112 66 106 Z"/>
   <path class="slot-stroke-accent" d="M74 108 V126 M86 108 V126" fill="none" stroke-width="3" stroke-linecap="round"/>
-  <path class="slot-outline" d="M62 178 H98 L94 198 H66 Z" fill="none" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
   <path class="slot-stroke-secondary-dark" d="M56 110 L46 156 L52 194" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
   <circle class="slot-skin" cx="53" cy="200" r="8"/>
   <path class="slot-stroke-secondary-dark" d="M104 108 L128 96 L134 60" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>

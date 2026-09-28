@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 480" data-si-label="Soft shapes" data-si-tags="shape,soft,modern">
+  <rect class="slot-background" x="30" y="70" width="540" height="390" rx="190"/>
+  <rect class="slot-primary-light" x="420" y="24" width="140" height="140" rx="40" transform="rotate(12 490 94)"/>
+  <circle class="slot-secondary-light" cx="80" cy="120" r="44"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 56" data-si-label="Document" data-si-tags="document,paperwork,report,file,contract,hero" data-si-mounts="handheld:grip">
+  <path class="slot-background" d="M4 1 H32 L43 12 V52 Q43 55 40 55 H4 Q1 55 1 52 V4 Q1 1 4 1 Z"/>
+  <path class="slot-outline" d="M4 1 H32 L43 12 V52 Q43 55 40 55 H4 Q1 55 1 52 V4 Q1 1 4 1 Z" fill="none" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+  <path class="slot-primary-light" d="M32 1 V10 Q32 12 34 12 H43 Z"/>
+  <path class="slot-stroke-accent" d="M8 13 H22" fill="none" stroke-width="4" stroke-linecap="round"/>
+  <path class="slot-stroke-neutral-light" d="M8 23 H34 M8 31 H36 M8 39 H36 M8 47 H24" fill="none" stroke-width="3" stroke-linecap="round"/>
+  <circle id="anchor-grip" cx="8" cy="48" r="2"/>
+</svg>

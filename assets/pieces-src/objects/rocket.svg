@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 160" data-si-label="Rocket" data-si-tags="rocket,launch,startup,growth,speed,hero,floating">
+  <path class="slot-accent" d="M33 128 Q45 164 57 128 Z"/>
+  <path class="slot-secondary-light" d="M39 128 Q45 150 51 128 Z"/>
+  <path class="slot-secondary-dark" d="M28 90 L10 122 Q8 130 15 128 L32 118 Z"/>
+  <path class="slot-secondary-dark" d="M62 90 L80 122 Q82 130 75 128 L58 118 Z"/>
+  <path class="slot-primary" d="M45 4 C66 22 70 56 66 96 L62 128 H28 L24 96 C20 56 24 22 45 4 Z"/>
+  <path class="slot-primary-dark" d="M45 4 C54 12 60 22 63 32 H27 C30 22 36 12 45 4 Z"/>
+  <circle class="slot-primary-dark" cx="45" cy="64" r="15"/>
+  <circle class="slot-background" cx="45" cy="64" r="11"/>
+  <rect class="slot-secondary-dark" x="42" y="100" width="6" height="30" rx="3"/>
+  <rect class="slot-neutral" x="30" y="124" width="30" height="8" rx="3"/>
+</svg>

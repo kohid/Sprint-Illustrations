@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 64" data-si-label="Laptop" data-si-tags="laptop,computer,work,tech,code,hero" data-si-mounts="lap:base,surface:base">
+  <rect class="slot-neutral-dark" x="12" y="0" width="72" height="48" rx="5"/>
+  <rect class="slot-primary-light" x="17" y="5" width="62" height="38" rx="2"/>
+  <rect class="slot-background" x="23" y="11" width="30" height="4" rx="2"/>
+  <rect class="slot-accent" x="23" y="19" width="18" height="4" rx="2"/>
+  <rect class="slot-background" x="23" y="27" width="38" height="4" rx="2"/>
+  <rect class="slot-background" x="23" y="35" width="24" height="4" rx="2"/>
+  <path class="slot-neutral" d="M10 48 H86 L96 58 H0 Z"/>
+  <rect class="slot-neutral-dark" x="0" y="57" width="96" height="7" rx="3"/>
+  <rect class="slot-neutral-light" x="40" y="57" width="16" height="3" rx="1.5"/>
+  <circle id="anchor-base" cx="48" cy="64" r="2"/>
+</svg>

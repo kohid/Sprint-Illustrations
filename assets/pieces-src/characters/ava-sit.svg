@@ -2,9 +2,9 @@
   <ellipse class="slot-neutral" cx="104" cy="292" rx="82" ry="6" opacity="0.12"/>
   <rect class="slot-neutral-light" x="34" y="204" width="96" height="84" rx="10"/>
   <path class="slot-outline" d="M42 220 H122" fill="none" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-  <path class="slot-stroke-neutral" d="M70 198 H136 V282 M76 206 H152 V282" fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect class="slot-neutral-dark" x="128" y="282" width="28" height="12" rx="6"/>
-  <rect class="slot-neutral-dark" x="144" y="282" width="28" height="12" rx="6"/>
+  <path class="slot-stroke-neutral" d="M70 198 H128 V282 M76 206 H154 V282" fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect class="slot-neutral-dark" x="120" y="282" width="28" height="12" rx="6"/>
+  <rect class="slot-neutral-dark" x="146" y="282" width="28" height="12" rx="6"/>
   <circle class="slot-hair" cx="58" cy="46" r="11"/>
   <rect class="slot-skin-dark" x="71" y="78" width="14" height="22" rx="4"/>
   <path class="slot-primary" d="M52 112 Q52 96 68 96 H88 Q104 96 104 112 L108 204 Q108 208 104 208 H52 Q48 208 48 204 Z"/>

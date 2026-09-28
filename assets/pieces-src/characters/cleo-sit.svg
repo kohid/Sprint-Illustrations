@@ -2,9 +2,9 @@
   <ellipse class="slot-neutral" cx="104" cy="292" rx="82" ry="6" opacity="0.12"/>
   <rect class="slot-secondary-dark" x="40" y="210" width="84" height="78" rx="10"/>
   <rect class="slot-accent" x="36" y="202" width="92" height="14" rx="7"/>
-  <path class="slot-stroke-neutral" d="M70 198 H136 V282 M76 206 H152 V282" fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect class="slot-neutral-dark" x="128" y="282" width="28" height="12" rx="6"/>
-  <rect class="slot-neutral-dark" x="144" y="282" width="28" height="12" rx="6"/>
+  <path class="slot-stroke-neutral" d="M70 198 H128 V282 M76 206 H154 V282" fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect class="slot-neutral-dark" x="120" y="282" width="28" height="12" rx="6"/>
+  <rect class="slot-neutral-dark" x="146" y="282" width="28" height="12" rx="6"/>
   <path class="slot-hair" d="M54 62 C54 32 102 32 102 62 L104 106 Q104 110 100 110 H56 Q52 110 52 106 Z"/>
   <rect class="slot-skin-dark" x="71" y="78" width="14" height="20" rx="4"/>
   <path class="slot-secondary" d="M54 112 Q54 98 70 98 H86 Q102 98 102 112 L106 204 Q106 208 102 208 H54 Q50 208 50 204 Z"/>
