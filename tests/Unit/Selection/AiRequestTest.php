@@ -56,6 +56,16 @@ final class AiRequestTest extends TestCase {
 		$this->assertStringContainsString( 'alt text', $body['system'] );
 	}
 
+	public function test_ping(): void {
+		$body = AiRequest::ping( 'claude-opus-5-5' );
+
+		$this->assertSame( 'claude-opus-5-5', $body['model'] );
+		$this->assertSame( 16, $body['max_tokens'] );
+		$this->assertCount( 1, $body['messages'] );
+		$this->assertSame( 'user', $body['messages'][0]['role'] );
+		$this->assertArrayNotHasKey( 'output_config', $body );
+	}
+
 	public function test_default_model_is_listed(): void {
 		$this->assertArrayHasKey( AiRequest::DEFAULT_MODEL, AiRequest::MODELS );
 		$this->assertSame( 'claude-sonnet-5-5', AiRequest::DEFAULT_MODEL );

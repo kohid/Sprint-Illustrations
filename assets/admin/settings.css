@@ -69,3 +69,5 @@ h2.si-panel__title{margin-bottom:12px;padding:0}
 .si-ai__remove{display:inline-flex;align-items:center;gap:6px;color:#50575e}
 .si-ai__privacy{margin-top:16px}
 @media (max-width:782px){.si-ai__row{grid-template-columns:1fr}.si-ai__label{padding-top:0}}
+.si-ai__test{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:16px 0 0}
+.si-ai__field .code{font-family:Consolas,Monaco,monospace}

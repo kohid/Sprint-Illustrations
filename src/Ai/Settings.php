@@ -13,13 +13,17 @@ use SprintIllustrations\Security\SecretStore;
 use SprintIllustrations\Selection\AiRequest;
 
 /**
- * Stored as sprint_illustrations_ai = { enabled, model, key_cipher }. The key itself is never returned to a browser.
+ * Stored as sprint_illustrations_ai = { enabled, model, key_cipher, workspace }. The key itself is never returned to a browser.
  */
 final class Settings {
 
 	public const OPTION = 'sprint_illustrations_ai';
 
 	public const CONSTANT = 'SPRINT_ILLUSTRATIONS_API_KEY';
+
+	public const WORKSPACE_CONSTANT = 'SPRINT_ILLUSTRATIONS_WORKSPACE_ID';
+
+	public const WORKSPACE_PATTERN = '/^wrkspc_[A-Za-z0-9]+$/D';
 
 	/**
 	 * Secret store.
@@ -33,7 +37,7 @@ final class Settings {
 	/**
 	 * Normalized stored settings.
 	 *
-	 * @return array{enabled: bool, model: string, key_cipher: string}
+	 * @return array{enabled: bool, model: string, key_cipher: string, workspace: string}
 	 */
 	public function settings(): array {
 		$raw   = get_option( self::OPTION, [] );
@@ -44,6 +48,7 @@ final class Settings {
 			'enabled'    => ! empty( $raw['enabled'] ),
 			'model'      => isset( AiRequest::MODELS[ $model ] ) ? $model : AiRequest::DEFAULT_MODEL,
 			'key_cipher' => is_string( $raw['key_cipher'] ?? null ) ? $raw['key_cipher'] : '',
+			'workspace'  => is_string( $raw['workspace'] ?? null ) && preg_match( self::WORKSPACE_PATTERN, $raw['workspace'] ) ? $raw['workspace'] : '',
 		];
 	}
 
@@ -69,6 +74,24 @@ final class Settings {
 		$cipher = $this->settings()['key_cipher'];
 
 		return '' === $cipher ? null : $this->store()->decrypt( $cipher );
+	}
+
+	/**
+	 * Whether wp-config.php supplies the workspace ID.
+	 *
+	 * @return bool
+	 */
+	public function workspace_from_constant(): bool {
+		return defined( self::WORKSPACE_CONSTANT ) && is_string( constant( self::WORKSPACE_CONSTANT ) ) && 1 === preg_match( self::WORKSPACE_PATTERN, constant( self::WORKSPACE_CONSTANT ) );
+	}
+
+	/**
+	 * Workspace ID sent as anthropic-workspace-id (needed by multi-workspace keys), or ''.
+	 *
+	 * @return string
+	 */
+	public function workspace(): string {
+		return $this->workspace_from_constant() ? (string) constant( self::WORKSPACE_CONSTANT ) : $this->settings()['workspace'];
 	}
 
 	/**
@@ -100,16 +123,23 @@ final class Settings {
 
 	/**
 	 * Settings API sanitize callback. A new key replaces the old; empty keeps it; "remove" deletes it.
+	 * An invalid workspace ID keeps the previous one and reports a settings error.
 	 * Also accepts its own output (WordPress sanitizes twice when the option is first added).
 	 *
 	 * @param mixed $input Submitted value.
-	 * @return array{enabled: bool, model: string, key_cipher: string}
+	 * @return array{enabled: bool, model: string, key_cipher: string, workspace: string}
 	 */
 	public function sanitize( mixed $input ): array {
-		$input  = is_array( $input ) ? $input : [];
-		$model  = sanitize_text_field( (string) ( $input['model'] ?? '' ) );
-		$key    = trim( sanitize_text_field( (string) ( $input['key'] ?? '' ) ) );
-		$cipher = $this->settings()['key_cipher'];
+		$input     = is_array( $input ) ? $input : [];
+		$model     = sanitize_text_field( (string) ( $input['model'] ?? '' ) );
+		$key       = trim( sanitize_text_field( (string) ( $input['key'] ?? '' ) ) );
+		$cipher    = $this->settings()['key_cipher'];
+		$workspace = trim( sanitize_text_field( (string) ( $input['workspace'] ?? '' ) ) );
+
+		if ( '' !== $workspace && ! preg_match( self::WORKSPACE_PATTERN, $workspace ) ) {
+			add_settings_error( self::OPTION, 'workspace', __( 'The workspace ID should look like wrkspc_01Jw… The previous value was kept.', 'sprint-illustrations' ) );
+			$workspace = $this->settings()['workspace'];
+		}
 
 		if ( '' !== $key ) {
 			$cipher = $this->store()->encrypt( $key );
@@ -123,6 +153,7 @@ final class Settings {
 			'enabled'    => ! empty( $input['enabled'] ),
 			'model'      => isset( AiRequest::MODELS[ $model ] ) ? $model : AiRequest::DEFAULT_MODEL,
 			'key_cipher' => $cipher,
+			'workspace'  => $workspace,
 		];
 	}
 }

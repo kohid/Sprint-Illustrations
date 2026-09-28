@@ -12,6 +12,7 @@ namespace SprintIllustrations\Rest;
 use SprintIllustrations\Ai\AnthropicClient;
 use SprintIllustrations\Compose\CompositionException;
 use SprintIllustrations\Plugin;
+use SprintIllustrations\Selection\AiFailure;
 use SprintIllustrations\Selection\AiRequest;
 use SprintIllustrations\Selection\AiResponse;
 
@@ -118,21 +119,15 @@ final class SuggestController {
 		$services  = $this->plugin->services();
 		$templates = array_values( $services->templates->all() );
 		$tags      = AiRequest::tags( $services->manifest->all(), $templates );
-		$response  = $this->client->messages( AiRequest::body( $content, $templates, $tags, $model ), $key );
+		$response  = $this->client->messages( AiRequest::body( $content, $templates, $tags, $model ), $key, $this->plugin->ai()->workspace() );
 
 		if ( is_wp_error( $response ) ) {
 			$this->log( $response->get_error_code() . ': ' . $response->get_error_message() );
 
-			switch ( $response->get_error_code() ) {
-				case 'authentication_error':
-				case 'permission_error':
-					return __( 'Claude rejected the API key, so keywords were used. Check the key in Settings.', 'sprint-illustrations' );
-				case 'rate_limit_error':
-				case 'overloaded_error':
-					return __( 'Claude is busy right now, so keywords were used. Try again in a minute.', 'sprint-illustrations' );
-				default:
-					return __( 'Claude couldn\'t be reached, so keywords were used.', 'sprint-illustrations' );
-			}
+			$code = (string) $response->get_error_code();
+			$text = self::failure_text( AiFailure::reason( $code, $response->get_error_message() ), $response->get_error_message() );
+
+			return $text . ' ' . __( 'Keywords were used.', 'sprint-illustrations' );
 		}
 
 		$spec = AiResponse::spec( $response, array_map( static fn( $template ): string => $template->id, $templates ), $tags );
@@ -142,6 +137,29 @@ final class SuggestController {
 		}
 
 		return $spec;
+	}
+
+	/**
+	 * What went wrong, in words (shared with Settings → Test connection).
+	 *
+	 * @param string $reason AiFailure reason.
+	 * @param string $detail Anthropic's error message (plain text).
+	 * @return string
+	 */
+	public static function failure_text( string $reason, string $detail ): string {
+		switch ( $reason ) {
+			case AiFailure::WORKSPACE:
+				return __( 'Your API key needs a workspace ID. Add it in Settings → AI suggestions.', 'sprint-illustrations' );
+			case AiFailure::AUTH:
+				return __( 'Claude rejected the API key. Check the key in Settings.', 'sprint-illustrations' );
+			case AiFailure::BUSY:
+				return __( 'Claude is busy right now. Try again in a minute.', 'sprint-illustrations' );
+			case AiFailure::NETWORK:
+				return __( 'Claude couldn\'t be reached. Check the site\'s internet connection.', 'sprint-illustrations' );
+			default:
+				/* translators: %s: error message from the Anthropic API. */
+				return sprintf( __( 'Claude returned an error: %s', 'sprint-illustrations' ), AiFailure::detail( $detail ) );
+		}
 	}
 
 	/**

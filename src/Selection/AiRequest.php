@@ -110,6 +110,25 @@ final class AiRequest {
 	}
 
 	/**
+	 * Smallest possible request, for "Test connection".
+	 *
+	 * @param string $model Model ID.
+	 * @return array<string, mixed>
+	 */
+	public static function ping( string $model ): array {
+		return [
+			'model'      => $model,
+			'max_tokens' => 16,
+			'messages'   => [
+				[
+					'role'    => 'user',
+					'content' => 'Reply with OK.',
+				],
+			],
+		];
+	}
+
+	/**
 	 * Plain text, collapsed whitespace, capped length.
 	 *
 	 * @param string $content Content.
