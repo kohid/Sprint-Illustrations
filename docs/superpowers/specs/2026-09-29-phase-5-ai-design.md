@@ -99,3 +99,21 @@ It is a new fieldset on the existing Settings page, in the same `si-panel` style
 ## 7. Out of scope
 
 AI picking individual pieces or palettes, image generation, AI on page views, bulk suggest, and streaming.
+
+## 8. Amendment (2026-09-29): workspace keys and honest errors
+
+The first real test gave "Claude couldn't be reached". The real response was HTTP 400 `invalid_request_error`: "This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header…". The docs confirm that `anthropic-workspace-id` (`wrkspc_…`) is required with a multi-workspace API key and optional otherwise.
+
+- **Workspace ID setting:**
+  - It's an optional text field in the AI panel, saved in the option as `workspace`. It must match `^wrkspc_[A-Za-z0-9]+$`; an invalid value keeps the previous one and adds a settings error.
+  - It isn't secret, so it's shown in the field.
+  - The `SPRINT_ILLUSTRATIONS_WORKSPACE_ID` constant wins over the saved value.
+  - When set, the request sends the `anthropic-workspace-id` header.
+- **Honest errors:**
+  - `AnthropicClient` errors carry Anthropic's `error.message`, tag-stripped and capped at 300 characters. That message never contains the key.
+  - The pure `Selection\AiFailure::reason( string $code, string $message ): string` returns one of `workspace` (the message mentions `anthropic-workspace-id`), `auth` (`authentication_error` or `permission_error`), `busy` (`rate_limit_error` or `overloaded_error`), `network` (`http_request_failed` or `invalid_json`), or `request` (anything else).
+  - The controller turns the reason into user text, and `request` includes Anthropic's message.
+- **Test connection:**
+  - An `admin-post` action, `sprint_illustrations_ai_test` (`manage_options`, nonce), sends one ping with the saved key, workspace and model: `max_tokens` 16 and "Reply with OK."
+  - It reports "Connected to <model label>." or the mapped error as an admin notice, then redirects back to Settings.
+  - It's a nonce link styled as a button, shown only when a key exists. It lives outside the options form's own nonce.
