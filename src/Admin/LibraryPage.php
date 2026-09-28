@@ -42,11 +42,27 @@ final class LibraryPage {
 	];
 
 	/**
+	 * Piece request panel.
+	 *
+	 * @var PieceRequestPanel
+	 */
+	private PieceRequestPanel $requests;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Plugin $plugin Plugin.
 	 */
-	public function __construct( private Plugin $plugin ) {}
+	public function __construct( private Plugin $plugin ) {
+		$this->requests = new PieceRequestPanel( $plugin );
+	}
+
+	/**
+	 * Register hooks (the request form handlers).
+	 */
+	public function register(): void {
+		$this->requests->register();
+	}
 
 	/**
 	 * Enqueue styles.
@@ -96,6 +112,7 @@ final class LibraryPage {
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Library', 'sprint-illustrations' ) . '</h1>';
 		echo '<p class="si-library__intro">' . esc_html__( 'Every piece and template the Builder and the shortcode can use, shown in your site palette.', 'sprint-illustrations' ) . '</p>';
 
+		$this->requests->render( $tab );
 		$this->render_search( $tab, $search );
 
 		echo '<nav class="nav-tab-wrapper si-library__tabs" aria-label="' . esc_attr__( 'Library sections', 'sprint-illustrations' ) . '">';
@@ -171,9 +188,17 @@ final class LibraryPage {
 		$previews = new PiecePreviews( new PieceLoader( $services->sanitizer ), $services->sanitizer );
 		$palette  = $this->plugin->site_palette()->palette();
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: which card to highlight.
+		$highlight = isset( $_GET['piece'] ) ? sanitize_text_field( wp_unslash( $_GET['piece'] ) ) : '';
+		$custom    = wp_normalize_path( $this->plugin->user_library_dir() );
+
 		echo '<ul class="si-library__grid">';
 		foreach ( $pieces as $piece ) {
-			echo '<li class="si-card">';
+			$is_custom = str_starts_with( wp_normalize_path( $piece->path ), $custom );
+			printf( '<li class="si-card%1$s" id="piece-%2$s">', $highlight === $piece->id ? ' is-highlighted' : '', esc_attr( $piece->id ) );
+			if ( $is_custom ) {
+				echo '<span class="si-card__badge">' . esc_html__( 'Custom', 'sprint-illustrations' ) . '</span>';
+			}
 			echo '<div class="si-card__art">' . $this->preview( $previews, $piece, $palette ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitizer output.
 			echo '<div class="si-card__body">';
 			echo '<h2 class="si-card__title">' . esc_html( $piece->label ) . '</h2>';

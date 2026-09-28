@@ -90,6 +90,7 @@ final class Menu {
 	 */
 	public function register(): void {
 		$this->settings->register();
+		$this->library->register();
 		add_action( 'admin_menu', [ $this, 'add_pages' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
 	}

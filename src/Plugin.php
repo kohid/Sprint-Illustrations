@@ -16,6 +16,8 @@ use SprintIllustrations\Cache\CachingComposer;
 use SprintIllustrations\Cache\SvgCache;
 use SprintIllustrations\Cli\CacheCommand;
 use SprintIllustrations\Cli\Command;
+use SprintIllustrations\Cli\PieceCommand;
+use SprintIllustrations\Cli\RequestsCommand;
 use SprintIllustrations\Compose\ComposesSvg;
 use SprintIllustrations\Compose\SceneSpec;
 use SprintIllustrations\Integrations\Block;
@@ -35,6 +37,8 @@ use SprintIllustrations\Rest\SuggestController;
 use SprintIllustrations\Settings\SitePalette;
 use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
+use SprintIllustrations\Storage\PieceRequestPostType;
+use SprintIllustrations\Storage\PieceRequestRepository;
 
 /**
  * Singleton that owns the service container and registers hooks.
@@ -118,6 +122,13 @@ final class Plugin {
 	 * @var AiSettings|null
 	 */
 	private ?AiSettings $ai = null;
+
+	/**
+	 * Piece requests.
+	 *
+	 * @var PieceRequestRepository|null
+	 */
+	private ?PieceRequestRepository $piece_requests = null;
 
 	/**
 	 * Boot on plugins_loaded.
@@ -234,6 +245,15 @@ final class Plugin {
 	}
 
 	/**
+	 * Piece requests (Library page queue).
+	 *
+	 * @return PieceRequestRepository
+	 */
+	public function piece_requests(): PieceRequestRepository {
+		return $this->piece_requests ??= new PieceRequestRepository();
+	}
+
+	/**
 	 * Register the front-end stylesheet (enqueued only where an illustration renders).
 	 */
 	public function register_assets(): void {
@@ -342,6 +362,7 @@ final class Plugin {
 	private function register_hooks(): void {
 		( new Sync( $this->site_palette(), new ColorSource() ) )->register();
 		( new IllustrationPostType() )->register();
+		( new PieceRequestPostType() )->register();
 		( new ComposeController( $this ) )->register();
 		( new LibraryController( $this ) )->register();
 		( new IllustrationsController( $this ) )->register();
@@ -362,6 +383,8 @@ final class Plugin {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			\WP_CLI::add_command( 'sprint-illustrations', new Command( $this ) );
 			\WP_CLI::add_command( 'sprint-illustrations cache', new CacheCommand( $this ) );
+			\WP_CLI::add_command( 'sprint-illustrations requests', new RequestsCommand( $this ) );
+			\WP_CLI::add_command( 'sprint-illustrations piece', new PieceCommand( $this ) );
 		}
 	}
 }
