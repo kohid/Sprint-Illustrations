@@ -337,7 +337,7 @@ final class SettingsPage {
 		];
 
 		echo '<fieldset class="si-panel"><legend class="si-panel__title">' . esc_html__( 'People', 'sprint-illustrations' ) . '</legend>';
-		echo '<p class="description">' . esc_html__( 'Each person in a scene gets one of these, chosen by the seed. Leave a field blank to remove it.', 'sprint-illustrations' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Each person in a scene gets one of these, chosen by the seed. Leave a field blank to remove it. If every field in a row is blank, the built-in colours are used.', 'sprint-illustrations' ) . '</p>';
 
 		foreach ( $groups as $group => $label ) {
 			echo '<div class="si-tones"><span class="si-tones__label">' . esc_html( $label ) . '</span><div class="si-tones__list">';
