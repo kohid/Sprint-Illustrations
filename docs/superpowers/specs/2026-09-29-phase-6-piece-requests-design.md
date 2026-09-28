@@ -75,3 +75,50 @@ The panel is `Admin\PieceRequestPanel`, which renders and handles the form; `Lib
 ## 6. Out of scope
 
 Uploading SVGs through the browser, editing pieces in the browser, a UI delete button for custom pieces (Claude Code runs `piece remove` when asked), and generating pieces through the API.
+
+## 7. Amendment (2026-09-29): review before keeping, and visible progress
+
+The owner wants to see each request's progress and to **keep or discard** a drawn piece before it joins the library. The queue label "by kohid, 30 minutes ago" was also read as a duration.
+
+**States and transitions** (pure `PieceRequest::STATES` and `can_move( $from, $to )`):
+
+| From | To |
+|---|---|
+| `queued` | `drawing` (Claude Code started), `review` (draft submitted directly), `declined` |
+| `drawing` | `review`, `declined`, `queued` (Claude Code gave up) |
+| `review` | `done` (Keep), `discarded` (Discard) |
+| `discarded` or `declined` | `queued` (Try again, with an optional feedback note) |
+
+Only `queued` requests can be cancelled.
+
+**Drafts** (`Storage\PieceDrafts`, WordPress-facing), kept out of the library until they're kept:
+- **Source:** `uploads/sprint-illustrations/drafts/src/<request-id>/<category>/<name>.svg`. It's built with `ManifestBuilder` into `drafts/build/<request-id>/`, which gives a sanitized piece plus its own manifest.
+- **Submitting a draft needs zero warnings and zero errors**, and a name that doesn't clash with an existing piece ID.
+- **Preview:** the draft piece rendered through `PiecePreviews`, plus a sample scene. `Services::create` is built with the user manifests plus the draft manifest, and the scene uses the pure `PieceRequest::sample( $category, $piece_id ): array{template, picks}`:
+
+  | Category | Template | Slot |
+  |---|---|---|
+  | characters | `hero-left-character` | `subject` |
+  | objects | `centered-object-with-decor` | `hero` |
+  | backgrounds | `centered-object-with-decor` | `bg` |
+  | decor | `centered-object-with-decor` | `decor` (as a list) |
+
+- **Keep:** copy the source into `inbox/<category>/<name>.svg`, then run `ManifestBuilder( inbox → library )` in PHP with `NullPrompter`. The request moves to `done` with the piece ID, and the draft folders are removed.
+- **Discard:** delete the draft folders and move the request to `discarded`.
+- **Try again:** store an optional `_si_feedback` note (up to 300 characters) and move the request back to `queued`.
+
+**UI on the Library page:**
+- The queue splits into **In progress** (queued, drawing and review), **Recently added**, and **Discarded or declined**.
+- In-progress cards show a 4-step track: **Requested → Drawing → Ready for review → Added**. The current step is highlighted; drawing gets a subtle pulse, which respects reduced motion.
+- **Wording:** "Requested by <name> <time> ago", "Added <time> ago", and "Waiting for you to ask Claude Code" or "Claude Code is drawing…".
+- **Review cards** show the piece preview and the sample scene side by side, with **Keep** and **Discard** buttons: admin-post POST requests with a nonce per request, allowed for the author or `manage_options`.
+- **Discarded or declined cards** show the note and a **Try again** form with an optional feedback input.
+- **Live updates:** `assets/admin/library.js` polls admin-ajax `sprint_illustrations_request_states` (nonce, `edit_posts`, returns `{id: state}`) every 10 seconds while any request is queued or drawing, and only while the tab is visible. It reloads the page when a state changes.
+
+**WP-CLI (Claude Code):**
+- New: `requests start <id>` and `requests draft <id> --file=<svg>`. The latter validates, stores the draft and moves the request to review, printing any warnings or errors.
+- `requests done` is removed, since review replaces it.
+- `requests list` shows the feedback notes.
+- The `CLAUDE.md` recipe is updated to: start → draw to a scratch file → `draft` → the owner keeps or discards.
+
+**Optional watching:** in Claude Code, `/loop make the requested pieces` has Claude Code check the queue while the session stays open.
