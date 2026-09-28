@@ -8,6 +8,7 @@
 	const { PanelBody, SelectControl, TextControl, ToggleControl, Button, Flex } = wp.components;
 	const ServerSideRender = wp.serverSideRender;
 	const { useSelect } = wp.data;
+	const { useState } = wp.element;
 	const { __ } = wp.i18n;
 	const choices = window.sprintIllustrationsBlock || { templates: [], presets: [] };
 
@@ -19,6 +20,35 @@
 				const editor = select( 'core/editor' );
 				return editor ? editor.getEditedPostAttribute( 'title' ) || '' : '';
 			}, [] );
+			const [ suggesting, setSuggesting ] = useState( false );
+			const [ status, setStatus ] = useState( '' );
+
+			function suggestFromPost() {
+				const editor = wp.data.select( 'core/editor' );
+				const content = editor ? editor.getEditedPostContent() || '' : '';
+				setSuggesting( true );
+				setStatus( '' );
+				wp.apiFetch( {
+					path: '/sprint-illustrations/v1/ai/suggest',
+					method: 'POST',
+					data: { content: postTitle + '\n\n' + content, seed: attributes.seed },
+				} )
+					.then( function ( result ) {
+						setAttributes( {
+							illustrationId: 0,
+							template: result.template,
+							keywords: ( result.keywords || [] ).join( ', ' ),
+							title: result.title || attributes.title,
+						} );
+						setStatus( 'ai' === result.source ? __( 'Suggested by Claude.', 'sprint-illustrations' ) : result.message );
+					} )
+					.catch( function ( error ) {
+						setStatus( ( error && error.message ) || __( 'Suggest failed.', 'sprint-illustrations' ) );
+					} )
+					.finally( function () {
+						setSuggesting( false );
+					} );
+			}
 
 			return el(
 				Fragment,
@@ -66,6 +96,14 @@
 								setAttributes( { keywords: postTitle } );
 							},
 						}, __( 'Use post title', 'sprint-illustrations' ) ),
+						el( Button, {
+							variant: 'secondary',
+							isBusy: suggesting,
+							disabled: suggesting || ! postTitle,
+							style: { marginLeft: '8px' },
+							onClick: suggestFromPost,
+						}, __( 'Suggest from post', 'sprint-illustrations' ) ),
+						el( 'p', { className: 'components-base-control__help', 'aria-live': 'polite', style: { marginTop: '8px' } }, status || ( choices.aiReady ? __( 'Suggest uses Claude.', 'sprint-illustrations' ) : __( 'Suggest uses keyword matching.', 'sprint-illustrations' ) ) ),
 						el( Flex, { align: 'flex-end', style: { marginTop: '16px' } },
 							el( TextControl, {
 								label: __( 'Seed', 'sprint-illustrations' ),

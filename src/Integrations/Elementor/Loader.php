@@ -19,6 +19,7 @@ final class Loader {
 	 */
 	public function register(): void {
 		add_action( 'elementor/widgets/register', [ $this, 'register_widget' ] );
+		add_action( 'elementor/editor/after_enqueue_scripts', [ $this, 'enqueue_editor' ] );
 	}
 
 	/**
@@ -28,5 +29,12 @@ final class Loader {
 	 */
 	public function register_widget( $widgets_manager ): void {
 		$widgets_manager->register( new Widget() );
+	}
+
+	/**
+	 * Editor script for the widget's Suggest button (wp-api-fetch brings the REST nonce).
+	 */
+	public function enqueue_editor(): void {
+		wp_enqueue_script( 'sprint-illustrations-elementor', plugins_url( 'assets/elementor/editor.js', SPRINT_ILLUSTRATIONS_FILE ), [ 'jquery', 'wp-api-fetch', 'wp-i18n' ], SPRINT_ILLUSTRATIONS_VERSION, true );
 	}
 }

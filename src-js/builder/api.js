@@ -41,3 +41,10 @@ export const exportPng = ( blob, { illustrationId, title, alt } ) => {
 	body.append( 'alt', alt || '' );
 	return apiFetch( { path: `${ NS }/media/png`, method: 'POST', body } );
 };
+
+export const suggest = ( content, seed ) =>
+	apiFetch( {
+		path: `${ NS }/ai/suggest`,
+		method: 'POST',
+		data: { content, seed },
+	} );

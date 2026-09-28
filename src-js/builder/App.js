@@ -12,6 +12,7 @@ import {
 	getIllustration,
 	getLibrary,
 	saveIllustration,
+	suggest,
 } from './api';
 import { svgToPngBlob } from './exportPng';
 import { initialState, reducer, specBody } from './state';
@@ -28,6 +29,7 @@ const SOCIAL_SIZE = [ 1200, 630 ];
 export default function App() {
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const [ exporting, setExporting ] = useState( false );
+	const [ suggesting, setSuggesting ] = useState( false );
 	const latest = useRef( 0 );
 	const body = specBody( state );
 	const bodyKey = JSON.stringify( body );
@@ -162,6 +164,27 @@ export default function App() {
 					},
 				} )
 			);
+	};
+
+	// Suggest from a description: Claude when enabled, keyword matching otherwise.
+	const suggestFrom = ( describe ) => {
+		setSuggesting( true );
+		suggest( describe, state.spec.seed )
+			.then( ( suggestion ) =>
+				dispatch( { type: 'SUGGESTED', suggestion } )
+			)
+			.catch( ( error ) =>
+				dispatch( {
+					type: 'NOTICE',
+					notice: {
+						status: 'error',
+						text:
+							error.message ||
+							__( 'Suggest failed.', 'sprint-illustrations' ),
+					},
+				} )
+			)
+			.finally( () => setSuggesting( false ) );
 	};
 
 	// Export the scene on the stage; the illustration is linked as the source only once saved.
@@ -305,6 +328,9 @@ export default function App() {
 				dispatch={ dispatch }
 				presets={ state.library.presets }
 				settingsUrl={ config.settingsUrl }
+				aiReady={ !! config.aiReady }
+				suggesting={ suggesting }
+				onSuggest={ suggestFrom }
 			/>
 		</div>
 	);

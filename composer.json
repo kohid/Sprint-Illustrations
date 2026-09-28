@@ -9,12 +9,13 @@
         "ext-libxml": "*"
     },
     "require-dev": {
-        "enshrined/svg-sanitize": "^1.0",
         "brianhenryie/strauss": "0.26.4",
-        "phpunit/phpunit": "^10.5",
-        "wp-coding-standards/wpcs": "^3.1",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "enshrined/svg-sanitize": "^1.0",
+        "paragonie/sodium_compat": "^2.1",
         "phpcompatibility/phpcompatibility-wp": "^2.1",
-        "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+        "phpunit/phpunit": "^10.5",
+        "wp-coding-standards/wpcs": "^3.1"
     },
     "autoload": {
         "psr-4": {
