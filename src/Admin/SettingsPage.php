@@ -154,7 +154,7 @@ final class SettingsPage {
 		/* translators: %d: number of cached files removed. */
 		Notices::add( sprintf( _n( 'Removed %d cached illustration.', 'Removed %d cached illustrations.', $count, 'sprint-illustrations' ), $count ), 'success' );
 
-		wp_safe_redirect( admin_url( 'admin.php?page=' . Menu::SLUG ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=' . Menu::SETTINGS_SLUG ) );
 		exit;
 	}
 

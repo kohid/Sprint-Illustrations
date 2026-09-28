@@ -13,13 +13,22 @@ use SprintIllustrations\Dev\ContactSheet;
 use SprintIllustrations\Plugin;
 
 /**
- * Top-level menu: Settings (landing page) and the Test page.
+ * Top-level menu: Builder (landing, edit_posts), Settings and the Test page (manage_options).
  */
 final class Menu {
 
 	public const SLUG = 'sprint-illustrations';
 
+	public const SETTINGS_SLUG = 'sprint-illustrations-settings';
+
 	public const TEST_SLUG = 'sprint-illustrations-test';
+
+	/**
+	 * Builder page.
+	 *
+	 * @var BuilderPage
+	 */
+	private BuilderPage $builder;
 
 	/**
 	 * Settings page.
@@ -27,6 +36,13 @@ final class Menu {
 	 * @var SettingsPage
 	 */
 	private SettingsPage $settings;
+
+	/**
+	 * Builder page hook suffix.
+	 *
+	 * @var string
+	 */
+	private string $builder_hook = '';
 
 	/**
 	 * Settings page hook suffix.
@@ -48,6 +64,7 @@ final class Menu {
 	 * @param Plugin $plugin Plugin.
 	 */
 	public function __construct( private Plugin $plugin ) {
+		$this->builder  = new BuilderPage( $plugin );
 		$this->settings = new SettingsPage( $plugin );
 	}
 
@@ -61,20 +78,29 @@ final class Menu {
 	}
 
 	/**
-	 * Add menu pages: Settings (landing) and Test page.
+	 * Add menu pages: Builder (landing), Settings and Test page.
 	 */
 	public function add_pages(): void {
-		$this->settings_hook = (string) add_menu_page(
+		$this->builder_hook = (string) add_menu_page(
 			__( 'Sprint Illustrations', 'sprint-illustrations' ),
 			__( 'Sprint Illustrations', 'sprint-illustrations' ),
-			SettingsPage::CAPABILITY,
+			BuilderPage::CAPABILITY,
 			self::SLUG,
-			[ $this->settings, 'render' ],
+			[ $this->builder, 'render' ],
 			'dashicons-art',
 			58
 		);
 
-		add_submenu_page( self::SLUG, __( 'Sprint Illustrations Settings', 'sprint-illustrations' ), __( 'Settings', 'sprint-illustrations' ), SettingsPage::CAPABILITY, self::SLUG, [ $this->settings, 'render' ] );
+		add_submenu_page( self::SLUG, __( 'Sprint Illustrations Builder', 'sprint-illustrations' ), __( 'Builder', 'sprint-illustrations' ), BuilderPage::CAPABILITY, self::SLUG, [ $this->builder, 'render' ] );
+
+		$this->settings_hook = (string) add_submenu_page(
+			self::SLUG,
+			__( 'Sprint Illustrations Settings', 'sprint-illustrations' ),
+			__( 'Settings', 'sprint-illustrations' ),
+			SettingsPage::CAPABILITY,
+			self::SETTINGS_SLUG,
+			[ $this->settings, 'render' ]
+		);
 
 		$this->test_hook = (string) add_submenu_page(
 			self::SLUG,
@@ -92,6 +118,11 @@ final class Menu {
 	 * @param string $hook_suffix Current admin page hook.
 	 */
 	public function enqueue( string $hook_suffix ): void {
+		if ( $hook_suffix === $this->builder_hook ) {
+			$this->builder->enqueue();
+			return;
+		}
+
 		if ( $hook_suffix === $this->settings_hook ) {
 			$this->settings->enqueue();
 			return;
