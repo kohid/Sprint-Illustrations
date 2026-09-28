@@ -147,7 +147,7 @@ final class Widget extends \Elementor\Widget_Base {
 	protected function render(): void {
 		$settings = $this->get_settings_for_display();
 
-		$html     = Plugin::instance()->renderer()->render(
+		$html = Plugin::instance()->renderer()->render(
 			[
 				'template'   => (string) ( $settings['template'] ?? '' ),
 				'keywords'   => (string) ( $settings['keywords'] ?? '' ),
