@@ -117,3 +117,32 @@ The first real test gave "Claude couldn't be reached". The real response was HTT
   - An `admin-post` action, `sprint_illustrations_ai_test` (`manage_options`, nonce), sends one ping with the saved key, workspace and model: `max_tokens` 16 and "Reply with OK."
   - It reports "Connected to <model label>." or the mapped error as an admin notice, then redirects back to Settings.
   - It's a nonce link styled as a button, shown only when a key exists. It lives outside the options form's own nonce.
+
+## 9. Amendment (2026-09-29): "Ask Claude Code" workflow
+
+The site owner's Claude subscription can't pay for API calls; the API is billed separately and needs credit. So the owner chose to have **Claude Code do the choosing** when prompted, while the Suggest buttons keep using keyword matching. Nothing here changes the API path, which stays available for when credit is added.
+
+- **Pure `Selection\Suggestion::validate( array $data, array $template_ids, array $tags, bool $strict ): array{suggestion: ?array, error: string}`** is the one rulebook for AI and CLI input:
+  - It requires a known template.
+  - Keywords may be an array or comma-separated. They're lower-cased and de-duplicated, and at most 6 are kept.
+  - Alt text is tag-stripped and capped at 120 characters.
+  - With `$strict` (CLI), an unknown tag is an error that names the tags. Without it (API), unknown tags are silently dropped.
+  - `AiResponse::spec()` delegates to it.
+- **Pure `Cli\PlacementEditor`** works on plain arrays:
+  - `blocks( array $blocks, ?int $index, string $insert, array $attrs ): array{blocks, changed: int, error}` updates the Nth `sprint-illustrations/illustration` block, searching inner blocks depth-first and counting from 1. With `insert` set to `top` or `bottom`, it adds a new block instead.
+  - `elementor( array $elements, int $index, array $settings ): array{elements, changed, error}` updates the Nth `sprint-illustration` widget.
+  - Both use `count_blocks()` and `count_widgets()`.
+- **WP-CLI `wp sprint-illustrations …`:**
+  - `library [--format=table|json]` lists templates (ID, label, tags, slot categories) and all tags, including user pieces.
+  - `apply <post-id> --template --keywords --title [--seed] [--index=N | --insert=top|bottom] [--dry-run]`:
+    - Block content is updated through `wp_update_post`, which records a revision.
+    - An Elementor page is updated through `Elementor\Plugin::$instance->documents->get( $id )->save( [ 'elements' => … ] )`.
+    - The settings written are `illustration_id` 0, `template`, `keywords` (comma-joined), `title`, and `seed` when given.
+    - Elementor pages don't support `--insert`; the error says to use `save` and pick the saved illustration in the widget.
+    - It needs `--user` with `edit_post` rights on the page. `--dry-run` prints what would change without saving.
+  - `save --name --template --keywords --title [--seed]` creates an `si_illustration` and prints its ID and shortcode.
+- **`CLAUDE.md`** gets a short "Illustrations via Claude Code" recipe: `library`, then read the page, then `apply` or `save`.
+- **Tests:**
+  - PHPUnit for `Suggestion` and `PlacementEditor`.
+  - A WP-CLI script on temporary block and Elementor pages, covering update, insert, dry-run, revision, rejection and cleanup.
+  - A live demo on a temporary page.
