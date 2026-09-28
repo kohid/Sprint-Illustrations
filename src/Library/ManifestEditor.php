@@ -27,7 +27,7 @@ final class ManifestEditor {
 		$kept   = [];
 
 		foreach ( $pieces as $entry ) {
-			if ( null === $file && is_array( $entry ) && $id === ( $entry['id'] ?? null ) ) {
+			if ( null === $file && is_array( $entry ) && ( $entry['id'] ?? null ) === $id ) {
 				$file = (string) ( $entry['file'] ?? '' );
 				continue;
 			}
