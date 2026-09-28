@@ -1744,3 +1744,20 @@ git commit -m "feat(builder): React Builder screen"
 - [ ] Add execution notes to this plan.
 - [ ] Run `composer test`, `composer lint` and `npm run build` one final time and confirm there's no diff in `build/`.
 - [ ] Commit, push the branch, and open a PR with a manual checklist for the Builder click-through, which needs a login.
+
+## Execution notes
+
+- Tasks 1–4 went as written. No existing fixture test depended on a repeated person, so no expectations changed.
+- **WordPress verification:** a `verify-3a.php` scratch script, run with `wp eval-file`, passed all 38 checks. It covered:
+  - The permission matrix and own-versus-others checks.
+  - The post-type guard: an existing page's ID returns 404.
+  - The cache split.
+  - A saved ID rendering identically on all three surfaces.
+  - Trash versus permanent delete.
+  - Cleanup of the temporary users and posts.
+- **Task 5 findings:**
+  - `@wordpress/eslint-plugin` crashed without `typescript` installed. It's now a dev dependency.
+  - ESLint `no-nested-ternary` flagged the save-state label, which now uses a plain `if`.
+  - The design review changed the default template to `hero-left-character`, fixed the lock column alignment, made the locked state solid blue, moved the keywords help below its row, and set the template grid to 3 columns under 960 px.
+- **Builder review method:** a login couldn't be automated, so the real `build/builder.js` was loaded on a static page with WordPress's own dependency scripts, which were computed with `wp_scripts()->all_deps()`. Only `wp.apiFetch` was mocked, returning REST responses captured with `rest_do_request`. There were no console errors. Lock plus Shuffle sends `picks` and a new seed. Saving without a name shows the inline error. The `beforeunload` prompt fires. Nothing overflows at 1440, 1024 or 782 px.
+- **Not automated (needs a login):** the real click-through against live REST: Save, Open, Save as new, Copy shortcode, and the piece picker changing the live composition.

@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A WordPress plugin (PHP 8.1+, WP 6.4+) that composes flat, brand-coloured SVG illustrations from a library of SVG "pieces" placed into JSON scene templates. Output is deterministic per seed, sanitized, accessible, and needs no front-end JS.
 
 - Design spec: `docs/superpowers/specs/2026-09-28-sprint-illustrations-design.md`. **§19 (amendments) overrides earlier sections.** §18 lists the build phases (1 core → 2 palette/cache → 3 REST/React builder → 4 block/shortcode/Elementor → 5 AI selector).
-- Phase plans: `docs/superpowers/plans/2026-09-28-phase-1-core.md` (done), `docs/superpowers/plans/2026-09-29-phase-2-palette-cache.md` (done), `docs/superpowers/plans/2026-09-29-phase-4-placement.md` (phase 4 was built before phase 3 at the user's request; specs in `docs/superpowers/specs/`). Phase 3 (REST, saved illustrations CPT, React Builder, Media export) is next.
+- Phase plans: `docs/superpowers/plans/2026-09-28-phase-1-core.md` (done), `docs/superpowers/plans/2026-09-29-phase-2-palette-cache.md` (done), `docs/superpowers/plans/2026-09-29-phase-4-placement.md` (built before phase 3 at the user's request), `docs/superpowers/plans/2026-09-29-phase-3a-builder.md` (saved illustrations, REST, Builder). Specs in `docs/superpowers/specs/`. Next: phase 3b (Media export SVG/PNG, Library browser), then phase 5 (AI suggest).
 - The plugin lives inside a Local (by Flywheel) site (`aberdeen-taxi-knowledge`). Run all commands from the plugin root.
 
 ## Commands
@@ -22,11 +22,19 @@ composer lint:fix                     # PHPCBF
 
 php bin/build-manifest.php --non-interactive      # rebuild assets/pieces + assets/manifest.json from assets/pieces-src
 php bin/contact-sheet.php [--seeds=1,2] [--templates=a,b] [--keywords=x,y] > sheet.html   # visual review without WP
+
+npm install                           # Builder toolchain (@wordpress/scripts; typescript is needed by its ESLint plugin)
+npm run build                         # src-js/builder → build/builder.js + builder.asset.php (build/ is committed)
+npm run lint:js                       # ESLint (wp-scripts); `npx wp-scripts lint-js src-js --fix` to format
 ```
+
+After changing `src-js/`, rebuild and commit `build/` with it: the server never runs Node.
 
 WP-CLI (in Local's "Open site shell"): `wp sprint-illustrations compose --template=<id> --seed=<n> [--keywords=..] [--palette=site|default|preset:<id>] [--no-cache] [--out=file.svg]`, `wp sprint-illustrations cache stats|purge`, and `wp sprint-illustrations build-manifest [--source] [--target] [--non-interactive]` (defaults to `uploads/sprint-illustrations/inbox` → `uploads/sprint-illustrations`). The admin Test page (Sprint Illustrations menu) renders a contact sheet in WordPress.
 
-Placement: shortcode `[sprint_illustration template="" keywords="" seed="1" palette="site|preset:<id>" title="" decorative="false"]`, block `sprint-illustrations/illustration`, Elementor widget `sprint-illustration` ("Sprint Illustration"). Showcase pages on the Local site: `/sprint-illustrations-showcase/` (blocks + shortcode) and `/sprint-illustrations-elementor/` (widget); the generator script is in the phase 4 plan, Task 5.
+Admin menu: **Builder** `admin.php?page=sprint-illustrations` (landing, `edit_posts`; `&illustration=<id>` opens a saved one), **Settings** `sprint-illustrations-settings` and **Test page** `sprint-illustrations-test` (`manage_options`).
+
+Placement: shortcode `[sprint_illustration id="<saved id>"]` or `[sprint_illustration template="" keywords="" seed="1" palette="site|preset:<id>" title="" decorative="false"]`, block `sprint-illustrations/illustration`, Elementor widget `sprint-illustration` ("Sprint Illustration"). Showcase pages on the Local site: `/sprint-illustrations-showcase/` (blocks + shortcode) and `/sprint-illustrations-elementor/` (widget); the generator script is in the phase 4 plan, Task 5.
 
 Outside Local's site shell (e.g. from an agent's Bash), set the site's env and call the phar directly; `wp.bat` routes through cmd and mangles quoted arguments. The site id is `K0O3LRE-P` (from `%APPDATA%/Local/sites.json`): `PHPRC=/c/Users/Admin/AppData/Roaming/Local/run/K0O3LRE-P/conf/php`, PHP from `%APPDATA%/Local/lightning-services/php-8.2.29+0/bin/win64`, then `php "/c/Program Files (x86)/Local/resources/extraResources/bin/wp-cli/wp-cli.phar" <args>` from `app/public`. The site must be running in Local. Elementor 4.2.4 and Elementor Pro 4.2.3 are installed.
 
@@ -54,6 +62,12 @@ Both `vendor/autoload.php` **and** `vendor-prefixed/autoload.php` must exist; th
 **Settings page.** `Admin\SettingsPage` (Settings API form + `wp_ajax_sprint_illustrations_preview` live stage, uncached) with plain `assets/admin/settings.{css,js}` (no build step). It is the menu's landing page; the Test page is the `sprint-illustrations-test` submenu.
 
 **Placement.** `Render\Renderer` (pure) is the single entry point for every surface: `spec()` normalizes attributes ("" or "auto" template means automatic, "" palette means site), `render( $args, $show_errors )` composes through `Plugin::composer()` (cached), gives each copy IDs `si-<hash8>-<n>`, and wraps in `<figure class="si-illustration si-template-…">`. Every surface passes `current_user_can( 'edit_posts' )` as `$show_errors`: visitors get a silent HTML comment, editors a readable notice. `Integrations\Shortcode`, `Integrations\Block` (`blocks/illustration/`: block.json apiVersion 3, `render.php`, plain-JS `editor.js` with a hand-written `editor.asset.php`, no build step) and `Integrations\Elementor\Widget` (classic `Widget_Base`, no `content_template()`, so the editor preview is rendered on the server) are thin adapters. The front-end stylesheet `assets/front/illustration.css` (handle `sprint-illustrations`) loads only where an illustration renders.
+
+**Saved illustrations & REST.** `Storage\Illustration` (pure value object; note `title` = name, `spec.title` = SVG alt text) is stored as the private `si_illustration` post type with the resolved spec JSON in `_si_spec`, via `Storage\IllustrationRepository` (every ID is checked to be an `si_illustration` before use — the IDOR guard). REST namespace `sprint-illustrations/v1` (`Rest\*`, cookie nonce): `POST /compose` (uncached, returns svg + resolved spec + per-slot `picked`/`locked`/`boxes`), `GET /library` (templates, pieces with cached site-palette previews via transients, presets), `/illustrations` CRUD with `edit_posts` plus per-post `read_post`/`edit_post`/`delete_post` (`Rest\Permissions`: 404 for non-illustrations before 403). Saving composes through the caching composer and stores the resolved spec. `Render\Renderer` takes a 4th closure (`find_published`) so `id=` works on every surface; only `title`/`decorative` override a saved design.
+
+**People.** Character pieces carry a `person` (`data-si-person`, default = first file-name part); `SceneResolver` never auto-picks a person already in the scene (falls back silently if that would leave nothing). `ComposedSvg::$boxes` gives each slot's rendered `[x,y,w,h]` for the Builder's hover outline.
+
+**Builder.** React app in `src-js/builder/` (`App` holds a `useReducer` state from `state.js`: `picks` contains only locked slots, so Shuffle re-resolves everything else; a 150 ms debounced `/compose` applies only the latest response). Mounted by `Admin\BuilderPage` from `build/builder.js` with dependencies from `build/builder.asset.php`.
 
 **Piece library.** Author sources in `assets/pieces-src/<category>/` (characters, objects, backgrounds, decor). `Cli\ManifestBuilder` reads `data-si-*` root metadata and `id="anchor-<name>"` marker shapes (resolved through transforms), strips them, sanitizes, and writes `assets/pieces/` + `assets/manifest.json` (both generated but committed). Colour comes only from `slot-<name>`, `slot-<name>-light/-dark`, `slot-stroke-<name>`, `slot-outline` classes; literal colours other than `none`/`transparent` are warnings.
 
