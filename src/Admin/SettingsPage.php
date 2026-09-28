@@ -1,6 +1,6 @@
 <?php
 /**
- * Settings page: palette source, presets, colours, Elementor mapping, cache.
+ * Settings page: palette source, presets, colours, Elementor mapping, AI suggestions, cache.
  *
  * @package SprintIllustrations
  */
@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace SprintIllustrations\Admin;
 
+use SprintIllustrations\Ai\Settings as AiSettings;
 use SprintIllustrations\Compose\CompositionException;
 use SprintIllustrations\Compose\SceneSpec;
 use SprintIllustrations\Integrations\Elementor\ColorSource;
@@ -16,6 +17,7 @@ use SprintIllustrations\Palette\ElementorMapping;
 use SprintIllustrations\Palette\Palette;
 use SprintIllustrations\Palette\PaletteSettings;
 use SprintIllustrations\Plugin;
+use SprintIllustrations\Selection\AiRequest;
 use SprintIllustrations\Settings\SitePalette;
 
 /**
@@ -61,6 +63,16 @@ final class SettingsPage {
 			[
 				'type'              => 'array',
 				'sanitize_callback' => [ $this, 'sanitize' ],
+				'default'           => [],
+				'show_in_rest'      => false,
+			]
+		);
+		register_setting(
+			self::GROUP,
+			AiSettings::OPTION,
+			[
+				'type'              => 'array',
+				'sanitize_callback' => [ $this->plugin->ai(), 'sanitize' ],
 				'default'           => [],
 				'show_in_rest'      => false,
 			]
@@ -210,6 +222,8 @@ final class SettingsPage {
 		if ( $elementor ) {
 			$this->render_elementor( $settings, $mapping, $map, $source->failed() );
 		}
+
+		$this->render_ai();
 
 		submit_button( __( 'Save changes', 'sprint-illustrations' ) );
 		echo '</form>';
@@ -520,5 +534,59 @@ final class SettingsPage {
 		}
 
 		return $variants;
+	}
+
+	/**
+	 * AI suggestions panel. The key field is write-only.
+	 */
+	private function render_ai(): void {
+		$ai       = $this->plugin->ai();
+		$settings = $ai->settings();
+		$name     = esc_attr( AiSettings::OPTION );
+		$has_key  = $ai->has_key();
+
+		echo '<fieldset class="si-panel si-ai"><legend class="si-panel__title">' . esc_html__( 'AI suggestions', 'sprint-illustrations' ) . '</legend>';
+		echo '<p class="si-ai__intro">' . esc_html__( 'Suggest reads a description or your page text and picks a template, keywords and alt text. Without Claude it uses keyword matching.', 'sprint-illustrations' ) . '</p>';
+
+		printf(
+			'<label class="si-ai__toggle"><input type="checkbox" name="%1$s[enabled]" value="1" %2$s %3$s> %4$s</label>',
+			$name, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
+			checked( $settings['enabled'], true, false ),
+			disabled( $has_key, false, false ),
+			esc_html__( 'Use Claude for Suggest', 'sprint-illustrations' )
+		);
+		if ( ! $has_key ) {
+			echo '<p class="description">' . esc_html__( 'Add an API key to turn this on.', 'sprint-illustrations' ) . '</p>';
+		}
+
+		echo '<div class="si-ai__row"><label class="si-ai__label" for="si-ai-key">' . esc_html__( 'Anthropic API key', 'sprint-illustrations' ) . '</label><div class="si-ai__field">';
+		if ( $ai->from_constant() ) {
+			echo '<p class="si-ai__status">' . esc_html__( 'Using the key from wp-config.php.', 'sprint-illustrations' ) . '</p>';
+		} else {
+			printf(
+				'<input type="password" id="si-ai-key" name="%1$s[key]" value="" autocomplete="new-password" spellcheck="false" class="regular-text" placeholder="%2$s">',
+				$name, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
+				esc_attr( $has_key ? __( 'Paste a new key to replace it', 'sprint-illustrations' ) : 'sk-ant-…' )
+			);
+			if ( $has_key ) {
+				echo '<p class="si-ai__status"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span> ' . esc_html__( 'A key is saved.', 'sprint-illustrations' ) . '</p>';
+				printf(
+					'<label class="si-ai__remove"><input type="checkbox" name="%1$s[remove_key]" value="1"> %2$s</label>',
+					$name, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
+					esc_html__( 'Remove the saved key', 'sprint-illustrations' )
+				);
+			}
+		}
+		echo '</div></div>';
+
+		echo '<div class="si-ai__row"><label class="si-ai__label" for="si-ai-model">' . esc_html__( 'Model', 'sprint-illustrations' ) . '</label><div class="si-ai__field">';
+		printf( '<select id="si-ai-model" name="%s[model]">', $name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
+		foreach ( AiRequest::MODELS as $id => $label ) {
+			printf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $id ), selected( $settings['model'], $id, false ), esc_html( $label ) );
+		}
+		echo '</select></div></div>';
+
+		echo '<p class="description si-ai__privacy">' . esc_html__( 'Suggest sends the text you choose, plus your template names and tags, to Anthropic. Nothing is sent when visitors view pages.', 'sprint-illustrations' ) . '</p>';
+		echo '</fieldset>';
 	}
 }

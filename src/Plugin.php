@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace SprintIllustrations;
 
 use SprintIllustrations\Admin\Menu;
+use SprintIllustrations\Ai\Settings as AiSettings;
 use SprintIllustrations\Admin\Notices;
 use SprintIllustrations\Cache\CachingComposer;
 use SprintIllustrations\Cache\SvgCache;
@@ -30,6 +31,7 @@ use SprintIllustrations\Rest\ComposeController;
 use SprintIllustrations\Rest\IllustrationsController;
 use SprintIllustrations\Rest\LibraryController;
 use SprintIllustrations\Rest\MediaController;
+use SprintIllustrations\Rest\SuggestController;
 use SprintIllustrations\Settings\SitePalette;
 use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
@@ -109,6 +111,13 @@ final class Plugin {
 	 * @var IllustrationRepository|null
 	 */
 	private ?IllustrationRepository $illustrations = null;
+
+	/**
+	 * AI settings.
+	 *
+	 * @var AiSettings|null
+	 */
+	private ?AiSettings $ai = null;
 
 	/**
 	 * Boot on plugins_loaded.
@@ -216,6 +225,15 @@ final class Plugin {
 	}
 
 	/**
+	 * AI settings (key, model, on/off).
+	 *
+	 * @return AiSettings
+	 */
+	public function ai(): AiSettings {
+		return $this->ai ??= new AiSettings();
+	}
+
+	/**
 	 * Register the front-end stylesheet (enqueued only where an illustration renders).
 	 */
 	public function register_assets(): void {
@@ -225,7 +243,7 @@ final class Plugin {
 	/**
 	 * Template and palette choices for the block and widget controls.
 	 *
-	 * @return array{templates: array<array{label: string, value: string}>, presets: array<array{label: string, value: string}>, illustrations: array<array{label: string, value: int}>}
+	 * @return array{templates: array<array{label: string, value: string}>, presets: array<array{label: string, value: string}>, illustrations: array<array{label: string, value: int}>, aiReady: bool}
 	 */
 	public function editor_choices(): array {
 		$templates = [];
@@ -257,6 +275,7 @@ final class Plugin {
 			'templates'     => $templates,
 			'presets'       => $presets,
 			'illustrations' => $illustrations,
+			'aiReady'       => $this->ai()->ready(),
 		];
 	}
 
@@ -327,6 +346,7 @@ final class Plugin {
 		( new LibraryController( $this ) )->register();
 		( new IllustrationsController( $this ) )->register();
 		( new MediaController( $this ) )->register();
+		( new SuggestController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
 		( new Shortcode( $this ) )->register();
 		( new Block( $this ) )->register();

@@ -58,3 +58,14 @@ h2.si-panel__title{margin-bottom:12px;padding:0}
 @media (prefers-reduced-motion:no-preference){.si-stage__art{transition:opacity .15s}}
 
 .si-cache__form p{margin:0 0 12px}
+
+.si-ai__intro{margin:0 0 12px;color:#50575e;max-width:560px}
+.si-ai__toggle{display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.si-ai__row{display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px 16px;align-items:start;margin-top:16px}
+.si-ai__label{font-weight:500;padding-top:6px}
+.si-ai__field .regular-text{width:100%;max-width:360px}
+.si-ai__status{display:flex;align-items:center;gap:4px;margin:8px 0 4px;color:#00a32a}
+.si-ai__status .dashicons{font-size:18px;width:18px;height:18px}
+.si-ai__remove{display:inline-flex;align-items:center;gap:6px;color:#50575e}
+.si-ai__privacy{margin-top:16px}
+@media (max-width:782px){.si-ai__row{grid-template-columns:1fr}.si-ai__label{padding-top:0}}
