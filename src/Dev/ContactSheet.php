@@ -9,7 +9,7 @@ declare( strict_types=1 );
 
 namespace SprintIllustrations\Dev;
 
-use SprintIllustrations\Compose\Composer;
+use SprintIllustrations\Compose\ComposesSvg;
 use SprintIllustrations\Compose\CompositionException;
 use SprintIllustrations\Compose\SceneSpec;
 use SprintIllustrations\Palette\Palette;
@@ -23,9 +23,9 @@ final class ContactSheet {
 	/**
 	 * Constructor.
 	 *
-	 * @param Composer $composer Composer.
+	 * @param ComposesSvg $composer Composer (plain or caching).
 	 */
-	public function __construct( private Composer $composer ) {}
+	public function __construct( private ComposesSvg $composer ) {}
 
 	/**
 	 * Presets used for review: the default plus two contrasting ones.
