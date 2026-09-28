@@ -13,11 +13,13 @@ use SprintIllustrations\Dev\ContactSheet;
 use SprintIllustrations\Plugin;
 
 /**
- * Top-level menu: Builder (landing, edit_posts), Settings and the Test page (manage_options).
+ * Top-level menu: Builder (landing) and Library (edit_posts), Settings and the Test page (manage_options).
  */
 final class Menu {
 
 	public const SLUG = 'sprint-illustrations';
+
+	public const LIBRARY_SLUG = 'sprint-illustrations-library';
 
 	public const SETTINGS_SLUG = 'sprint-illustrations-settings';
 
@@ -29,6 +31,13 @@ final class Menu {
 	 * @var BuilderPage
 	 */
 	private BuilderPage $builder;
+
+	/**
+	 * Library page.
+	 *
+	 * @var LibraryPage
+	 */
+	private LibraryPage $library;
 
 	/**
 	 * Settings page.
@@ -43,6 +52,13 @@ final class Menu {
 	 * @var string
 	 */
 	private string $builder_hook = '';
+
+	/**
+	 * Library page hook suffix.
+	 *
+	 * @var string
+	 */
+	private string $library_hook = '';
 
 	/**
 	 * Settings page hook suffix.
@@ -65,6 +81,7 @@ final class Menu {
 	 */
 	public function __construct( private Plugin $plugin ) {
 		$this->builder  = new BuilderPage( $plugin );
+		$this->library  = new LibraryPage( $plugin );
 		$this->settings = new SettingsPage( $plugin );
 	}
 
@@ -78,7 +95,7 @@ final class Menu {
 	}
 
 	/**
-	 * Add menu pages: Builder (landing), Settings and Test page.
+	 * Add menu pages: Builder (landing), Library, Settings and Test page.
 	 */
 	public function add_pages(): void {
 		$this->builder_hook = (string) add_menu_page(
@@ -92,6 +109,15 @@ final class Menu {
 		);
 
 		add_submenu_page( self::SLUG, __( 'Sprint Illustrations Builder', 'sprint-illustrations' ), __( 'Builder', 'sprint-illustrations' ), BuilderPage::CAPABILITY, self::SLUG, [ $this->builder, 'render' ] );
+
+		$this->library_hook = (string) add_submenu_page(
+			self::SLUG,
+			__( 'Sprint Illustrations Library', 'sprint-illustrations' ),
+			__( 'Library', 'sprint-illustrations' ),
+			LibraryPage::CAPABILITY,
+			self::LIBRARY_SLUG,
+			[ $this->library, 'render' ]
+		);
 
 		$this->settings_hook = (string) add_submenu_page(
 			self::SLUG,
@@ -120,6 +146,11 @@ final class Menu {
 	public function enqueue( string $hook_suffix ): void {
 		if ( $hook_suffix === $this->builder_hook ) {
 			$this->builder->enqueue();
+			return;
+		}
+
+		if ( $hook_suffix === $this->library_hook ) {
+			$this->library->enqueue();
 			return;
 		}
 

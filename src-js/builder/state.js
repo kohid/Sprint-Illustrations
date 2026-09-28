@@ -24,14 +24,16 @@ export const initialState = {
 };
 
 /**
- * Start from a person-centred hero when the library has one; otherwise the first template.
+ * Start on the requested template, else a person-centred hero, else the first template.
  *
- * @param {Object|null} library Library from /library.
+ * @param {Object|null} library   Library from /library.
+ * @param {string}      preferred Template to start on, when it exists.
  * @return {string} Template ID.
  */
-function defaultTemplate( library ) {
+function defaultTemplate( library, preferred = '' ) {
 	const templates = library?.templates || [];
 	return (
+		templates.find( ( t ) => preferred && preferred === t.id )?.id ||
 		templates.find( ( t ) => 'hero-left-character' === t.id )?.id ||
 		templates[ 0 ]?.id ||
 		''
@@ -62,7 +64,7 @@ export function reducer( state, action ) {
 					...state.spec,
 					template:
 						state.spec.template ||
-						defaultTemplate( action.library ),
+						defaultTemplate( action.library, action.preferred ),
 				},
 			};
 		case 'SET_SPEC':

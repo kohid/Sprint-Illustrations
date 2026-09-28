@@ -50,13 +50,16 @@ final class BuilderPage {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: which illustration to open.
 		$initial = isset( $_GET['illustration'] ) ? absint( $_GET['illustration'] ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: which template to start on.
+		$template = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
 
 		wp_localize_script(
 			'sprint-illustrations-builder',
 			'sprintIllustrationsBuilder',
 			[
-				'initialId'   => $initial,
-				'settingsUrl' => current_user_can( SettingsPage::CAPABILITY ) ? admin_url( 'admin.php?page=' . Menu::SETTINGS_SLUG ) : '',
+				'initialId'       => $initial,
+				'initialTemplate' => $template,
+				'settingsUrl'     => current_user_can( SettingsPage::CAPABILITY ) ? admin_url( 'admin.php?page=' . Menu::SETTINGS_SLUG ) : '',
 			]
 		);
 	}

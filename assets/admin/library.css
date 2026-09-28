@@ -1,0 +1,34 @@
+/* Sprint Illustrations: Library page. Native WP admin; colour comes only from the illustrations. */
+.si-library__intro{margin:4px 0 0;color:#646970;max-width:640px}
+.si-library__search{display:flex;align-items:center;gap:6px;float:none;margin:16px 0 0;height:auto}
+.si-library__search input[type=search]{width:260px;max-width:100%;margin:0}
+.si-library__clear{margin-left:4px}
+.si-library__tabs{margin-top:16px}
+.si-library__count{display:inline-block;min-width:18px;padding:0 6px;margin-left:4px;border-radius:9px;background:#dcdcde;color:#50575e;font-size:11px;font-weight:600;line-height:18px;text-align:center}
+.nav-tab-active .si-library__count{background:#2271b1;color:#fff}
+
+.si-library__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0 0;padding:0;list-style:none}
+@media (min-width:783px){.si-library__grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1280px){.si-library__grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+.si-card{display:flex;flex-direction:column;margin:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden;min-width:0}
+.si-card__art{aspect-ratio:1;min-height:0;overflow:hidden;display:grid;place-items:center;padding:16px;background:#f6f7f7 radial-gradient(#dcdcde 1px,transparent 1.5px) 0 0/16px 16px;border-bottom:1px solid #dcdcde}
+.si-card__art--scene{aspect-ratio:4/3;padding:0}
+.si-card__art svg{display:block;width:100%;height:100%;min-height:0}
+.si-card__body{display:flex;flex-direction:column;gap:6px;padding:12px 14px 14px;flex:1}
+.si-card__title{margin:0;font-size:14px;font-weight:600;line-height:1.4}
+.si-card__meta{margin:0;color:#50575e;font-size:12px;line-height:1.5}
+.si-card__id{margin:auto 0 0;padding-top:4px}
+.si-card__id code{padding:1px 4px;font-size:11px;background:#f0f0f1;color:#50575e}
+.si-card__action{margin:auto 0 0;padding-top:6px}
+
+.si-tags{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+.si-tag{margin:0;padding:1px 8px;border:1px solid #dcdcde;border-radius:10px;color:#50575e;font-size:11px;line-height:16px}
+
+.si-library__empty{margin-top:20px;padding:32px 24px;background:#fff;border:1px dashed #c3c4c7;border-radius:4px;text-align:center;color:#50575e}
+.si-library__empty p{margin:0;font-size:14px}
+
+@media (max-width:782px){
+	.si-library__search input[type=search]{flex:1;width:auto}
+	.si-card__body{padding:10px 12px 12px}
+}

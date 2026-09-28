@@ -39,11 +39,15 @@ export default function App() {
 				} )
 			);
 
-	// Library, then the illustration from ?illustration=ID.
+	// Library (starting on ?template=ID), then the illustration from ?illustration=ID.
 	useEffect( () => {
 		getLibrary()
 			.then( ( library ) => {
-				dispatch( { type: 'LIBRARY', library } );
+				dispatch( {
+					type: 'LIBRARY',
+					library,
+					preferred: config.initialTemplate,
+				} );
 				if ( config.initialId ) {
 					open( config.initialId );
 				}
