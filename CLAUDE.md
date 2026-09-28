@@ -42,7 +42,7 @@ Both `vendor/autoload.php` **and** `vendor-prefixed/autoload.php` must exist; th
 
 ## Architecture
 
-**Boundary rule.** `Library`, `Compose`, `Palette`, `Security`, `Selection`, `Svg`, `Dev`, `Cache` and `Cli` (except `Cli\Command`, `Cli\CacheCommand`) are pure PHP with **no WordPress calls**. They run from PHPUnit and `bin/` scripts, and `phpcs.xml.dist` relaxes filesystem/escaping sniffs only for those paths. WordPress-facing code (`Plugin`, `Admin\*`, `Settings\*`, `Integrations\*`, the two CLI command classes) gets services from `Plugin` (`services()`, `composer()`, `site_palette()`, `presets()`, `cache()`).
+**Boundary rule.** `Library`, `Compose`, `Palette`, `Security`, `Selection`, `Svg`, `Dev`, `Cache` and `Cli` (except the `*Command` classes: `Command`, `CacheCommand`, `RequestsCommand`, `PieceCommand`) are pure PHP with **no WordPress calls**. They run from PHPUnit and `bin/` scripts, and `phpcs.xml.dist` relaxes filesystem/escaping sniffs only for those paths. WordPress-facing code (`Plugin`, `Admin\*`, `Settings\*`, `Integrations\*`, the two CLI command classes) gets services from `Plugin` (`services()`, `composer()`, `site_palette()`, `presets()`, `cache()`).
 
 **Wiring.** `Services::create( $root, $extra_manifests, $extra_template_dirs )` builds the whole core from a library root (`<root>/assets/{manifest.json,templates/,keywords/synonyms.json}`). Tests use it with `tests/fixtures/library`; `Plugin` uses it with the plugin dir plus user manifests from the `sprint_illustrations_library_paths` filter (default `uploads/sprint-illustrations/manifest.json`).
 
