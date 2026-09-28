@@ -78,3 +78,19 @@
 - [ ] **Step 4:** Verify with a WP-CLI script covering spec §5. It cleans up the temporary users, requests and custom piece. Then run `composer test` and `composer lint`.
 - [ ] **Step 5:** Commit, push, and open a PR stacked on `phase-5-ai`.
 - [ ] **Step 6:** Live demo: file a real request ("Objects: a black Aberdeen taxi, side view"), fulfil it, and show it in the Library and the Builder.
+
+## Execution notes
+
+- **Task 1:** 7 tests. The first commit carried one PHPCS Yoda finding, which was fixed in a follow-up commit before the push.
+- **Task 2:**
+  - The `admin-post` handlers were exercised through the real callbacks, with `wp_redirect` and `wp_die` stubbed. They passed 23 checks: permissions (subscriber, author, another author, admin), validation, cancel and decline rules, and panel rendering.
+  - The owner had already filed a real request (#442, "car") through the panel during the build. The test script left it untouched, and it became the live demo.
+  - Visual review at 1440 and 782 px: the form sits beside the queue from 1280 px and stacks below that.
+- **Task 3:** a throwaway `obj-si-test-box` covered the rest:
+  - Build, the `/library` REST response, and the Custom badge and highlight on the Library page.
+  - `requests done`: an unknown piece is rejected, and a request that's already done is rejected.
+  - `decline` without a note is refused.
+  - `piece remove` refuses `obj-laptop` and removes the manifest entry, the built file and the source.
+- **Live demo:** request #442 was fulfilled with `obj-car`:
+  - It's a flat side view on 2× units, so it's realistic next to 310-unit people. Its tags are car, vehicle, taxi, transport, travel and hero, with a `base` anchor and a surface mount.
+  - It built with zero warnings, composed into Featured object, appears in the Builder library, and can be locked into Feature card's hero slot.
