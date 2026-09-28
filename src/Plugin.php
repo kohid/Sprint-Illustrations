@@ -29,6 +29,7 @@ use SprintIllustrations\Render\Renderer;
 use SprintIllustrations\Rest\ComposeController;
 use SprintIllustrations\Rest\IllustrationsController;
 use SprintIllustrations\Rest\LibraryController;
+use SprintIllustrations\Rest\MediaController;
 use SprintIllustrations\Settings\SitePalette;
 use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
@@ -325,6 +326,7 @@ final class Plugin {
 		( new ComposeController( $this ) )->register();
 		( new LibraryController( $this ) )->register();
 		( new IllustrationsController( $this ) )->register();
+		( new MediaController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
 		( new Shortcode( $this ) )->register();
 		( new Block( $this ) )->register();

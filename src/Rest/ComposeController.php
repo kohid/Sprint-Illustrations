@@ -57,8 +57,10 @@ final class ComposeController {
 		$params = $request->get_json_params();
 		$spec   = SceneSpec::from_array( is_array( $params ) ? $params : $request->get_body_params() );
 
+		$palette = $this->plugin->site_palette()->resolve( $spec->palette );
+
 		try {
-			$result = $this->plugin->services()->composer->compose( $spec, $this->plugin->site_palette()->resolve( $spec->palette ) );
+			$result = $this->plugin->services()->composer->compose( $spec, $palette );
 		} catch ( CompositionException $e ) {
 			return new \WP_Error( 'sprint_illustrations_composition_failed', $e->getMessage(), [ 'status' => 422 ] );
 		}
@@ -75,15 +77,16 @@ final class ComposeController {
 
 		return new \WP_REST_Response(
 			[
-				'svg'      => $result->with_instance_id( 'si-b' . substr( md5( uniqid( '', true ) ), 0, 10 ) ),
-				'spec'     => $result->spec->to_array(),
-				'warnings' => $result->warnings,
-				'template' => null === $template ? null : [
+				'svg'        => $result->with_instance_id( 'si-b' . substr( md5( uniqid( '', true ) ), 0, 10 ) ),
+				'spec'       => $result->spec->to_array(),
+				'warnings'   => $result->warnings,
+				'template'   => null === $template ? null : [
 					'id'     => $template->id,
 					'label'  => $template->label,
 					'canvas' => $template->canvas,
 				],
-				'slots'    => $slots,
+				'slots'      => $slots,
+				'background' => (string) $palette->resolve( 'background' ),
 			]
 		);
 	}

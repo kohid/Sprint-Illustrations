@@ -14,6 +14,11 @@ final class PngCheckTest extends TestCase {
 
 	public function test_valid_png(): void {
 		$this->assertNull( PngCheck::problem( self::head( 1600, 1200 ), 250000 ) );
+		$this->assertNull( PngCheck::problem( self::head( 1600, 1200 ), 250000, "\0\0\0\0IEND\xAE\x42\x60\x82" ) );
+	}
+
+	public function test_rejects_incomplete_png(): void {
+		$this->assertStringContainsString( 'incomplete', (string) PngCheck::problem( self::head( 10, 10 ), 100, str_repeat( "\0", 12 ) ) );
 	}
 
 	public function test_rejects_non_png(): void {

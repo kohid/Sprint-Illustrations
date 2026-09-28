@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Sprint Illustrations
  * Description:       Composes flat, brand-coloured illustrations from a library of SVG pieces.
- * Version:           0.4.0
+ * Version:           0.5.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Sprint
@@ -17,7 +17,7 @@ declare( strict_types=1 );
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SPRINT_ILLUSTRATIONS_VERSION', '0.4.0' );
+define( 'SPRINT_ILLUSTRATIONS_VERSION', '0.5.0' );
 define( 'SPRINT_ILLUSTRATIONS_FILE', __FILE__ );
 
 /**
