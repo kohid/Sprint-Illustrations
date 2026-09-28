@@ -55,12 +55,14 @@ final class ManifestBuilderTest extends TestCase {
 		$this->assertSame( [ 'hold' => 'handheld' ], $hero['accepts'] );
 		$this->assertSame( [ 'primary', 'skin' ], $hero['slots'] );
 		$this->assertSame( [ 0, 0, 100, 200 ], $hero['viewBox'] );
+		$this->assertSame( 'hero', $hero['person'], 'Characters default their person to the first file-name part.' );
 
 		$cup = $entries['obj-coffee-cup'];
 		$this->assertSame( [ 0, 0, 20, 24 ], $cup['viewBox'] );
 		$this->assertSame( [ 'coffee', 'cup' ], $cup['tags'], 'Tags default to the normalized file name parts.' );
 		$this->assertSame( 20, $cup['z'] );
 		$this->assertSame( [ 'handheld' => 'grip' ], $cup['mounts'] );
+		$this->assertArrayNotHasKey( 'person', $cup, 'Only characters have a person.' );
 	}
 
 	public function test_cleaned_files_have_no_markers_metadata_or_scripts(): void {

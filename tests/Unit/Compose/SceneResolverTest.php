@@ -194,6 +194,44 @@ final class SceneResolverTest extends TestCase {
 		$this->assertEqualsWithDelta( $box_centre, $right->x + $right->width() / 2, 0.0001 );
 	}
 
+	public function test_two_character_slots_never_share_a_person(): void {
+		for ( $seed = 1; $seed <= 50; $seed++ ) {
+			$scene = $this->resolve( 'fixture-duo', [ 'seed' => $seed ] );
+			$left  = $this->by_slot( $scene, 'left' )[0]->piece->person;
+			$right = $this->by_slot( $scene, 'right' )[0]->piece->person;
+
+			$this->assertNotSame( $left, $right, "seed $seed" );
+		}
+	}
+
+	public function test_explicit_pick_person_is_avoided_by_auto_slots(): void {
+		for ( $seed = 1; $seed <= 20; $seed++ ) {
+			$scene = $this->resolve(
+				'fixture-duo',
+				[
+					'seed'  => $seed,
+					'picks' => [ 'left' => 'char-stick' ],
+				]
+			);
+			$this->assertSame( 'char-stick', $this->by_slot( $scene, 'left' )[0]->piece->id );
+			$this->assertSame( 'char-runner', $this->by_slot( $scene, 'right' )[0]->piece->id, "seed $seed" );
+		}
+	}
+
+	public function test_single_person_library_repeats_instead_of_failing(): void {
+		$file           = tempnam( sys_get_temp_dir(), 'si-manifest' );
+		$data           = json_decode( (string) file_get_contents( self::ASSETS . '/manifest.json' ), true );
+		$data['pieces'] = array_values( array_filter( $data['pieces'], static fn( $p ) => 'char-runner' !== $p['id'] ) );
+		file_put_contents( $file, (string) json_encode( $data ) );
+
+		$scene = ( new SceneResolver( Manifest::from_files( [ $file ] ) ) )->resolve( $this->templates->get( 'fixture-duo' ), SceneSpec::from_array( [ 'template' => 'fixture-duo' ] ), [] );
+		unlink( $file );
+
+		$this->assertSame( 'char-stick', $this->by_slot( $scene, 'left' )[0]->piece->id );
+		$this->assertSame( 'char-stick', $this->by_slot( $scene, 'right' )[0]->piece->id );
+		$this->assertSame( [], $scene->warnings );
+	}
+
 	public function test_required_slot_without_candidates_throws(): void {
 		$template = Template::from_array(
 			[

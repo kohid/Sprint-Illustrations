@@ -61,6 +61,7 @@ final class StarterPackTest extends TestCase {
 			if ( 'characters' === $piece->category ) {
 				$this->assertNotNull( $piece->anchor( 'ground' ), $piece->id . ' needs an anchor-ground marker.' );
 				$this->assertArrayHasKey( 'hold', $piece->accepts, $piece->id . ' needs a "hold" anchor that accepts an attachment type.' );
+				$this->assertMatchesRegularExpression( '/^[a-z0-9-]+$/D', (string) $piece->person, $piece->id . ' needs a person.' );
 			}
 
 			foreach ( $piece->mounts as $type => $anchor ) {
@@ -100,6 +101,26 @@ final class StarterPackTest extends TestCase {
 
 		$lap = array_filter( self::$services->manifest->by_category( 'objects' ), static fn( $p ) => isset( $p->mounts['lap'] ) );
 		$this->assertNotEmpty( $lap, 'Seated poses need at least one lap-mountable object.' );
+	}
+
+	public function test_two_people_collaborating_never_repeats_a_person(): void {
+		for ( $seed = 1; $seed <= 100; $seed++ ) {
+			$picks = self::$services->composer->compose(
+				SceneSpec::from_array(
+					[
+						'template' => 'two-people-collaborating',
+						'seed'     => $seed,
+					]
+				),
+				\SprintIllustrations\Palette\Palette::default()
+			)->spec->picks;
+
+			$this->assertNotSame(
+				self::$services->manifest->get( (string) $picks['left'] )->person,
+				self::$services->manifest->get( (string) $picks['right'] )->person,
+				"seed $seed"
+			);
+		}
 	}
 
 	public function test_template_tags_and_synonyms_use_token_forms(): void {
