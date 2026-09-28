@@ -45,18 +45,18 @@
 	</rule>
 
 	<!--
-	The composition core (Library, Compose, Palette, Security, Selection, Svg, Dev, Cli, Cache, Render) is
+	The composition core (Library, Compose, Palette, Security, Selection, Svg, Dev, Cli, Cache, Render, Media) is
 	framework-free PHP that also runs from bin/ scripts and PHPUnit without WordPress loaded.
 	It may use native filesystem functions and throws exceptions whose messages are never
 	echoed unescaped (WordPress-facing callers escape on output).
 	-->
 	<rule ref="WordPress.WP.AlternativeFunctions">
-		<exclude-pattern>/src/(Library|Compose|Palette|Security|Selection|Svg|Dev|Cli|Cache|Render)/*</exclude-pattern>
+		<exclude-pattern>/src/(Library|Compose|Palette|Security|Selection|Svg|Dev|Cli|Cache|Render|Media)/*</exclude-pattern>
 		<exclude-pattern>/bin/*</exclude-pattern>
 		<exclude-pattern>/tests/*</exclude-pattern>
 	</rule>
 	<rule ref="WordPress.Security.EscapeOutput.ExceptionNotEscaped">
-		<exclude-pattern>/src/(Library|Compose|Palette|Security|Selection|Svg|Dev|Cli|Cache|Render)/*</exclude-pattern>
+		<exclude-pattern>/src/(Library|Compose|Palette|Security|Selection|Svg|Dev|Cli|Cache|Render|Media)/*</exclude-pattern>
 	</rule>
 	<rule ref="WordPress.Security.EscapeOutput">
 		<exclude-pattern>/bin/*</exclude-pattern>
