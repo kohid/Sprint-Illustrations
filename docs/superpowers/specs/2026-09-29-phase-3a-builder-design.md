@@ -81,7 +81,7 @@ Error codes are `sprint_illustrations_rest_forbidden` (401/403), `_cannot_edit`,
 
 - `Render\Renderer` gains an optional fourth constructor argument, `fn( int $id ): ?SceneSpec` (`find_published`).
 - With `id` > 0, the saved spec is used. Only `title` (if non-empty) and `decorative` (if given) override it. An unknown ID throws the usual `CompositionException`, so visitors see the silent comment and editors the notice.
-- The shortcode takes `id`, the block `illustrationId` (integer), and the widget an `illustration_id` select. `Plugin::editor_choices()` gains `illustrations: [{label, value}]`, up to 200, newest first.
+- The shortcode takes `id`, the block `illustrationId` (integer), and the widget an `illustration_id` select. `Plugin::editor_choices()` gains `illustrations: [{label, value}]`, up to 100, newest first.
 
 ## 3. Builder
 
