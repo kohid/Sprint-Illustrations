@@ -12,6 +12,27 @@ final class TemplateRepositoryTest extends TestCase {
 
 	private const DIR = __DIR__ . '/../../fixtures/library/assets/templates';
 
+	public function test_to_array_shapes(): void {
+		$data = TemplateRepository::from_directories( [ self::DIR ] )->get( 'fixture-duo' )->to_array();
+
+		$this->assertSame( 'fixture-duo', $data['id'] );
+		$this->assertSame( [ 400.0, 300.0 ], array_map( 'floatval', $data['canvas'] ) );
+		$this->assertSame(
+			[
+				'name'     => 'left-prop',
+				'category' => 'objects',
+				'required' => false,
+				'attach'   => [
+					'to'     => 'left',
+					'anchor' => 'hold',
+				],
+				'multiple' => false,
+			],
+			$data['slots'][1]
+		);
+		$this->assertNull( $data['slots'][0]['attach'] );
+	}
+
 	public function test_loads_and_sorts_templates(): void {
 		$repository = TemplateRepository::from_directories( [ self::DIR, '/missing/dir' ] );
 

@@ -120,6 +120,24 @@ final class TemplateSlot {
 	}
 
 	/**
+	 * Public shape for REST.
+	 *
+	 * @return array{name: string, category: string, required: bool, attach: array{to: string, anchor: string}|null, multiple: bool}
+	 */
+	public function to_array(): array {
+		return [
+			'name'     => $this->name,
+			'category' => $this->category,
+			'required' => $this->required,
+			'attach'   => null === $this->attach_to ? null : [
+				'to'     => $this->attach_to,
+				'anchor' => (string) $this->attach_anchor,
+			],
+			'multiple' => $this->is_multiple(),
+		];
+	}
+
+	/**
 	 * Validate a rectangle.
 	 *
 	 * @param mixed  $value       Candidate.

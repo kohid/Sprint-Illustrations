@@ -31,6 +31,7 @@ final class Piece {
 	 * @param array<string, string>                         $mounts    Attachment type => own anchor name used to mount.
 	 * @param array<string>                                 $slots     Colour slot names used.
 	 * @param string                                        $hash      Content hash of the cleaned SVG.
+	 * @param string|null                                   $person    Person this character depicts (characters only).
 	 */
 	public function __construct(
 		public readonly string $id,
@@ -45,6 +46,7 @@ final class Piece {
 		public readonly array $mounts,
 		public readonly array $slots,
 		public readonly string $hash,
+		public readonly ?string $person = null,
 	) {}
 
 	/**
@@ -91,7 +93,8 @@ final class Piece {
 			array_map( 'strval', (array) ( $data['accepts'] ?? [] ) ),
 			array_map( 'strval', (array) ( $data['mounts'] ?? [] ) ),
 			array_values( array_map( 'strval', (array) ( $data['slots'] ?? [] ) ) ),
-			(string) ( $data['hash'] ?? '' )
+			(string) ( $data['hash'] ?? '' ),
+			isset( $data['person'] ) && is_string( $data['person'] ) && '' !== trim( $data['person'] ) ? strtolower( trim( $data['person'] ) ) : null
 		);
 	}
 
@@ -131,5 +134,22 @@ final class Piece {
 	 */
 	public function has_tag( string $tag ): bool {
 		return in_array( strtolower( $tag ), $this->tags, true );
+	}
+
+	/**
+	 * Public shape for REST.
+	 *
+	 * @return array{id: string, label: string, category: string, tags: array<string>, accepts: array<string, string>, mounts: array<string, string>, person: ?string}
+	 */
+	public function to_array(): array {
+		return [
+			'id'       => $this->id,
+			'label'    => $this->label,
+			'category' => $this->category,
+			'tags'     => $this->tags,
+			'accepts'  => $this->accepts,
+			'mounts'   => $this->mounts,
+			'person'   => $this->person,
+		];
 	}
 }

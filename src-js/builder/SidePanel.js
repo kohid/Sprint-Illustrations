@@ -1,0 +1,134 @@
+/**
+ * Palette, variation and accessibility controls.
+ */
+import { __ } from '@wordpress/i18n';
+import {
+	Button,
+	RadioControl,
+	TextControl,
+	ToggleControl,
+} from '@wordpress/components';
+
+export default function SidePanel( { state, dispatch, presets, settingsUrl } ) {
+	const set = ( spec ) => dispatch( { type: 'SET_SPEC', spec } );
+
+	return (
+		<div className="si-b-side">
+			<section className="si-b-panel" aria-labelledby="si-b-palette">
+				<h2 className="si-b-panel__title" id="si-b-palette">
+					{ __( 'Palette', 'sprint-illustrations' ) }
+				</h2>
+				<RadioControl
+					label={ __( 'Palette', 'sprint-illustrations' ) }
+					hideLabelFromVision
+					selected={ state.spec.palette }
+					options={ [
+						{
+							label: __( 'Site palette', 'sprint-illustrations' ),
+							value: 'site',
+						},
+					].concat( presets ) }
+					onChange={ ( palette ) => set( { palette } ) }
+				/>
+				{ settingsUrl && (
+					<p className="si-b-muted">
+						<a href={ settingsUrl }>
+							{ __(
+								'Edit the site palette',
+								'sprint-illustrations'
+							) }
+						</a>
+					</p>
+				) }
+			</section>
+
+			<section className="si-b-panel" aria-labelledby="si-b-variation">
+				<h2 className="si-b-panel__title" id="si-b-variation">
+					{ __( 'Variation', 'sprint-illustrations' ) }
+				</h2>
+				<div className="si-b-row">
+					<TextControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __( 'Seed', 'sprint-illustrations' ) }
+						type="number"
+						min={ 0 }
+						value={ String( state.spec.seed ) }
+						onChange={ ( value ) =>
+							set( {
+								seed: Math.max( 0, parseInt( value, 10 ) || 0 ),
+							} )
+						}
+					/>
+					<Button
+						variant="secondary"
+						__next40pxDefaultSize
+						onClick={ () =>
+							set( {
+								seed: Math.floor( Math.random() * 100000 ) + 1,
+							} )
+						}
+					>
+						{ __( 'Shuffle', 'sprint-illustrations' ) }
+					</Button>
+				</div>
+				<div className="si-b-row">
+					<TextControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __( 'Keywords', 'sprint-illustrations' ) }
+						value={ state.spec.keywords }
+						onChange={ ( keywords ) => set( { keywords } ) }
+					/>
+					<Button
+						variant="secondary"
+						__next40pxDefaultSize
+						disabled={ ! state.spec.keywords.trim() }
+						onClick={ () =>
+							dispatch( { type: 'SET_TEMPLATE', template: '' } )
+						}
+						label={ __(
+							'Pick the best template for these keywords',
+							'sprint-illustrations'
+						) }
+						showTooltip
+					>
+						{ __( 'Suggest', 'sprint-illustrations' ) }
+					</Button>
+				</div>
+				<p className="si-b-muted si-b-help">
+					{ __(
+						'Keywords steer which pieces appear, e.g. “coffee, laptop”. Suggest picks the template too.',
+						'sprint-illustrations'
+					) }
+				</p>
+			</section>
+
+			<section className="si-b-panel" aria-labelledby="si-b-a11y">
+				<h2 className="si-b-panel__title" id="si-b-a11y">
+					{ __( 'Accessibility', 'sprint-illustrations' ) }
+				</h2>
+				<TextControl
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+					label={ __( 'Alt text', 'sprint-illustrations' ) }
+					help={ __(
+						'Leave blank to use the template name.',
+						'sprint-illustrations'
+					) }
+					value={ state.spec.title }
+					onChange={ ( title ) => set( { title } ) }
+				/>
+				<ToggleControl
+					__nextHasNoMarginBottom
+					label={ __(
+						'Decorative (hide from screen readers)',
+						'sprint-illustrations'
+					) }
+					checked={ state.spec.decorative }
+					onChange={ ( decorative ) => set( { decorative } ) }
+				/>
+			</section>
+		</div>
+	);
+}

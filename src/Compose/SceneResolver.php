@@ -43,12 +43,13 @@ final class SceneResolver {
 		$placed   = [];
 		$warnings = [];
 		$order    = 0;
+		$used     = [];
 
 		foreach ( $template->slots as $slot ) {
 			$seed  = Seed::from_string( $spec->seed . '|' . $template->id . '|' . $slot->name );
 			$items = null === $slot->attach_to
-				? $this->resolve_box_slot( $template, $slot, $spec, $tokens, $seed, $warnings, $order )
-				: $this->resolve_attached_slot( $slot, $placed, $spec, $tokens, $seed, $warnings, $order );
+				? $this->resolve_box_slot( $template, $slot, $spec, $tokens, $seed, $warnings, $order, $used )
+				: $this->resolve_attached_slot( $slot, $placed, $spec, $tokens, $seed, $warnings, $order, $used );
 
 			if ( ! $items && $slot->required ) {
 				throw new CompositionException( sprintf( 'Required slot "%s" in template "%s" could not be filled.', $slot->name, $template->id ) );
@@ -66,16 +67,17 @@ final class SceneResolver {
 	/**
 	 * Resolve a box slot (single, multiple, or scattered).
 	 *
-	 * @param Template      $template Template.
-	 * @param TemplateSlot  $slot     Slot.
-	 * @param SceneSpec     $spec     Spec.
-	 * @param array<string> $tokens   Tokens.
-	 * @param Seed          $seed     Slot seed.
-	 * @param array<string> $warnings Warnings (by reference).
-	 * @param int           $order    Order counter (by reference).
+	 * @param Template            $template Template.
+	 * @param TemplateSlot        $slot     Slot.
+	 * @param SceneSpec           $spec     Spec.
+	 * @param array<string>       $tokens   Tokens.
+	 * @param Seed                $seed     Slot seed.
+	 * @param array<string>       $warnings Warnings (by reference).
+	 * @param int                 $order    Order counter (by reference).
+	 * @param array<string, true> $used Persons already placed in this scene (by reference).
 	 * @return array<Placement>
 	 */
-	private function resolve_box_slot( Template $template, TemplateSlot $slot, SceneSpec $spec, array $tokens, Seed $seed, array &$warnings, int &$order ): array {
+	private function resolve_box_slot( Template $template, TemplateSlot $slot, SceneSpec $spec, array $tokens, Seed $seed, array &$warnings, int &$order, array &$used ): array {
 		$requested  = $this->requested_pieces( $slot, $spec, null, $warnings );
 		$count      = $seed->int( $slot->count[0], $slot->count[1] );
 		$count      = $requested ? count( $requested ) : $count;
@@ -84,7 +86,7 @@ final class SceneResolver {
 		$items      = [];
 
 		for ( $i = 0; $i < $count; $i++ ) {
-			$auto   = $this->pick( $candidates, $slot, $tokens, $seed );
+			$auto   = $this->pick( $this->unused( $candidates, $used ), $slot, $tokens, $seed );
 			$factor = $seed->float( $slot->scale[0], $slot->scale[1] );
 			$skin   = $seed->int( 0, 63 );
 			$hair   = $seed->int( 0, 63 );
@@ -92,6 +94,10 @@ final class SceneResolver {
 
 			if ( null === $piece ) {
 				continue;
+			}
+
+			if ( null !== $piece->person ) {
+				$used[ $piece->person ] = true;
 			}
 
 			$scale = $this->box_scale( $template, $slot, $piece ) * $factor;
@@ -118,9 +124,10 @@ final class SceneResolver {
 	 * @param Seed                            $seed     Slot seed.
 	 * @param array<string>                   $warnings Warnings (by reference).
 	 * @param int                             $order    Order counter (by reference).
+	 * @param array<string, true>             $used     Persons already placed in this scene (by reference).
 	 * @return array<Placement>
 	 */
-	private function resolve_attached_slot( TemplateSlot $slot, array $placed, SceneSpec $spec, array $tokens, Seed $seed, array &$warnings, int &$order ): array {
+	private function resolve_attached_slot( TemplateSlot $slot, array $placed, SceneSpec $spec, array $tokens, Seed $seed, array &$warnings, int &$order, array &$used ): array {
 		$parent = $placed[ (string) $slot->attach_to ][0] ?? null;
 		if ( null === $parent ) {
 			return [];
@@ -133,12 +140,16 @@ final class SceneResolver {
 		}
 
 		$requested = $this->requested_pieces( $slot, $spec, $type, $warnings );
-		$auto      = $this->pick( $this->candidates( $slot, $type ), $slot, $tokens, $seed );
+		$auto      = $this->pick( $this->unused( $this->candidates( $slot, $type ), $used ), $slot, $tokens, $seed );
 		$factor    = $seed->float( $slot->scale[0], $slot->scale[1] );
 		$piece     = $requested[0] ?? $auto;
 
 		if ( null === $piece ) {
 			return [];
+		}
+
+		if ( null !== $piece->person ) {
+			$used[ $piece->person ] = true;
 		}
 
 		[ $vx, $vy, $vw, $vh ] = $piece->view_box;
@@ -175,6 +186,23 @@ final class SceneResolver {
 				}
 			)
 		);
+	}
+
+	/**
+	 * Drop pieces whose person is already in the scene, unless that would leave nothing.
+	 *
+	 * @param array<Piece>        $candidates Candidates.
+	 * @param array<string, true> $used       Persons already placed.
+	 * @return array<Piece>
+	 */
+	private function unused( array $candidates, array $used ): array {
+		if ( ! $used ) {
+			return $candidates;
+		}
+
+		$fresh = array_values( array_filter( $candidates, static fn( Piece $piece ): bool => null === $piece->person || ! isset( $used[ $piece->person ] ) ) );
+
+		return $fresh ? $fresh : $candidates;
 	}
 
 	/**

@@ -29,6 +29,78 @@ final class RendererTest extends TestCase {
 		);
 	}
 
+	private function renderer_with_saved(): Renderer {
+		return new Renderer(
+			Services::create( __DIR__ . '/../../fixtures/library' )->composer,
+			static fn(): Palette => Palette::default(),
+			function ( string $message ): void {
+				$this->logged[] = $message;
+			},
+			static fn( int $id ): ?\SprintIllustrations\Compose\SceneSpec => 7 === $id
+				? \SprintIllustrations\Compose\SceneSpec::from_array(
+					[
+						'template' => 'fixture-object',
+						'seed'     => 11,
+						'title'    => 'Saved title',
+					]
+				)
+				: null
+		);
+	}
+
+	public function test_saved_illustration_wins_over_attributes(): void {
+		$html = $this->renderer_with_saved()->render(
+			[
+				'id'       => '7',
+				'template' => 'fixture-hero',
+				'seed'     => 1,
+			]
+		);
+
+		$this->assertStringContainsString( 'si-template-fixture-object', $html );
+		$this->assertStringContainsString( '>Saved title</title>', $html );
+	}
+
+	public function test_saved_illustration_title_and_decorative_can_be_overridden(): void {
+		$renderer = $this->renderer_with_saved();
+
+		$this->assertStringContainsString(
+			'>Placement title</title>',
+			$renderer->render(
+				[
+					'id'    => 7,
+					'title' => 'Placement title',
+				]
+			)
+		);
+		$this->assertStringContainsString(
+			'aria-hidden="true"',
+			$renderer->render(
+				[
+					'id'         => 7,
+					'decorative' => true,
+				]
+			)
+		);
+	}
+
+	public function test_unknown_saved_illustration_takes_the_error_path(): void {
+		$this->assertSame( '<!-- Sprint Illustrations: illustration could not be rendered. -->', $this->renderer_with_saved()->render( [ 'id' => 99 ] ) );
+		$this->assertStringContainsString( 'Saved illustration 99 was not found.', $this->logged[0] );
+	}
+
+	public function test_id_is_ignored_without_a_lookup(): void {
+		$this->assertStringContainsString(
+			'si-template-fixture-hero',
+			$this->renderer()->render(
+				[
+					'id'       => 7,
+					'template' => 'fixture-hero',
+				]
+			)
+		);
+	}
+
 	public function test_spec_normalizes_surface_attributes(): void {
 		$spec = Renderer::spec(
 			[

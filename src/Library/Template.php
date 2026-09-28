@@ -78,4 +78,19 @@ final class Template {
 			array_values( $slots )
 		);
 	}
+
+	/**
+	 * Public shape for REST.
+	 *
+	 * @return array{id: string, label: string, canvas: array, tags: array<string>, slots: array<array<string, mixed>>}
+	 */
+	public function to_array(): array {
+		return [
+			'id'     => $this->id,
+			'label'  => $this->label,
+			'canvas' => $this->canvas,
+			'tags'   => $this->tags,
+			'slots'  => array_map( static fn( TemplateSlot $slot ): array => $slot->to_array(), $this->slots ),
+		];
+	}
 }

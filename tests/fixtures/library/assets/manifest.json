@@ -34,12 +34,13 @@
             "accepts": {
                 "hold": "handheld"
             },
-            "mounts": {},
+            "mounts": [],
             "slots": [
                 "primary",
                 "skin"
             ],
-            "hash": "fixture"
+            "hash": "fixture",
+            "person": "stick"
         },
         {
             "id": "char-runner",
@@ -75,13 +76,14 @@
             "accepts": {
                 "hold": "handheld"
             },
-            "mounts": {},
+            "mounts": [],
             "slots": [
                 "secondary",
                 "skin",
                 "hair"
             ],
-            "hash": "fixture"
+            "hash": "fixture",
+            "person": "runner"
         },
         {
             "id": "obj-mug",
@@ -109,7 +111,7 @@
                     12
                 ]
             },
-            "accepts": {},
+            "accepts": [],
             "mounts": {
                 "handheld": "grip"
             },
@@ -145,7 +147,7 @@
                     80
                 ]
             },
-            "accepts": {},
+            "accepts": [],
             "mounts": {
                 "surface": "base"
             },
@@ -176,9 +178,9 @@
                 40
             ],
             "z": 20,
-            "anchors": {},
-            "accepts": {},
-            "mounts": {},
+            "anchors": [],
+            "accepts": [],
+            "mounts": [],
             "slots": [
                 "accent"
             ],
@@ -203,9 +205,9 @@
                 150
             ],
             "z": 0,
-            "anchors": {},
-            "accepts": {},
-            "mounts": {},
+            "anchors": [],
+            "accepts": [],
+            "mounts": [],
             "slots": [
                 "background"
             ],
@@ -230,9 +232,9 @@
                 10
             ],
             "z": 5,
-            "anchors": {},
-            "accepts": {},
-            "mounts": {},
+            "anchors": [],
+            "accepts": [],
+            "mounts": [],
             "slots": [
                 "accent"
             ],

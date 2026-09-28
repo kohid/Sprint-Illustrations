@@ -24,7 +24,7 @@ use SprintIllustrations\Svg\SvgException;
  *   - Anchor markers: any <circle|ellipse|rect id="anchor-<name>"> (removed from output).
  *   - Optional root metadata (removed from output), used as prompt defaults:
  *       data-si-label, data-si-tags="a,b", data-si-z, data-si-accepts="hold:handheld",
- *       data-si-mounts="handheld:grip"
+ *       data-si-mounts="handheld:grip", data-si-person="ava" (characters; defaults to the first file-name part)
  *   - Colour slots: class="slot-*" (see Recolorer).
  */
 final class ManifestBuilder {
@@ -149,6 +149,10 @@ final class ManifestBuilder {
 		$tags  = $this->csv( $this->prompter->ask( "[$id] Tags (comma-separated)", $meta['tags'] ?? implode( ',', (array) ( $previous['tags'] ?? explode( '-', $name ) ) ) ) );
 		$z     = (int) $this->prompter->ask( "[$id] Z-layer", (string) ( $meta['z'] ?? $previous['z'] ?? self::DEFAULT_Z[ $category ] ) );
 
+		$person = 'characters' === $category
+			? (string) preg_replace( '/[^a-z0-9-]+/', '', strtolower( $meta['person'] ?? (string) ( $previous['person'] ?? explode( '-', $name )[0] ) ) )
+			: '';
+
 		$accepts = [];
 		$mounts  = [];
 		if ( $anchors ) {
@@ -193,7 +197,7 @@ final class ManifestBuilder {
 			'mounts'   => (object) $mounts,
 			'slots'    => $slots,
 			'hash'     => sha1( $clean ),
-		];
+		] + ( '' === $person ? [] : [ 'person' => $person ] );
 	}
 
 	/**
@@ -205,7 +209,7 @@ final class ManifestBuilder {
 	private function take_meta( \DOMElement $root ): array {
 		$meta = [];
 
-		foreach ( [ 'label', 'tags', 'z', 'accepts', 'mounts' ] as $key ) {
+		foreach ( [ 'label', 'tags', 'z', 'accepts', 'mounts', 'person' ] as $key ) {
 			$attribute = 'data-si-' . $key;
 			if ( $root->hasAttribute( $attribute ) ) {
 				$meta[ $key ] = trim( $root->getAttribute( $attribute ) );

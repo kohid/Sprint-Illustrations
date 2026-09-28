@@ -1,0 +1,15 @@
+{
+	"name": "sprint-illustrations",
+	"private": true,
+	"description": "Build tooling for the Sprint Illustrations Builder screen.",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build builder=./src-js/builder/index.js --output-path=build",
+		"start": "wp-scripts start builder=./src-js/builder/index.js --output-path=build",
+		"lint:js": "wp-scripts lint-js src-js"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.0.0",
+		"typescript": "^5.9.3"
+	}
+}

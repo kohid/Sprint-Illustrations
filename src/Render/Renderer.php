@@ -31,11 +31,13 @@ final class Renderer {
 	 * @param ComposesSvg   $composer Composer (normally the caching one).
 	 * @param \Closure      $palettes fn( string|array $ref ): Palette.
 	 * @param \Closure|null $log      fn( string $message ): void, for failures.
+	 * @param \Closure|null $illustrations fn( int $id ): ?SceneSpec, for saved illustrations.
 	 */
 	public function __construct(
 		private ComposesSvg $composer,
 		private \Closure $palettes,
 		private ?\Closure $log = null,
+		private ?\Closure $illustrations = null,
 	) {}
 
 	/**
@@ -68,9 +70,8 @@ final class Renderer {
 	 * @return string
 	 */
 	public function render( array $args, bool $show_errors = false ): string {
-		$spec = self::spec( $args );
-
 		try {
+			$spec   = $this->resolve_spec( $args );
 			$result = $this->composer->compose( $spec, ( $this->palettes )( $spec->palette ) );
 		} catch ( CompositionException $e ) {
 			if ( null !== $this->log ) {
@@ -87,6 +88,36 @@ final class Renderer {
 		return '<figure class="si-illustration si-template-' . self::esc( (string) $result->spec->template ) . '">'
 			. $result->with_instance_id( $instance )
 			. '</figure>';
+	}
+
+	/**
+	 * Saved illustration (when "id" is set and a lookup exists) or the attributes.
+	 *
+	 * @param array<string, mixed> $args Attributes.
+	 * @return SceneSpec
+	 * @throws CompositionException When the saved illustration is missing.
+	 */
+	private function resolve_spec( array $args ): SceneSpec {
+		$id = isset( $args['id'] ) && is_numeric( $args['id'] ) ? (int) $args['id'] : 0;
+
+		if ( $id <= 0 || null === $this->illustrations ) {
+			return self::spec( $args );
+		}
+
+		$saved = ( $this->illustrations )( $id );
+		if ( ! $saved instanceof SceneSpec ) {
+			throw new CompositionException( sprintf( 'Saved illustration %d was not found.', $id ) );
+		}
+
+		$overrides = [];
+		if ( isset( $args['title'] ) && is_string( $args['title'] ) && '' !== trim( $args['title'] ) ) {
+			$overrides['title'] = $args['title'];
+		}
+		if ( array_key_exists( 'decorative', $args ) ) {
+			$overrides['decorative'] = $args['decorative'];
+		}
+
+		return $overrides ? SceneSpec::from_array( $overrides + $saved->to_array() ) : $saved;
 	}
 
 	/**

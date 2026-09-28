@@ -79,6 +79,16 @@ final class Widget extends \Elementor\Widget_Base {
 		$this->start_controls_section( 'illustration', [ 'label' => esc_html__( 'Illustration', 'sprint-illustrations' ) ] );
 
 		$this->add_control(
+			'illustration_id',
+			[
+				'label'       => esc_html__( 'Saved illustration', 'sprint-illustrations' ),
+				'type'        => \Elementor\Controls_Manager::SELECT,
+				'default'     => '0',
+				'options'     => [ '0' => esc_html__( 'None (design here)', 'sprint-illustrations' ) ] + array_column( $choices['illustrations'], 'label', 'value' ),
+				'description' => esc_html__( 'A saved design ignores the settings below except accessibility.', 'sprint-illustrations' ),
+			]
+		);
+		$this->add_control(
 			'template',
 			[
 				'label'   => esc_html__( 'Template', 'sprint-illustrations' ),
@@ -149,6 +159,7 @@ final class Widget extends \Elementor\Widget_Base {
 
 		$html = Plugin::instance()->renderer()->render(
 			[
+				'id'         => (int) ( $settings['illustration_id'] ?? 0 ),
 				'template'   => (string) ( $settings['template'] ?? '' ),
 				'keywords'   => (string) ( $settings['keywords'] ?? '' ),
 				'seed'       => $settings['seed'] ?? 1,

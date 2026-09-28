@@ -41,6 +41,7 @@ final class Shortcode {
 	public function render( $atts ): string {
 		$atts = shortcode_atts(
 			[
+				'id'         => '0',
 				'template'   => '',
 				'keywords'   => '',
 				'seed'       => '1',

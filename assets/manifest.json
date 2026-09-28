@@ -1,5 +1,5 @@
 {
-    "version": 4,
+    "version": 5,
     "pieces": [
         {
             "id": "bg-blob",
@@ -138,7 +138,8 @@
                 "primary",
                 "skin"
             ],
-            "hash": "f7ad9ce55649e887a0f35682e84560d5dd9f4ecc"
+            "hash": "f7ad9ce55649e887a0f35682e84560d5dd9f4ecc",
+            "person": "ava"
         },
         {
             "id": "char-ava-wave",
@@ -187,7 +188,8 @@
                 "primary",
                 "skin"
             ],
-            "hash": "b1dbc43da6003369c7966c4b26b8f86ff053a9b5"
+            "hash": "b1dbc43da6003369c7966c4b26b8f86ff053a9b5",
+            "person": "ava"
         },
         {
             "id": "char-ben-hold",
@@ -233,7 +235,8 @@
                 "primary",
                 "skin"
             ],
-            "hash": "f81e1ae5852718b7fa902f2b6e7bbda003a3efcf"
+            "hash": "f81e1ae5852718b7fa902f2b6e7bbda003a3efcf",
+            "person": "ben"
         },
         {
             "id": "char-ben-point",
@@ -281,7 +284,8 @@
                 "primary",
                 "skin"
             ],
-            "hash": "d238a06dc4af9655dc3deb8a4df8d058d8f56496"
+            "hash": "d238a06dc4af9655dc3deb8a4df8d058d8f56496",
+            "person": "ben"
         },
         {
             "id": "char-cleo-point",
@@ -328,7 +332,8 @@
                 "secondary",
                 "skin"
             ],
-            "hash": "a0bf25e490262cf2493ad85c97e4663951782354"
+            "hash": "a0bf25e490262cf2493ad85c97e4663951782354",
+            "person": "cleo"
         },
         {
             "id": "char-cleo-sit",
@@ -374,7 +379,8 @@
                 "secondary",
                 "skin"
             ],
-            "hash": "ffffa4590d1d86c2171942fe465cf1f142715ca2"
+            "hash": "ffffa4590d1d86c2171942fe465cf1f142715ca2",
+            "person": "cleo"
         },
         {
             "id": "char-dev-hold",
@@ -420,7 +426,8 @@
                 "secondary",
                 "skin"
             ],
-            "hash": "88521db2de85933af5eddfc0dbbcba6aba89c915"
+            "hash": "88521db2de85933af5eddfc0dbbcba6aba89c915",
+            "person": "dev"
         },
         {
             "id": "char-dev-wave",
@@ -467,7 +474,8 @@
                 "secondary",
                 "skin"
             ],
-            "hash": "3d2cae719079e37dc049452a0f004e09a53c833d"
+            "hash": "3d2cae719079e37dc049452a0f004e09a53c833d",
+            "person": "dev"
         },
         {
             "id": "decor-confetti",
