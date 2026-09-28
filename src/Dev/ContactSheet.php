@@ -13,6 +13,7 @@ use SprintIllustrations\Compose\Composer;
 use SprintIllustrations\Compose\CompositionException;
 use SprintIllustrations\Compose\SceneSpec;
 use SprintIllustrations\Palette\Palette;
+use SprintIllustrations\Palette\PresetRepository;
 
 /**
  * Used by the admin Test page and bin/contact-sheet.php.
@@ -27,34 +28,19 @@ final class ContactSheet {
 	public function __construct( private Composer $composer ) {}
 
 	/**
-	 * Built-in palettes for review: the default plus two contrasting ones.
+	 * Presets used for review: the default plus two contrasting ones.
 	 *
 	 * @return array<string, Palette>
 	 */
 	public static function review_palettes(): array {
-		return [
-			'Sprint' => Palette::default(),
-			'Forest' => Palette::from_array(
-				[
-					'primary'    => '#2f7d5b',
-					'secondary'  => '#f2c14e',
-					'accent'     => '#f25c54',
-					'neutral'    => '#233038',
-					'background' => '#e8f3ee',
-					'outline'    => '#233038',
-				]
-			),
-			'Night'  => Palette::from_array(
-				[
-					'primary'    => '#8b5cf6',
-					'secondary'  => '#22d3ee',
-					'accent'     => '#f472b6',
-					'neutral'    => '#1e1b4b',
-					'background' => '#ede9fe',
-					'outline'    => '#1e1b4b',
-				]
-			),
-		];
+		$presets  = PresetRepository::bundled()->all();
+		$palettes = [];
+
+		foreach ( [ 'sprint', 'forest', 'night' ] as $id ) {
+			$palettes[ $presets[ $id ]['label'] ] = $presets[ $id ]['palette'];
+		}
+
+		return $palettes;
 	}
 
 	/**
