@@ -124,6 +124,25 @@ final class Widget extends \Elementor\Widget_Base {
 				'options' => [ 'site' => esc_html__( 'Site palette', 'sprint-illustrations' ) ] + array_column( $choices['presets'], 'label', 'value' ),
 			]
 		);
+		$this->add_control(
+			'describe',
+			[
+				'label'       => esc_html__( 'Describe it', 'sprint-illustrations' ),
+				'type'        => \Elementor\Controls_Manager::TEXTAREA,
+				'rows'        => 3,
+				'placeholder' => esc_html__( 'Leave blank to use the page title', 'sprint-illustrations' ),
+				'separator'   => 'before',
+			]
+		);
+		$this->add_control(
+			'suggest',
+			[
+				'type'        => \Elementor\Controls_Manager::BUTTON,
+				'text'        => esc_html__( 'Suggest', 'sprint-illustrations' ),
+				'event'       => 'sprintIllustrations:suggest',
+				'description' => $choices['aiReady'] ? esc_html__( 'Uses Claude to pick a template, keywords and alt text.', 'sprint-illustrations' ) : esc_html__( 'Uses keyword matching. Turn on Claude in Settings.', 'sprint-illustrations' ),
+			]
+		);
 
 		$this->end_controls_section();
 
