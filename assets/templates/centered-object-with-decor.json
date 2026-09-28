@@ -1,0 +1,75 @@
+{
+    "id": "centered-object-with-decor",
+    "label": "Featured object",
+    "canvas": [
+        800,
+        600
+    ],
+    "unit": 1.25,
+    "tags": [
+        "feature",
+        "product",
+        "idea",
+        "tool",
+        "service",
+        "launch",
+        "object"
+    ],
+    "slots": [
+        {
+            "name": "bg",
+            "category": "backgrounds",
+            "box": [
+                160,
+                60,
+                480,
+                480
+            ],
+            "fit": "contain",
+            "align": "center",
+            "z": 0,
+            "required": true
+        },
+        {
+            "name": "hero",
+            "category": "objects",
+            "box": [
+                260,
+                140,
+                280,
+                300
+            ],
+            "fit": "contain",
+            "align": "center",
+            "require_tags": [
+                "hero"
+            ],
+            "z": 20,
+            "required": true
+        },
+        {
+            "name": "decor",
+            "category": "decor",
+            "box": [
+                40,
+                30,
+                720,
+                540
+            ],
+            "count": [
+                4,
+                7
+            ],
+            "scatter": true,
+            "avoid": [
+                [
+                    220,
+                    100,
+                    360,
+                    380
+                ]
+            ],
+            "z": 5
+        }
+    ]
+}

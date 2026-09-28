@@ -1,0 +1,162 @@
+{
+    "analytic": [
+        "chart",
+        "data",
+        "growth"
+    ],
+    "app": [
+        "phone",
+        "mobile"
+    ],
+    "automation": [
+        "gear",
+        "process"
+    ],
+    "break": [
+        "coffee"
+    ],
+    "cafe": [
+        "coffee"
+    ],
+    "code": [
+        "laptop",
+        "developer"
+    ],
+    "communication": [
+        "chat",
+        "message"
+    ],
+    "contract": [
+        "document"
+    ],
+    "creative": [
+        "lightbulb",
+        "idea"
+    ],
+    "customer": [
+        "chat",
+        "support",
+        "person"
+    ],
+    "data": [
+        "chart"
+    ],
+    "developer": [
+        "laptop",
+        "code"
+    ],
+    "document": [
+        "paperwork",
+        "report"
+    ],
+    "engineering": [
+        "gear",
+        "laptop"
+    ],
+    "finance": [
+        "chart",
+        "money"
+    ],
+    "green": [
+        "plant",
+        "nature"
+    ],
+    "growth": [
+        "chart",
+        "plant",
+        "rocket"
+    ],
+    "hello": [
+        "welcome",
+        "waving"
+    ],
+    "help": [
+        "chat",
+        "support"
+    ],
+    "idea": [
+        "lightbulb",
+        "creative"
+    ],
+    "innovation": [
+        "lightbulb",
+        "rocket"
+    ],
+    "launch": [
+        "rocket",
+        "startup"
+    ],
+    "marketing": [
+        "chart",
+        "chat",
+        "idea"
+    ],
+    "meeting": [
+        "team",
+        "chat"
+    ],
+    "message": [
+        "chat"
+    ],
+    "mobile": [
+        "phone",
+        "app"
+    ],
+    "money": [
+        "chart",
+        "finance"
+    ],
+    "nature": [
+        "plant",
+        "green"
+    ],
+    "office": [
+        "work",
+        "plant",
+        "laptop"
+    ],
+    "process": [
+        "gear"
+    ],
+    "remote": [
+        "laptop",
+        "work"
+    ],
+    "report": [
+        "document",
+        "chart"
+    ],
+    "sale": [
+        "chart",
+        "growth"
+    ],
+    "setting": [
+        "gear"
+    ],
+    "startup": [
+        "rocket",
+        "launch",
+        "growth"
+    ],
+    "support": [
+        "chat",
+        "help"
+    ],
+    "sustainability": [
+        "plant",
+        "green"
+    ],
+    "team": [
+        "people",
+        "person",
+        "collaboration"
+    ],
+    "welcome": [
+        "hello",
+        "waving"
+    ],
+    "work": [
+        "laptop",
+        "office"
+    ]
+}

@@ -1,0 +1,195 @@
+{
+    "version": 1,
+    "pieces": [
+        {
+            "id": "bg-blob",
+            "label": "Soft blob",
+            "category": "backgrounds",
+            "file": "pieces/backgrounds/blob.svg",
+            "tags": [
+                "blob",
+                "organic",
+                "soft"
+            ],
+            "viewBox": [
+                0,
+                0,
+                600,
+                480
+            ],
+            "size": [
+                600,
+                480
+            ],
+            "z": 0,
+            "anchors": {},
+            "accepts": {},
+            "mounts": {},
+            "slots": [
+                "background",
+                "primary"
+            ],
+            "hash": "d62a7f31d5a5f091dda45806a62c147d9097c70c"
+        },
+        {
+            "id": "char-ava-wave",
+            "label": "Ava waving",
+            "category": "characters",
+            "file": "pieces/characters/ava-wave.svg",
+            "tags": [
+                "person",
+                "woman",
+                "waving",
+                "hello",
+                "welcome",
+                "greeting",
+                "standing"
+            ],
+            "viewBox": [
+                0,
+                0,
+                160,
+                320
+            ],
+            "size": [
+                160,
+                320
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    80,
+                    310
+                ],
+                "hold": [
+                    53,
+                    186
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "outline",
+                "primary",
+                "skin"
+            ],
+            "hash": "b1dbc43da6003369c7966c4b26b8f86ff053a9b5"
+        },
+        {
+            "id": "decor-sparkle",
+            "label": "Sparkle",
+            "category": "decor",
+            "file": "pieces/decor/sparkle.svg",
+            "tags": [
+                "sparkle",
+                "shine",
+                "magic"
+            ],
+            "viewBox": [
+                0,
+                0,
+                24,
+                24
+            ],
+            "size": [
+                24,
+                24
+            ],
+            "z": 5,
+            "anchors": {},
+            "accepts": {},
+            "mounts": {},
+            "slots": [
+                "accent"
+            ],
+            "hash": "ab06c8a2742f5530fd30539cee423937d4da09bb"
+        },
+        {
+            "id": "obj-phone",
+            "label": "Phone",
+            "category": "objects",
+            "file": "pieces/objects/phone.svg",
+            "tags": [
+                "phone",
+                "mobile",
+                "app",
+                "tech",
+                "hero",
+                "handheld"
+            ],
+            "viewBox": [
+                0,
+                0,
+                28,
+                48
+            ],
+            "size": [
+                28,
+                48
+            ],
+            "z": 20,
+            "anchors": {
+                "grip": [
+                    6,
+                    36
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "handheld": "grip"
+            },
+            "slots": [
+                "accent",
+                "background",
+                "neutral",
+                "primary"
+            ],
+            "hash": "26bfacc375f8fa475b005c6bd9c9d313585c5989"
+        },
+        {
+            "id": "obj-plant",
+            "label": "Potted plant",
+            "category": "objects",
+            "file": "pieces/objects/plant.svg",
+            "tags": [
+                "plant",
+                "nature",
+                "growth",
+                "green",
+                "office",
+                "floor"
+            ],
+            "viewBox": [
+                0,
+                0,
+                110,
+                190
+            ],
+            "size": [
+                110,
+                190
+            ],
+            "z": 20,
+            "anchors": {
+                "base": [
+                    55,
+                    190
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "surface": "base"
+            },
+            "slots": [
+                "primary",
+                "secondary"
+            ],
+            "hash": "e1a9970a9034aed09825e3c6c0ce9492ac2ad72e"
+        }
+    ]
+}

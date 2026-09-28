@@ -1,0 +1,75 @@
+{
+    "id": "empty-state",
+    "label": "Empty state",
+    "canvas": [
+        600,
+        450
+    ],
+    "unit": 1,
+    "tags": [
+        "empty",
+        "nothing",
+        "search",
+        "inbox",
+        "error",
+        "none",
+        "missing"
+    ],
+    "slots": [
+        {
+            "name": "bg",
+            "category": "backgrounds",
+            "box": [
+                150,
+                40,
+                300,
+                300
+            ],
+            "fit": "contain",
+            "align": "center",
+            "z": 0,
+            "required": true
+        },
+        {
+            "name": "hero",
+            "category": "objects",
+            "box": [
+                210,
+                90,
+                180,
+                200
+            ],
+            "fit": "contain",
+            "align": "center",
+            "require_tags": [
+                "hero"
+            ],
+            "z": 20,
+            "required": true
+        },
+        {
+            "name": "decor",
+            "category": "decor",
+            "box": [
+                60,
+                20,
+                480,
+                360
+            ],
+            "count": [
+                2,
+                4
+            ],
+            "scatter": true,
+            "avoid": [
+                [
+                    180,
+                    60,
+                    240,
+                    260
+                ]
+            ],
+            "z": 5
+        }
+    ]
+}

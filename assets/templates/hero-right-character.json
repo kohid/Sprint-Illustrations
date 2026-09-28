@@ -1,0 +1,119 @@
+{
+    "id": "hero-right-character",
+    "label": "Hero with a person on the right",
+    "canvas": [
+        800,
+        600
+    ],
+    "unit": 1.25,
+    "tags": [
+        "hero",
+        "person",
+        "welcome",
+        "about",
+        "landing",
+        "work"
+    ],
+    "slots": [
+        {
+            "name": "bg",
+            "category": "backgrounds",
+            "box": [
+                200,
+                30,
+                560,
+                540
+            ],
+            "fit": "contain",
+            "align": "center",
+            "z": 0,
+            "required": true
+        },
+        {
+            "name": "subject",
+            "category": "characters",
+            "box": [
+                370,
+                130,
+                280,
+                440
+            ],
+            "scale": [
+                0.96,
+                1.04
+            ],
+            "flip": true,
+            "z": 30,
+            "required": true
+        },
+        {
+            "name": "prop",
+            "category": "objects",
+            "attach": {
+                "to": "subject",
+                "anchor": "hold"
+            }
+        },
+        {
+            "name": "side",
+            "category": "objects",
+            "box": [
+                160,
+                300,
+                200,
+                270
+            ],
+            "require_tags": [
+                "floor"
+            ],
+            "prefer": [
+                "plant",
+                "chart"
+            ],
+            "z": 20
+        },
+        {
+            "name": "float",
+            "category": "objects",
+            "box": [
+                110,
+                70,
+                220,
+                200
+            ],
+            "align": "center",
+            "require_tags": [
+                "floating"
+            ],
+            "scale": [
+                1.3,
+                1.6
+            ],
+            "z": 25
+        },
+        {
+            "name": "decor",
+            "category": "decor",
+            "box": [
+                20,
+                20,
+                760,
+                560
+            ],
+            "count": [
+                3,
+                5
+            ],
+            "scatter": true,
+            "avoid": [
+                [
+                    370,
+                    130,
+                    280,
+                    440
+                ]
+            ],
+            "z": 5
+        }
+    ]
+}

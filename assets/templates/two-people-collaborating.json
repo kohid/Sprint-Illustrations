@@ -1,0 +1,126 @@
+{
+    "id": "two-people-collaborating",
+    "label": "Two people collaborating",
+    "canvas": [
+        800,
+        600
+    ],
+    "unit": 1.2,
+    "tags": [
+        "team",
+        "collaboration",
+        "people",
+        "meeting",
+        "partnership",
+        "community",
+        "together"
+    ],
+    "slots": [
+        {
+            "name": "bg",
+            "category": "backgrounds",
+            "box": [
+                60,
+                60,
+                680,
+                500
+            ],
+            "fit": "contain",
+            "align": "center",
+            "z": 0,
+            "required": true
+        },
+        {
+            "name": "left",
+            "category": "characters",
+            "box": [
+                110,
+                150,
+                240,
+                420
+            ],
+            "scale": [
+                0.96,
+                1.04
+            ],
+            "z": 30,
+            "required": true
+        },
+        {
+            "name": "left-prop",
+            "category": "objects",
+            "attach": {
+                "to": "left",
+                "anchor": "hold"
+            }
+        },
+        {
+            "name": "right",
+            "category": "characters",
+            "box": [
+                450,
+                150,
+                240,
+                420
+            ],
+            "scale": [
+                0.96,
+                1.04
+            ],
+            "flip": true,
+            "z": 30,
+            "required": true
+        },
+        {
+            "name": "right-prop",
+            "category": "objects",
+            "attach": {
+                "to": "right",
+                "anchor": "hold"
+            }
+        },
+        {
+            "name": "float",
+            "category": "objects",
+            "box": [
+                320,
+                50,
+                160,
+                160
+            ],
+            "align": "center",
+            "require_tags": [
+                "floating"
+            ],
+            "scale": [
+                1.1,
+                1.4
+            ],
+            "z": 25
+        },
+        {
+            "name": "decor",
+            "category": "decor",
+            "box": [
+                20,
+                20,
+                760,
+                560
+            ],
+            "count": [
+                2,
+                4
+            ],
+            "scatter": true,
+            "avoid": [
+                [
+                    110,
+                    150,
+                    580,
+                    420
+                ]
+            ],
+            "z": 5
+        }
+    ]
+}
