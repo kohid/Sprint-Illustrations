@@ -16,6 +16,8 @@ use SprintIllustrations\Cache\SvgCache;
 use SprintIllustrations\Cli\CacheCommand;
 use SprintIllustrations\Cli\Command;
 use SprintIllustrations\Compose\ComposesSvg;
+use SprintIllustrations\Integrations\Elementor\ColorSource;
+use SprintIllustrations\Integrations\Elementor\Sync;
 use SprintIllustrations\Palette\PaletteSettings;
 use SprintIllustrations\Palette\PresetRepository;
 use SprintIllustrations\Settings\SitePalette;
@@ -216,6 +218,7 @@ final class Plugin {
 	 * Register hooks.
 	 */
 	private function register_hooks(): void {
+		( new Sync( $this->site_palette(), new ColorSource() ) )->register();
 		add_action( 'init', [ self::class, 'activate' ] );
 		add_action( self::CRON_HOOK, [ $this, 'collect_garbage' ] );
 
