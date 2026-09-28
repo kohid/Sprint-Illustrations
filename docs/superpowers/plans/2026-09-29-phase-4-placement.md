@@ -1103,3 +1103,16 @@ git commit -m "docs: phase 4 placement in CLAUDE.md; plan execution notes"
 3. In Elementor, search for **Sprint Illustration** in the widget panel, drop it in, and change its controls.
 4. Try `[sprint_illustration keywords="team"]` in any post.
 5. To remove the showcase pages: `wp post delete <id> --force`.
+
+## Execution notes
+
+- **Results on the Local site:** Showcase page 411 at `/sprint-illustrations-showcase/` and Elementor page 412 at `/sprint-illustrations-elementor/`, both published. Checked logged out at 1440 px and 390 px:
+  - 15 and 3 figures.
+  - No error notices, no silent-failure comments, no duplicate IDs, no horizontal overflow.
+  - Every SVG has a title, and the stylesheet loads.
+- **Fixed during review (showcase script only):**
+  - WordPress runs shortcodes inside `<code>`, so the example text rendered a second illustration. The brackets are now written as `&#91;`/`&#93;`.
+  - The Elementor hero is now a real two-column hero section: heading and text on the left (45%), the widget on the right (50%, 100% on mobile), with copy that doesn't depend on layout.
+- `phpcs.xml.dist` gains `<file>blocks</file>` in Task 3, not Task 1, because PHPCS errors on a missing directory.
+- The widget's multi-line `echo` needed its markup in a variable first. A `phpcs:ignore` only covers its own line.
+- **Not automated (needs login):** inserting the block in the editor and the widget in Elementor, and checking that the controls update the preview.

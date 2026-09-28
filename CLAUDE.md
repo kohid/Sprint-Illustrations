@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A WordPress plugin (PHP 8.1+, WP 6.4+) that composes flat, brand-coloured SVG illustrations from a library of SVG "pieces" placed into JSON scene templates. Output is deterministic per seed, sanitized, accessible, and needs no front-end JS.
 
 - Design spec: `docs/superpowers/specs/2026-09-28-sprint-illustrations-design.md`. **§19 (amendments) overrides earlier sections.** §18 lists the build phases (1 core → 2 palette/cache → 3 REST/React builder → 4 block/shortcode/Elementor → 5 AI selector).
-- Phase plans: `docs/superpowers/plans/2026-09-28-phase-1-core.md` (done), `docs/superpowers/plans/2026-09-29-phase-2-palette-cache.md` (spec: `docs/superpowers/specs/2026-09-29-phase-2-palette-cache-design.md`).
+- Phase plans: `docs/superpowers/plans/2026-09-28-phase-1-core.md` (done), `docs/superpowers/plans/2026-09-29-phase-2-palette-cache.md` (done), `docs/superpowers/plans/2026-09-29-phase-4-placement.md` (phase 4 was built before phase 3 at the user's request; specs in `docs/superpowers/specs/`). Phase 3 (REST, saved illustrations CPT, React Builder, Media export) is next.
 - The plugin lives inside a Local (by Flywheel) site (`aberdeen-taxi-knowledge`). Run all commands from the plugin root.
 
 ## Commands
@@ -25,6 +25,8 @@ php bin/contact-sheet.php [--seeds=1,2] [--templates=a,b] [--keywords=x,y] > she
 ```
 
 WP-CLI (in Local's "Open site shell"): `wp sprint-illustrations compose --template=<id> --seed=<n> [--keywords=..] [--palette=site|default|preset:<id>] [--no-cache] [--out=file.svg]`, `wp sprint-illustrations cache stats|purge`, and `wp sprint-illustrations build-manifest [--source] [--target] [--non-interactive]` (defaults to `uploads/sprint-illustrations/inbox` → `uploads/sprint-illustrations`). The admin Test page (Sprint Illustrations menu) renders a contact sheet in WordPress.
+
+Placement: shortcode `[sprint_illustration template="" keywords="" seed="1" palette="site|preset:<id>" title="" decorative="false"]`, block `sprint-illustrations/illustration`, Elementor widget `sprint-illustration` ("Sprint Illustration"). Showcase pages on the Local site: `/sprint-illustrations-showcase/` (blocks + shortcode) and `/sprint-illustrations-elementor/` (widget); the generator script is in the phase 4 plan, Task 5.
 
 Outside Local's site shell (e.g. from an agent's Bash), set the site's env and call the phar directly; `wp.bat` routes through cmd and mangles quoted arguments. The site id is `K0O3LRE-P` (from `%APPDATA%/Local/sites.json`): `PHPRC=/c/Users/Admin/AppData/Roaming/Local/run/K0O3LRE-P/conf/php`, PHP from `%APPDATA%/Local/lightning-services/php-8.2.29+0/bin/win64`, then `php "/c/Program Files (x86)/Local/resources/extraResources/bin/wp-cli/wp-cli.phar" <args>` from `app/public`. The site must be running in Local. Elementor 4.2.4 and Elementor Pro 4.2.3 are installed.
 
@@ -50,6 +52,8 @@ Both `vendor/autoload.php` **and** `vendor-prefixed/autoload.php` must exist; th
 **Elementor.** `Integrations\Elementor\ColorSource` reads Kit `system_colors`/`custom_colors` and V4 colour Variables through Elementor's own classes (Variables only when the `e_variables` + `e_atomic_elements` experiments are active — on this site they are set inactive). `Palette\ElementorMapping` (pure) suggests and applies slot mappings. `Sync` re-applies the stored map on `elementor/document/after_save` for the active Kit and on `_elementor_global_variables` meta changes (Variables fire no Elementor action).
 
 **Settings page.** `Admin\SettingsPage` (Settings API form + `wp_ajax_sprint_illustrations_preview` live stage, uncached) with plain `assets/admin/settings.{css,js}` (no build step). It is the menu's landing page; the Test page is the `sprint-illustrations-test` submenu.
+
+**Placement.** `Render\Renderer` (pure) is the single entry point for every surface: `spec()` normalizes attributes ("" or "auto" template means automatic, "" palette means site), `render( $args, $show_errors )` composes through `Plugin::composer()` (cached), gives each copy IDs `si-<hash8>-<n>`, and wraps in `<figure class="si-illustration si-template-…">`. Every surface passes `current_user_can( 'edit_posts' )` as `$show_errors`: visitors get a silent HTML comment, editors a readable notice. `Integrations\Shortcode`, `Integrations\Block` (`blocks/illustration/`: block.json apiVersion 3, `render.php`, plain-JS `editor.js` with a hand-written `editor.asset.php`, no build step) and `Integrations\Elementor\Widget` (classic `Widget_Base`, no `content_template()`, so the editor preview is rendered on the server) are thin adapters. The front-end stylesheet `assets/front/illustration.css` (handle `sprint-illustrations`) loads only where an illustration renders.
 
 **Piece library.** Author sources in `assets/pieces-src/<category>/` (characters, objects, backgrounds, decor). `Cli\ManifestBuilder` reads `data-si-*` root metadata and `id="anchor-<name>"` marker shapes (resolved through transforms), strips them, sanitizes, and writes `assets/pieces/` + `assets/manifest.json` (both generated but committed). Colour comes only from `slot-<name>`, `slot-<name>-light/-dark`, `slot-stroke-<name>`, `slot-outline` classes; literal colours other than `none`/`transparent` are warnings.
 
