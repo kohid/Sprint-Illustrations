@@ -23,14 +23,16 @@ final class ComposedSvg {
 	/**
 	 * Constructor.
 	 *
-	 * @param string        $markup   Sanitized SVG containing ID_TOKEN placeholders.
-	 * @param SceneSpec     $spec     Spec with template and picks resolved (re-renders identically).
-	 * @param array<string> $warnings Non-fatal issues.
+	 * @param string                                                              $markup   Sanitized SVG containing ID_TOKEN placeholders.
+	 * @param SceneSpec                                                           $spec     Spec with template and picks resolved (re-renders identically).
+	 * @param array<string>                                                       $warnings Non-fatal issues.
+	 * @param array<string, array<array{0: float, 1: float, 2: float, 3: float}>> $boxes Slot => rendered boxes [x, y, w, h] in canvas units.
 	 */
 	public function __construct(
 		public readonly string $markup,
 		public readonly SceneSpec $spec,
 		public readonly array $warnings,
+		public readonly array $boxes = [],
 	) {}
 
 	/**
@@ -58,6 +60,7 @@ final class ComposedSvg {
 			'markup'   => $this->markup,
 			'spec'     => $this->spec->to_array(),
 			'warnings' => $this->warnings,
+			'boxes'    => $this->boxes,
 		];
 	}
 
@@ -72,6 +75,11 @@ final class ComposedSvg {
 			return null;
 		}
 
-		return new self( $data['markup'], SceneSpec::from_array( $data['spec'] ), array_values( array_filter( $data['warnings'], 'is_string' ) ) );
+		return new self(
+			$data['markup'],
+			SceneSpec::from_array( $data['spec'] ),
+			array_values( array_filter( $data['warnings'], 'is_string' ) ),
+			is_array( $data['boxes'] ?? null ) ? $data['boxes'] : []
+		);
 	}
 }

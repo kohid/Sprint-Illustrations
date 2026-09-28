@@ -23,6 +23,26 @@ final class ComposerTest extends TestCase {
 		return $this->services->composer->compose( SceneSpec::from_array( $spec ), $palette ?? Palette::default() );
 	}
 
+	public function test_boxes_describe_each_slot_inside_the_canvas(): void {
+		$result = $this->compose(
+			[
+				'template' => 'fixture-duo',
+				'seed'     => 3,
+			]
+		);
+
+		$this->assertSame( [ 'left', 'left-prop', 'right', 'right-prop' ], array_keys( $result->boxes ) );
+		foreach ( $result->boxes as $slot => $boxes ) {
+			foreach ( $boxes as [ $x, $y, $w, $h ] ) {
+				$this->assertGreaterThan( 0, $w, $slot );
+				$this->assertGreaterThan( 0, $h, $slot );
+				$this->assertGreaterThanOrEqual( -1, $x, $slot );
+				$this->assertLessThanOrEqual( 401, $x + $w, $slot );
+			}
+		}
+		$this->assertEqualsWithDelta( 300, $result->boxes['right'][0][0] + $result->boxes['right'][0][2] / 2, 0.01, 'Right character is centred in its box even when flipped.' );
+	}
+
 	public function test_output_is_valid_accessible_svg(): void {
 		$result = $this->compose(
 			[

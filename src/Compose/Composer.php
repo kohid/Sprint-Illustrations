@@ -81,8 +81,31 @@ final class Composer implements ComposesSvg {
 		return new ComposedSvg(
 			$this->render( $scene, $spec, $palette ),
 			$spec->with_template( $template->id )->with_picks( $scene->picks ),
-			$scene->warnings
+			$scene->warnings,
+			self::boxes( $scene )
 		);
+	}
+
+	/**
+	 * Rendered box of every placement, grouped by slot in template order.
+	 *
+	 * @param ResolvedScene $scene Scene.
+	 * @return array<string, array<array{0: float, 1: float, 2: float, 3: float}>>
+	 */
+	private static function boxes( ResolvedScene $scene ): array {
+		$boxes = [];
+		foreach ( $scene->placements as $placement ) {
+			$boxes[ $placement->slot ][] = [ round( $placement->x, 2 ), round( $placement->y, 2 ), round( $placement->width(), 2 ), round( $placement->height(), 2 ) ];
+		}
+
+		$ordered = [];
+		foreach ( $scene->template->slots as $slot ) {
+			if ( isset( $boxes[ $slot->name ] ) ) {
+				$ordered[ $slot->name ] = $boxes[ $slot->name ];
+			}
+		}
+
+		return $ordered;
 	}
 
 	/**

@@ -19,7 +19,8 @@ final class ComposedSvgTest extends TestCase {
 					'picks'    => [ 'subject' => 'char-stick' ],
 				]
 			),
-			[ 'note' ]
+			[ 'note' ],
+			[ 'left' => [ [ 1.5, 2, 30, 40 ] ] ]
 		);
 
 		$copy = ComposedSvg::from_array( json_decode( (string) json_encode( $svg->to_array() ), true ) );
@@ -27,6 +28,20 @@ final class ComposedSvgTest extends TestCase {
 		$this->assertSame( $svg->markup, $copy->markup );
 		$this->assertSame( $svg->spec->to_array(), $copy->spec->to_array() );
 		$this->assertSame( [ 'note' ], $copy->warnings );
+		$this->assertSame( [ 'left' => [ [ 1.5, 2, 30, 40 ] ] ], $copy->boxes );
+	}
+
+	public function test_boxes_default_to_empty(): void {
+		$this->assertSame(
+			[],
+			ComposedSvg::from_array(
+				[
+					'markup'   => '<svg/>',
+					'spec'     => [],
+					'warnings' => [],
+				]
+			)->boxes
+		);
 	}
 
 	public function test_from_array_rejects_bad_shapes(): void {
