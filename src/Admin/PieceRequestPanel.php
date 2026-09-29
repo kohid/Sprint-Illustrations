@@ -13,13 +13,23 @@ use SprintIllustrations\Library\PieceRequest;
 use SprintIllustrations\Plugin;
 
 /**
- * Form + queue. Claude Code fulfils queued requests through `wp sprint-illustrations requests`.
+ * Form + progress queue. Claude Code draws drafts (WP-CLI); the requester keeps or discards them here.
  */
 final class PieceRequestPanel {
 
 	public const CREATE_ACTION = 'sprint_illustrations_piece_request';
 
 	public const CANCEL_ACTION = 'sprint_illustrations_piece_request_cancel';
+
+	public const KEEP_ACTION = 'sprint_illustrations_piece_request_keep';
+
+	public const DISCARD_ACTION = 'sprint_illustrations_piece_request_discard';
+
+	public const RETRY_ACTION = 'sprint_illustrations_piece_request_retry';
+
+	public const STATES_ACTION = 'sprint_illustrations_request_states';
+
+	private const ACTIVE = [ 'queued', 'drawing', 'review' ];
 
 	private const RECENT = 5;
 
@@ -36,6 +46,10 @@ final class PieceRequestPanel {
 	public function register(): void {
 		add_action( 'admin_post_' . self::CREATE_ACTION, [ $this, 'handle_create' ] );
 		add_action( 'admin_post_' . self::CANCEL_ACTION, [ $this, 'handle_cancel' ] );
+		add_action( 'admin_post_' . self::KEEP_ACTION, [ $this, 'handle_keep' ] );
+		add_action( 'admin_post_' . self::DISCARD_ACTION, [ $this, 'handle_discard' ] );
+		add_action( 'admin_post_' . self::RETRY_ACTION, [ $this, 'handle_retry' ] );
+		add_action( 'wp_ajax_' . self::STATES_ACTION, [ $this, 'ajax_states' ] );
 	}
 
 	/**
@@ -53,6 +67,20 @@ final class PieceRequestPanel {
 	}
 
 	/**
+	 * Current states of active requests (for live updates).
+	 *
+	 * @return array<int, string>
+	 */
+	public function states(): array {
+		$states = [];
+		foreach ( $this->plugin->piece_requests()->list( self::ACTIVE, 50 ) as $row ) {
+			$states[ $row['id'] ] = $row['state'];
+		}
+
+		return $states;
+	}
+
+	/**
 	 * Render the panel.
 	 *
 	 * @param string $tab Current Library tab (preselects the category).
@@ -63,12 +91,54 @@ final class PieceRequestPanel {
 		}
 
 		$repo     = $this->plugin->piece_requests();
-		$queued   = $repo->list( 'queued', 50 );
+		$active   = $repo->list( self::ACTIVE, 50 );
 		$done     = $repo->list( 'done', self::RECENT );
-		$declined = $repo->list( 'declined', self::RECENT );
+		$closed   = $repo->list( [ 'discarded', 'declined' ], self::RECENT );
 		$selected = isset( $this->categories()[ $tab ] ) ? $tab : 'objects';
 
-		echo '<section class="si-panel si-requests" aria-labelledby="si-requests-title">';
+		printf(
+			'<section class="si-panel si-requests" aria-labelledby="si-requests-title" data-si-requests="%s">',
+			esc_attr( (string) wp_json_encode( (object) $this->states() ) )
+		);
+		$this->render_form( $selected );
+
+		echo '<div class="si-requests__queue">';
+		/* translators: %d: number of requests in progress. */
+		echo '<h3 class="si-requests__heading">' . esc_html( sprintf( __( 'In progress (%d)', 'sprint-illustrations' ), count( $active ) ) ) . '</h3>';
+		if ( ! $active ) {
+			echo '<p class="si-requests__empty">' . esc_html__( 'Nothing in progress. Add a request to get started.', 'sprint-illustrations' ) . '</p>';
+		} else {
+			echo '<ul class="si-requests__list">';
+			foreach ( $active as $row ) {
+				$this->render_active( $row );
+			}
+			echo '</ul>';
+		}
+
+		if ( $done ) {
+			echo '<h3 class="si-requests__heading">' . esc_html__( 'Recently added', 'sprint-illustrations' ) . '</h3><ul class="si-requests__list si-requests__list--done">';
+			foreach ( $done as $row ) {
+				$this->render_finished( $row );
+			}
+			echo '</ul>';
+		}
+
+		if ( $closed ) {
+			echo '<h3 class="si-requests__heading">' . esc_html__( 'Discarded or declined', 'sprint-illustrations' ) . '</h3><ul class="si-requests__list si-requests__list--closed">';
+			foreach ( $closed as $row ) {
+				$this->render_finished( $row );
+			}
+			echo '</ul>';
+		}
+		echo '</div></section>';
+	}
+
+	/**
+	 * The request form.
+	 *
+	 * @param string $selected Preselected category.
+	 */
+	private function render_form( string $selected ): void {
 		echo '<div class="si-requests__form">';
 		echo '<h2 class="si-panel__title" id="si-requests-title">' . esc_html__( 'Request a piece', 'sprint-illustrations' ) . '</h2>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
@@ -90,91 +160,248 @@ final class PieceRequestPanel {
 		);
 
 		echo '<p class="si-requests__actions"><button type="submit" class="button button-primary">' . esc_html__( 'Add request', 'sprint-illustrations' ) . '</button></p>';
-		echo '<p class="si-requests__hint">' . esc_html__( 'Then ask Claude Code: “make the requested pieces”. New pieces appear here and in the Builder.', 'sprint-illustrations' ) . '</p>';
+		echo '<p class="si-requests__hint">' . esc_html__( 'Then ask Claude Code: “make the requested pieces”. You’ll see each piece here before it joins the library.', 'sprint-illustrations' ) . '</p>';
 		echo '</form></div>';
-
-		echo '<div class="si-requests__queue">';
-		/* translators: %d: number of queued requests. */
-		$this->render_list( sprintf( __( 'Waiting (%d)', 'sprint-illustrations' ), count( $queued ) ), $queued, 'queued', __( 'No requests waiting.', 'sprint-illustrations' ) );
-		if ( $done ) {
-			$this->render_list( __( 'Recently added', 'sprint-illustrations' ), $done, 'done', '' );
-		}
-		if ( $declined ) {
-			$this->render_list( __( 'Declined', 'sprint-illustrations' ), $declined, 'declined', '' );
-		}
-		echo '</div></section>';
 	}
 
 	/**
-	 * One list of requests.
+	 * A request that's queued, being drawn, or waiting for review.
 	 *
-	 * @param string                           $heading Heading.
-	 * @param array<int, array<string, mixed>> $rows    Requests.
-	 * @param string                           $state   State.
-	 * @param string                           $none    Text when the list is empty.
+	 * @param array<string, mixed> $row Request.
 	 */
-	private function render_list( string $heading, array $rows, string $state, string $none ): void {
-		echo '<h3 class="si-requests__heading">' . esc_html( $heading ) . '</h3>';
+	private function render_active( array $row ): void {
+		$state = (string) $row['state'];
 
-		if ( ! $rows ) {
-			echo '<p class="si-requests__empty">' . esc_html( $none ) . '</p>';
-			return;
+		printf( '<li class="si-request is-%s">', esc_attr( $state ) );
+		$this->render_head( $row );
+		echo '<span class="si-request__meta">' . esc_html( $this->requested_by( $row ) );
+		if ( 'queued' === $state && $this->can_act( $row ) ) {
+			echo ' · ' . $this->action_link( self::CANCEL_ACTION, $row, __( 'Cancel', 'sprint-illustrations' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in action_link().
+		}
+		echo '</span>';
+
+		if ( '' !== $row['feedback'] ) {
+			/* translators: %s: feedback. */
+			echo '<span class="si-request__note">' . esc_html( sprintf( __( 'Your feedback: %s', 'sprint-illustrations' ), $row['feedback'] ) ) . '</span>';
 		}
 
-		echo '<ul class="si-requests__list si-requests__list--' . esc_attr( $state ) . '">';
-		foreach ( $rows as $row ) {
-			$author = get_userdata( (int) $row['author'] );
-			$when   = human_time_diff( (int) strtotime( $row['date'] . ' UTC' ) );
+		$this->render_track( $state );
 
-			echo '<li class="si-request">';
-			echo '<span class="si-request__category">' . esc_html( $this->categories()[ $row['category'] ] ?? $row['category'] ) . '</span>';
-			echo '<span class="si-request__text">' . esc_html( $row['description'] ) . '</span>';
-			echo '<span class="si-request__meta">';
-			/* translators: 1: user name, 2: time ago. */
-			echo esc_html( sprintf( __( 'by %1$s, %2$s ago', 'sprint-illustrations' ), $author ? $author->display_name : __( 'someone', 'sprint-illustrations' ), $when ) );
+		$status = [
+			'queued'  => __( 'Waiting for you to ask Claude Code: “make the requested pieces”.', 'sprint-illustrations' ),
+			'drawing' => __( 'Claude Code is drawing this…', 'sprint-illustrations' ),
+			'review'  => __( 'Ready for review. Keep it to add it to the library, or discard it.', 'sprint-illustrations' ),
+		];
+		echo '<p class="si-request__status" role="status">' . esc_html( $status[ $state ] ?? '' ) . '</p>';
 
-			if ( 'queued' === $state && $this->can_cancel( $row ) ) {
-				printf(
-					' · <a href="%1$s">%2$s<span class="screen-reader-text"> %3$s</span></a>',
-					esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=' . self::CANCEL_ACTION . '&request=' . (int) $row['id'] ), self::CANCEL_ACTION . '_' . (int) $row['id'] ) ),
-					esc_html__( 'Cancel', 'sprint-illustrations' ),
-					esc_html( $row['description'] )
-				);
-			}
-			if ( 'done' === $state && '' !== $row['piece'] ) {
-				printf(
-					' · <a href="%1$s">%2$s</a>',
-					esc_url(
-						add_query_arg(
-							[
-								'page'  => Menu::LIBRARY_SLUG,
-								'tab'   => $row['category'],
-								'piece' => $row['piece'],
-							],
-							admin_url( 'admin.php' )
-						) . '#piece-' . rawurlencode( $row['piece'] )
-					),
-					esc_html__( 'View piece', 'sprint-illustrations' )
-				);
-			}
-			echo '</span>';
-
-			if ( 'declined' === $state && '' !== $row['note'] ) {
-				echo '<span class="si-request__note">' . esc_html( $row['note'] ) . '</span>';
-			}
-			echo '</li>';
-		}//end foreach
-		echo '</ul>';
+		if ( 'review' === $state ) {
+			$this->render_review( $row );
+		}
+		echo '</li>';
 	}
 
 	/**
-	 * Whether the current user may cancel a request.
+	 * Previews and Keep / Discard.
+	 *
+	 * @param array<string, mixed> $row Request.
+	 */
+	private function render_review( array $row ): void {
+		$preview = $this->plugin->piece_drafts()->preview( $row );
+
+		echo '<div class="si-review">';
+		if ( '' !== $preview['piece'] ) {
+			echo '<figure class="si-review__art si-review__art--piece"><div class="si-review__canvas">' . $preview['piece'] . '</div><figcaption>' . esc_html__( 'The piece', 'sprint-illustrations' ) . '</figcaption></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitizer output.
+		}
+		if ( '' !== $preview['scene'] ) {
+			echo '<figure class="si-review__art si-review__art--scene"><div class="si-review__canvas">' . $preview['scene'] . '</div><figcaption>' . esc_html__( 'In a scene', 'sprint-illustrations' ) . '</figcaption></figure>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Composer output.
+		}
+		if ( '' === $preview['piece'] ) {
+			echo '<p class="si-request__note">' . esc_html__( 'The draft preview is missing. Ask Claude Code to draw it again.', 'sprint-illustrations' ) . '</p>';
+		}
+		echo '</div>';
+
+		if ( $this->can_act( $row ) ) {
+			echo '<div class="si-review__actions">';
+			$this->render_button( self::KEEP_ACTION, $row, __( 'Keep', 'sprint-illustrations' ), 'button button-primary', '' !== $preview['piece'] );
+			$this->render_button( self::DISCARD_ACTION, $row, __( 'Discard', 'sprint-illustrations' ), 'button', true );
+			echo '</div>';
+		}
+	}
+
+	/**
+	 * Added, discarded or declined.
+	 *
+	 * @param array<string, mixed> $row Request.
+	 */
+	private function render_finished( array $row ): void {
+		$state   = (string) $row['state'];
+		$changed = '' !== $row['changed'] ? (string) $row['changed'] : (string) $row['date'];
+		$labels  = [
+			/* translators: %s: time ago. */
+			'done'      => __( 'Added %s ago', 'sprint-illustrations' ),
+			/* translators: %s: time ago. */
+			'discarded' => __( 'Discarded %s ago', 'sprint-illustrations' ),
+			/* translators: %s: time ago. */
+			'declined'  => __( 'Declined %s ago', 'sprint-illustrations' ),
+		];
+
+		printf( '<li class="si-request is-%s">', esc_attr( $state ) );
+		$this->render_head( $row );
+		echo '<span class="si-request__meta">' . esc_html( $this->requested_by( $row ) . ' · ' . sprintf( $labels[ $state ] ?? '%s', $this->ago( $changed ) ) );
+
+		if ( 'done' === $state && '' !== $row['piece'] ) {
+			$url = add_query_arg(
+				[
+					'page'  => Menu::LIBRARY_SLUG,
+					'tab'   => $row['category'],
+					'piece' => $row['piece'],
+				],
+				admin_url( 'admin.php' )
+			) . '#piece-' . rawurlencode( (string) $row['piece'] );
+			printf( ' · <a href="%1$s">%2$s</a>', esc_url( $url ), esc_html__( 'View piece', 'sprint-illustrations' ) );
+		}
+		echo '</span>';
+
+		if ( 'declined' === $state && '' !== $row['note'] ) {
+			echo '<span class="si-request__note">' . esc_html( (string) $row['note'] ) . '</span>';
+		}
+
+		if ( 'done' !== $state && $this->can_act( $row ) ) {
+			$this->render_retry( $row );
+		}
+		echo '</li>';
+	}
+
+	/**
+	 * Try again form with optional feedback.
+	 *
+	 * @param array<string, mixed> $row Request.
+	 */
+	private function render_retry( array $row ): void {
+		$id = (int) $row['id'];
+
+		echo '<form class="si-retry" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="' . esc_attr( self::RETRY_ACTION ) . '"><input type="hidden" name="request" value="' . esc_attr( (string) $id ) . '">';
+		wp_nonce_field( self::RETRY_ACTION . '_' . $id );
+		echo '<label class="screen-reader-text" for="si-retry-' . esc_attr( (string) $id ) . '">' . esc_html__( 'What should change?', 'sprint-illustrations' ) . '</label>';
+		printf(
+			'<input type="text" id="si-retry-%1$d" name="feedback" maxlength="%2$d" placeholder="%3$s">',
+			(int) $id,
+			(int) PieceRequest::MAX_LENGTH,
+			esc_attr__( 'What should change? (optional)', 'sprint-illustrations' )
+		);
+		echo '<button type="submit" class="button">' . esc_html__( 'Try again', 'sprint-illustrations' ) . '</button></form>';
+	}
+
+	/**
+	 * Category chip + description.
+	 *
+	 * @param array<string, mixed> $row Request.
+	 */
+	private function render_head( array $row ): void {
+		echo '<span class="si-request__category">' . esc_html( $this->categories()[ $row['category'] ] ?? (string) $row['category'] ) . '</span>';
+		echo '<span class="si-request__text">' . esc_html( (string) $row['description'] ) . '</span>';
+	}
+
+	/**
+	 * Four-step progress track.
+	 *
+	 * @param string $state Current state.
+	 */
+	private function render_track( string $state ): void {
+		$steps   = [
+			'queued'  => __( 'Requested', 'sprint-illustrations' ),
+			'drawing' => __( 'Drawing', 'sprint-illustrations' ),
+			'review'  => __( 'Ready for review', 'sprint-illustrations' ),
+			'done'    => __( 'Added', 'sprint-illustrations' ),
+		];
+		$current = (int) array_search( $state, array_keys( $steps ), true );
+
+		echo '<ol class="si-track" aria-label="' . esc_attr__( 'Progress', 'sprint-illustrations' ) . '">';
+		foreach ( array_values( $steps ) as $i => $label ) {
+			$class = '';
+			if ( $i < $current ) {
+				$class = 'is-done';
+			} elseif ( $i === $current ) {
+				$class = 'is-current';
+			}
+			printf( '<li class="si-track__step %1$s"%2$s>%3$s</li>', esc_attr( $class ), $i === $current ? ' aria-current="step"' : '', esc_html( $label ) );
+		}
+		echo '</ol>';
+	}
+
+	/**
+	 * POST button for a request action.
+	 *
+	 * @param string               $action  Action.
+	 * @param array<string, mixed> $row     Request.
+	 * @param string               $label   Label.
+	 * @param string               $classes Button classes.
+	 * @param bool                 $enabled Enabled.
+	 */
+	private function render_button( string $action, array $row, string $label, string $classes, bool $enabled ): void {
+		$id = (int) $row['id'];
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="' . esc_attr( $action ) . '"><input type="hidden" name="request" value="' . esc_attr( (string) $id ) . '">';
+		wp_nonce_field( $action . '_' . $id );
+		printf(
+			'<button type="submit" class="%1$s"%2$s>%3$s<span class="screen-reader-text"> %4$s</span></button></form>',
+			esc_attr( $classes ),
+			$enabled ? '' : ' disabled',
+			esc_html( $label ),
+			esc_html( (string) $row['description'] )
+		);
+	}
+
+	/**
+	 * Nonced GET link for a request action.
+	 *
+	 * @param string               $action Action.
+	 * @param array<string, mixed> $row    Request.
+	 * @param string               $label  Label.
+	 * @return string
+	 */
+	private function action_link( string $action, array $row, string $label ): string {
+		return sprintf(
+			'<a href="%1$s">%2$s<span class="screen-reader-text"> %3$s</span></a>',
+			esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=' . $action . '&request=' . (int) $row['id'] ), $action . '_' . (int) $row['id'] ) ),
+			esc_html( $label ),
+			esc_html( (string) $row['description'] )
+		);
+	}
+
+	/**
+	 * "Requested by <name> <time> ago".
+	 *
+	 * @param array<string, mixed> $row Request.
+	 * @return string
+	 */
+	private function requested_by( array $row ): string {
+		$author = get_userdata( (int) $row['author'] );
+
+		/* translators: 1: user name, 2: time ago. */
+		return sprintf( __( 'Requested by %1$s %2$s ago', 'sprint-illustrations' ), $author ? $author->display_name : __( 'someone', 'sprint-illustrations' ), $this->ago( (string) $row['date'] ) );
+	}
+
+	/**
+	 * Human time since a GMT datetime.
+	 *
+	 * @param string $gmt Y-m-d H:i:s (GMT).
+	 * @return string
+	 */
+	private function ago( string $gmt ): string {
+		return human_time_diff( (int) strtotime( $gmt . ' UTC' ) );
+	}
+
+	/**
+	 * Whether the current user may act on a request (requester or admin).
 	 *
 	 * @param array<string, mixed> $row Request.
 	 * @return bool
 	 */
-	private function can_cancel( array $row ): bool {
-		return current_user_can( 'manage_options' ) || get_current_user_id() === (int) $row['author'];
+	private function can_act( array $row ): bool {
+		return current_user_can( 'manage_options' ) || ( current_user_can( 'edit_posts' ) && get_current_user_id() === (int) $row['author'] );
 	}
 
 	/**
@@ -204,40 +431,115 @@ final class PieceRequestPanel {
 	 * Admin-post handler: cancel a queued request.
 	 */
 	public function handle_cancel(): void {
-		$id = isset( $_GET['request'] ) ? absint( $_GET['request'] ) : 0;
-		check_admin_referer( self::CANCEL_ACTION . '_' . $id );
+		$request = $this->authorized( self::CANCEL_ACTION, 'GET' );
+		$done    = $this->plugin->piece_requests()->cancel( (int) $request['id'] );
 
-		$repo    = $this->plugin->piece_requests();
-		$request = $repo->get( $id );
-
-		if ( null === $request || ! current_user_can( 'edit_posts' ) || ! $this->can_cancel( $request ) ) {
-			wp_die( esc_html__( 'You do not have permission to do that.', 'sprint-illustrations' ), 403 );
-		}
-
-		Notices::add_for_user(
-			get_current_user_id(),
-			$repo->cancel( $id ) ? __( 'Request cancelled.', 'sprint-illustrations' ) : __( 'That request was already handled.', 'sprint-illustrations' ),
-			'info'
-		);
-
-		$this->back( $request['category'] );
+		Notices::add_for_user( get_current_user_id(), $done ? __( 'Request cancelled.', 'sprint-illustrations' ) : __( 'That request is already being handled.', 'sprint-illustrations' ), 'info' );
+		$this->back( (string) $request['category'] );
 	}
 
 	/**
-	 * Redirect to the Library tab.
-	 *
-	 * @param string $tab Tab.
+	 * Admin-post handler: keep a draft (it joins the library).
 	 */
-	private function back( string $tab ): void {
-		wp_safe_redirect(
-			add_query_arg(
-				[
-					'page' => Menu::LIBRARY_SLUG,
-					'tab'  => isset( $this->categories()[ $tab ] ) ? $tab : 'characters',
-				],
-				admin_url( 'admin.php' )
-			)
-		);
+	public function handle_keep(): void {
+		$request = $this->authorized( self::KEEP_ACTION, 'POST' );
+
+		if ( 'review' !== $request['state'] ) {
+			Notices::add_for_user( get_current_user_id(), __( 'That request is not waiting for review.', 'sprint-illustrations' ), 'info' );
+			$this->back( (string) $request['category'] );
+		}
+
+		$result = $this->plugin->piece_drafts()->keep( $request );
+		if ( ! $result['ok'] ) {
+			Notices::add_for_user( get_current_user_id(), implode( ' ', $result['messages'] ), 'error' );
+			$this->back( (string) $request['category'] );
+		}
+
+		$this->plugin->piece_requests()->keep( (int) $request['id'], $result['piece'] );
+		Notices::add_for_user( get_current_user_id(), __( 'Kept. The piece is now in the library and the Builder.', 'sprint-illustrations' ), 'success' );
+		$this->back( (string) $request['category'], $result['piece'] );
+	}
+
+	/**
+	 * Admin-post handler: discard a draft.
+	 */
+	public function handle_discard(): void {
+		$request = $this->authorized( self::DISCARD_ACTION, 'POST' );
+
+		if ( 'review' === $request['state'] ) {
+			$this->plugin->piece_drafts()->discard( $request );
+			$this->plugin->piece_requests()->discard( (int) $request['id'] );
+			Notices::add_for_user( get_current_user_id(), __( 'Discarded. Use Try again to ask for a new version.', 'sprint-illustrations' ), 'info' );
+		}
+
+		$this->back( (string) $request['category'] );
+	}
+
+	/**
+	 * Admin-post handler: send a discarded or declined request back to the queue.
+	 */
+	public function handle_retry(): void {
+		$request  = $this->authorized( self::RETRY_ACTION, 'POST' );
+		$feedback = isset( $_POST['feedback'] ) ? sanitize_text_field( wp_unslash( $_POST['feedback'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified in authorized().
+
+		if ( $this->plugin->piece_requests()->retry( (int) $request['id'], $feedback ) ) {
+			Notices::add_for_user( get_current_user_id(), __( 'Back in the queue. Ask Claude Code to “make the requested pieces”.', 'sprint-illustrations' ), 'success' );
+		}
+
+		$this->back( (string) $request['category'] );
+	}
+
+	/**
+	 * AJAX: current states for live updates.
+	 */
+	public function ajax_states(): void {
+		check_ajax_referer( self::STATES_ACTION, 'nonce' );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( null, 403 );
+		}
+
+		wp_send_json_success( (object) $this->states() );
+	}
+
+	/**
+	 * Nonce + permission check for a per-request action; returns the request or dies.
+	 *
+	 * @param string $action Action.
+	 * @param string $method GET or POST.
+	 * @return array<string, mixed>
+	 */
+	private function authorized( string $action, string $method ): array {
+		// phpcs:disable WordPress.Security.NonceVerification -- Verified just below.
+		$source = 'GET' === $method ? $_GET : $_POST;
+		$id     = isset( $source['request'] ) ? absint( $source['request'] ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification
+		check_admin_referer( $action . '_' . $id );
+
+		$request = $this->plugin->piece_requests()->get( $id );
+		if ( null === $request || ! $this->can_act( $request ) ) {
+			wp_die( esc_html__( 'You do not have permission to do that.', 'sprint-illustrations' ), 403 );
+		}
+
+		return $request;
+	}
+
+	/**
+	 * Redirect to the Library tab (optionally highlighting a piece).
+	 *
+	 * @param string $tab   Tab.
+	 * @param string $piece Piece to highlight.
+	 */
+	private function back( string $tab, string $piece = '' ): void {
+		$args = [
+			'page' => Menu::LIBRARY_SLUG,
+			'tab'  => isset( $this->categories()[ $tab ] ) ? $tab : 'characters',
+		];
+		if ( '' !== $piece ) {
+			$args['piece'] = $piece;
+		}
+
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) . ( '' !== $piece ? '#piece-' . rawurlencode( $piece ) : '' ) );
 		exit;
 	}
 }

@@ -54,7 +54,7 @@
 .si-request:first-child{border-top:0;padding-top:0}
 .si-request__category{grid-row:span 2;padding:1px 8px;border-radius:10px;background:#f0f0f1;color:#50575e;font-size:11px;line-height:18px;white-space:nowrap}
 .si-requests__list--done .si-request__category{background:#edfaef;color:#00650c}
-.si-requests__list--declined .si-request__category{background:#fcf0f1;color:#8a2424}
+
 .si-request__text{color:#1d2327}
 .si-request__meta{color:#646970;font-size:12px}
 .si-request__note{grid-column:2;color:#50575e;font-size:12px;font-style:italic}
@@ -65,3 +65,31 @@
 .si-card.is-highlighted{border-color:#2271b1;box-shadow:0 0 0 2px #2271b1}
 @media (prefers-reduced-motion:no-preference){.si-card.is-highlighted{animation:si-card-in .6s ease-out}}
 @keyframes si-card-in{from{box-shadow:0 0 0 8px rgba(34,113,177,.25)}to{box-shadow:0 0 0 2px #2271b1}}
+
+/* Request progress: Requested → Drawing → Ready for review → Added. */
+.si-request__status{grid-column:2;margin:6px 0 0;color:#50575e;font-size:12px}
+.is-drawing .si-request__status{color:#2271b1}
+.si-track{grid-column:2;display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 0;padding:0;list-style:none;counter-reset:si-step}
+.si-track__step{position:relative;margin:0;padding:2px 10px 2px 22px;border-radius:10px;background:#f0f0f1;color:#646970;font-size:11px;line-height:16px;counter-increment:si-step}
+.si-track__step::before{content:counter(si-step);position:absolute;left:4px;top:2px;width:14px;height:14px;border-radius:50%;background:#dcdcde;color:#50575e;font-size:9px;line-height:14px;text-align:center}
+.si-track__step.is-done{background:#edfaef;color:#00650c}
+.si-track__step.is-done::before{content:"✓";background:#00a32a;color:#fff}
+.si-track__step.is-current{background:#2271b1;color:#fff}
+.si-track__step.is-current::before{background:#fff;color:#2271b1}
+@media (prefers-reduced-motion:no-preference){.is-drawing .si-track__step.is-current{animation:si-pulse 1.6s ease-in-out infinite}}
+@keyframes si-pulse{50%{box-shadow:0 0 0 4px rgba(34,113,177,.2)}}
+
+/* Review: the piece and a sample scene, then Keep / Discard. */
+.si-review{grid-column:2;display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 0}
+.si-review__art{margin:0;flex:1 1 160px;max-width:260px}
+.si-review__art--piece{flex-basis:140px;max-width:180px}
+.si-review__canvas{aspect-ratio:4/3;display:grid;place-items:center;padding:10px;overflow:hidden;border:1px solid #dcdcde;border-radius:4px;background:#f6f7f7 radial-gradient(#dcdcde 1px,transparent 1.5px) 0 0/14px 14px}
+.si-review__art--piece .si-review__canvas{aspect-ratio:1}
+.si-review__art--scene .si-review__canvas{padding:0}
+.si-review__canvas svg{display:block;width:100%;height:100%}
+.si-review__art figcaption{margin-top:4px;color:#646970;font-size:11px}
+.si-review__actions{grid-column:2;display:flex;gap:8px;margin:10px 0 2px}
+.si-review__actions form{margin:0}
+.si-retry{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.si-retry input[type=text]{flex:1 1 220px;min-width:0}
+.si-requests__list--closed .si-request__category{background:#fcf0f1;color:#8a2424}

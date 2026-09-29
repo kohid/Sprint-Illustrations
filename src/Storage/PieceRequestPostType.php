@@ -24,6 +24,12 @@ final class PieceRequestPostType {
 
 	public const META_NOTE = '_si_note';
 
+	public const META_DRAFT = '_si_draft';
+
+	public const META_FEEDBACK = '_si_feedback';
+
+	public const META_CHANGED = '_si_changed';
+
 	/**
 	 * Register hooks.
 	 */

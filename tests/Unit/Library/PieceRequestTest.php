@@ -27,6 +27,37 @@ final class PieceRequestTest extends TestCase {
 	}
 
 	public function test_states(): void {
-		$this->assertSame( [ 'queued', 'done', 'declined' ], PieceRequest::STATES );
+		$this->assertSame( [ 'queued', 'drawing', 'review', 'done', 'discarded', 'declined' ], PieceRequest::STATES );
+	}
+
+	public function test_transitions(): void {
+		$this->assertTrue( PieceRequest::can_move( 'queued', 'drawing' ) );
+		$this->assertTrue( PieceRequest::can_move( 'queued', 'review' ) );
+		$this->assertTrue( PieceRequest::can_move( 'drawing', 'review' ) );
+		$this->assertTrue( PieceRequest::can_move( 'drawing', 'queued' ) );
+		$this->assertTrue( PieceRequest::can_move( 'review', 'done' ) );
+		$this->assertTrue( PieceRequest::can_move( 'review', 'discarded' ) );
+		$this->assertTrue( PieceRequest::can_move( 'discarded', 'queued' ) );
+		$this->assertTrue( PieceRequest::can_move( 'declined', 'queued' ) );
+
+		$this->assertFalse( PieceRequest::can_move( 'queued', 'done' ) );
+		$this->assertFalse( PieceRequest::can_move( 'review', 'queued' ) );
+		$this->assertFalse( PieceRequest::can_move( 'done', 'queued' ) );
+		$this->assertFalse( PieceRequest::can_move( 'done', 'discarded' ) );
+		$this->assertFalse( PieceRequest::can_move( 'nope', 'queued' ) );
+	}
+
+	public function test_sample_scene_per_category(): void {
+		$this->assertSame(
+			[
+				'template' => 'hero-left-character',
+				'picks'    => [ 'subject' => 'char-x' ],
+			],
+			PieceRequest::sample( 'characters', 'char-x' )
+		);
+		$this->assertSame( [ 'hero' => 'obj-x' ], PieceRequest::sample( 'objects', 'obj-x' )['picks'] );
+		$this->assertSame( [ 'bg' => 'bg-x' ], PieceRequest::sample( 'backgrounds', 'bg-x' )['picks'] );
+		$this->assertSame( [ 'decor' => [ 'decor-x' ] ], PieceRequest::sample( 'decor', 'decor-x' )['picks'] );
+		$this->assertSame( 'centered-object-with-decor', PieceRequest::sample( 'decor', 'decor-x' )['template'] );
 	}
 }

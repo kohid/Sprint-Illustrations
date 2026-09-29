@@ -80,16 +80,16 @@ Both `vendor/autoload.php` **and** `vendor-prefixed/autoload.php` must exist; th
 4. Apply with `wp sprint-illustrations apply <id> --template=… --keywords="a, b" --title="…" --user=<admin>`, which updates illustration block/widget `--index` (default 1). Add `--insert=top|bottom` for block pages with no illustration yet, and `--dry-run` to preview. Omitted `--keywords`/`--title`/`--seed` keep current values, and every save keeps a revision. Or use `wp sprint-illustrations save --name=… --template=… …` for a reusable saved illustration plus its shortcode.
 Validation is `Selection\Suggestion` (strict: unknown tags and templates are errors, not guesses); page edits are `Cli\PlacementEditor` (pure). Elementor pages are saved through Elementor's document API, and `--insert` isn't supported there.
 
-**Piece requests (Claude Code draws new pieces).** Editors queue requests on the Library page (`Admin\PieceRequestPanel`; private post type `si_piece_request` via `Storage\PieceRequestRepository`; pure rules in `Library\PieceRequest`). When the owner says "make the requested pieces":
-1. `wp sprint-illustrations requests list` (add `--format=json` for details).
-2. Draw each piece at `wp-content/uploads/sprint-illustrations/inbox/<category>/<name>.svg`, following `docs/importing-pieces.md` and the starter pack's style:
+**Piece requests (Claude Code draws, the requester keeps or discards).** Editors queue requests on the Library page (`Admin\PieceRequestPanel`; private post type `si_piece_request` via `Storage\PieceRequestRepository`; pure rules and transitions in `Library\PieceRequest`). The states are `queued`, `drawing`, `review`, `done`, `discarded` and `declined`, and the page shows a Requested → Drawing → Ready for review → Added track. It live-updates through `assets/admin/library.js` while anything is queued or drawing. **Nothing joins the library until the requester clicks Keep**: drafts live in `uploads/sprint-illustrations/drafts/` (`Storage\PieceDrafts`). Keep copies the draft into `inbox/` and rebuilds the site manifest in PHP; Discard deletes it; Try again re-queues with feedback. When the owner says "make the requested pieces":
+1. `wp sprint-illustrations requests list` (add `--format=json` for details). Read any `feedback` left from an earlier Try again.
+2. `wp sprint-illustrations requests start <id>`, so the page shows "Drawing". Then draw the SVG to a scratch file whose name becomes the piece name (`taxi.svg` becomes `obj-taxi`), following `docs/importing-pieces.md` and the starter pack's style:
    - Flat shapes, colour **only** from slot classes (no literal colours), and `data-si-label`/`data-si-tags` (single, singular, lower-case tags).
    - Real-world scale: a standing adult is about 310 units tall.
    - Characters: `anchor-ground`, `anchor-hold`, `data-si-accepts`, and a person name as the first part of the file name.
    - Objects: `data-si-mounts` plus an `anchor-grip` or `anchor-base`. Add `hero` to tag big centrepiece objects and `floor` for standing props.
-3. Run `wp sprint-illustrations build-manifest --non-interactive`. It must report **zero warnings**.
-4. Render it with `wp sprint-illustrations compose --template=<fitting> --keywords=<its tag> --no-cache --out=…` and look at the result.
-5. Run `wp sprint-illustrations requests done <id> --piece=<id>`, or `requests decline <id> --note="why + what to ask instead"`.
+3. `wp sprint-illustrations requests draft <id> --file=<svg>` builds the draft. It requires **zero warnings** and a name no piece or other draft uses. The request becomes "Ready for review", with the piece and a sample scene shown.
+4. Look at the result: render the SVG, or use `compose --no-cache --out=…` with the draft once kept. The requester decides in the Library.
+5. `wp sprint-illustrations requests decline <id> --note="why + what to ask instead"` is for things the flat style can't do. To keep processing requests while the session is open, the owner can run `/loop make the requested pieces`.
 6. `wp sprint-illustrations piece remove <id>` deletes a custom piece; bundled pieces are refused. Pieces in `uploads/` survive plugin updates and appear with a **Custom** badge. `Cli\RequestsCommand` and `Cli\PieceCommand` are WordPress-facing, like `Cli\Command`.
 
 **Library page.** `Admin\LibraryPage` (`sprint-illustrations-library`, `edit_posts`, server-rendered, `assets/admin/library.css`): tabs per category + Templates, search via pure `Library\LibraryFilter` (every word must appear in the label or tags).

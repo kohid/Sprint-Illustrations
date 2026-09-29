@@ -10,9 +10,10 @@ declare( strict_types=1 );
 namespace SprintIllustrations\Cli;
 
 use SprintIllustrations\Plugin;
+use SprintIllustrations\Storage\PieceDrafts;
 
 /**
- * List, complete and decline piece requests (Claude Code's side of the queue).
+ * Claude Code's side of the queue: list, start, submit a draft for review, decline.
  */
 final class RequestsCommand {
 
@@ -29,12 +30,15 @@ final class RequestsCommand {
 	 * ## OPTIONS
 	 *
 	 * [--state=<state>]
-	 * : queued, done, declined or all.
+	 * : queued, drawing, review, done, discarded, declined or all.
 	 * ---
 	 * default: queued
 	 * options:
 	 *   - queued
+	 *   - drawing
+	 *   - review
 	 *   - done
+	 *   - discarded
 	 *   - declined
 	 *   - all
 	 * ---
@@ -73,42 +77,66 @@ final class RequestsCommand {
 			return;
 		}
 
-		\WP_CLI\Utils\format_items( 'table', $rows, [ 'id', 'category', 'description', 'state', 'piece', 'author', 'date' ] );
+		\WP_CLI\Utils\format_items( 'table', $rows, [ 'id', 'category', 'description', 'state', 'feedback', 'piece', 'author', 'date' ] );
 	}
 
 	/**
-	 * Mark a queued request done with the piece that fulfils it.
+	 * Mark a queued request as being drawn (the Library page shows "Drawing").
 	 *
 	 * ## OPTIONS
 	 *
 	 * <id>
 	 * : Request ID.
 	 *
-	 * --piece=<piece-id>
-	 * : A piece that exists in the library (after build-manifest).
+	 * @param array<int, string> $args Positional args.
+	 */
+	public function start( array $args ): void {
+		$id = absint( $args[0] ?? 0 );
+		$this->request( $id );
+
+		if ( ! $this->plugin->piece_requests()->start( $id ) ) {
+			\WP_CLI::error( sprintf( 'Request %d is not queued.', $id ) );
+		}
+		\WP_CLI::success( sprintf( 'Request %d: drawing.', $id ) );
+	}
+
+	/**
+	 * Submit a drawn SVG as the draft for review (it is not added to the library until the requester keeps it).
+	 *
+	 * ## OPTIONS
+	 *
+	 * <id>
+	 * : Request ID.
+	 *
+	 * --file=<svg>
+	 * : The drawn piece. Its file name becomes the piece name (e.g. taxi.svg → obj-taxi).
 	 *
 	 * @param array<int, string>         $args       Positional args.
 	 * @param array<string, string|bool> $assoc_args Options.
 	 */
-	public function done( array $args, array $assoc_args ): void {
+	public function draft( array $args, array $assoc_args ): void {
 		$id      = absint( $args[0] ?? 0 );
-		$piece   = (string) ( $assoc_args['piece'] ?? '' );
-		$request = $this->queued( $id );
+		$request = $this->request( $id );
 
-		$found = $this->plugin->services()->manifest->get( $piece );
-		if ( null === $found ) {
-			\WP_CLI::error( sprintf( 'Piece "%s" is not in the library. Run `wp sprint-illustrations build-manifest --non-interactive` first.', $piece ) );
-		}
-		if ( $found->category !== $request['category'] ) {
-			\WP_CLI::warning( sprintf( 'The request asked for %s; "%s" is in %s.', $request['category'], $piece, $found->category ) );
+		if ( ! in_array( $request['state'], [ 'queued', 'drawing' ], true ) ) {
+			\WP_CLI::error( sprintf( 'Request %d is %s; only queued or drawing requests take a draft.', $id, $request['state'] ) );
 		}
 
-		$this->plugin->piece_requests()->complete( $id, $piece );
-		\WP_CLI::success( sprintf( 'Request %d done: %s.', $id, $piece ) );
+		$file   = (string) ( $assoc_args['file'] ?? '' );
+		$result = $this->plugin->piece_drafts()->submit( $request, $file );
+		if ( ! $result['ok'] ) {
+			foreach ( $result['messages'] as $message ) {
+				\WP_CLI::warning( $message );
+			}
+			\WP_CLI::error( 'The draft was not accepted; fix the SVG and submit it again.' );
+		}
+
+		$this->plugin->piece_requests()->submit_draft( $id, PieceDrafts::name( $file ) );
+		\WP_CLI::success( sprintf( 'Request %d: draft %s is ready for review on the Library page.', $id, $result['piece'] ) );
 	}
 
 	/**
-	 * Decline a queued request with a note the requester sees on the Library page.
+	 * Decline a queued or drawing request with a note the requester sees on the Library page.
 	 *
 	 * ## OPTIONS
 	 *
@@ -124,29 +152,28 @@ final class RequestsCommand {
 	public function decline( array $args, array $assoc_args ): void {
 		$id   = absint( $args[0] ?? 0 );
 		$note = trim( (string) ( $assoc_args['note'] ?? '' ) );
-		$this->queued( $id );
+		$this->request( $id );
 
 		if ( '' === $note ) {
 			\WP_CLI::error( '--note is required so the requester knows why.' );
 		}
 
-		$this->plugin->piece_requests()->decline( $id, $note );
+		if ( ! $this->plugin->piece_requests()->decline( $id, $note ) ) {
+			\WP_CLI::error( sprintf( 'Request %d cannot be declined now.', $id ) );
+		}
 		\WP_CLI::success( sprintf( 'Request %d declined.', $id ) );
 	}
 
 	/**
-	 * A queued request, or exit with an error.
+	 * A request, or exit with an error.
 	 *
 	 * @param int $id Request ID.
 	 * @return array<string, mixed>
 	 */
-	private function queued( int $id ): array {
+	private function request( int $id ): array {
 		$request = $this->plugin->piece_requests()->get( $id );
 		if ( null === $request ) {
 			\WP_CLI::error( sprintf( 'Request %d not found.', $id ) );
-		}
-		if ( 'queued' !== $request['state'] ) {
-			\WP_CLI::error( sprintf( 'Request %d is already %s.', $id, $request['state'] ) );
 		}
 
 		return $request;

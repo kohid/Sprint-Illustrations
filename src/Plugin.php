@@ -37,6 +37,7 @@ use SprintIllustrations\Rest\SuggestController;
 use SprintIllustrations\Settings\SitePalette;
 use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
+use SprintIllustrations\Storage\PieceDrafts;
 use SprintIllustrations\Storage\PieceRequestPostType;
 use SprintIllustrations\Storage\PieceRequestRepository;
 
@@ -254,6 +255,15 @@ final class Plugin {
 	}
 
 	/**
+	 * Draft pieces awaiting review.
+	 *
+	 * @return PieceDrafts
+	 */
+	public function piece_drafts(): PieceDrafts {
+		return new PieceDrafts( $this );
+	}
+
+	/**
 	 * Register the front-end stylesheet (enqueued only where an illustration renders).
 	 */
 	public function register_assets(): void {
@@ -345,7 +355,7 @@ final class Plugin {
 	 *
 	 * @return array<string>
 	 */
-	private function user_manifests(): array {
+	public function user_manifests(): array {
 		/**
 		 * Filter the list of additional manifest.json files merged after the bundled library.
 		 *

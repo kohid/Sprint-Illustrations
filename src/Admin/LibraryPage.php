@@ -69,6 +69,16 @@ final class LibraryPage {
 	 */
 	public function enqueue(): void {
 		wp_enqueue_style( 'sprint-illustrations-library', plugins_url( 'assets/admin/library.css', SPRINT_ILLUSTRATIONS_FILE ), [], SPRINT_ILLUSTRATIONS_VERSION );
+		wp_enqueue_script( 'sprint-illustrations-library', plugins_url( 'assets/admin/library.js', SPRINT_ILLUSTRATIONS_FILE ), [], SPRINT_ILLUSTRATIONS_VERSION, true );
+		wp_localize_script(
+			'sprint-illustrations-library',
+			'sprintIllustrationsLibrary',
+			[
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'action'  => PieceRequestPanel::STATES_ACTION,
+				'nonce'   => wp_create_nonce( PieceRequestPanel::STATES_ACTION ),
+			]
+		);
 	}
 
 	/**

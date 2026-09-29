@@ -12,7 +12,7 @@ namespace SprintIllustrations\Storage;
 use SprintIllustrations\Library\PieceRequest;
 
 /**
- * Create, list and move requests through queued → done | declined.
+ * Create, list and move requests: queued → drawing → review → done | discarded; declined; retry → queued.
  */
 final class PieceRequestRepository {
 
@@ -51,7 +51,7 @@ final class PieceRequestRepository {
 	 * One request.
 	 *
 	 * @param int $id Request ID.
-	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, author: int, date: string}|null
+	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string}|null
 	 */
 	public function get( int $id ): ?array {
 		$post = get_post( $id );
@@ -60,27 +60,41 @@ final class PieceRequestRepository {
 	}
 
 	/**
-	 * Requests in a state, newest first ('all' for every state).
+	 * Requests in one or more states ('all' for every state). Active states list oldest first; finished ones newest first.
 	 *
-	 * @param string $state State or 'all'.
-	 * @param int    $limit Maximum.
-	 * @return array<int, array{id: int, category: string, description: string, state: string, piece: string, note: string, author: int, date: string}>
+	 * @param string|array<string> $state State(s) or 'all'.
+	 * @param int                  $limit Maximum.
+	 * @return array<int, array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string}>
 	 */
-	public function list( string $state, int $limit = 50 ): array {
-		$args = [
+	public function list( string|array $state, int $limit = 50 ): array {
+		$states = (array) $state;
+		$active = [] === array_diff( $states, [ 'queued', 'drawing', 'review' ] );
+		$args   = [
 			'post_type'      => PieceRequestPostType::POST_TYPE,
 			'post_status'    => 'publish',
 			'posts_per_page' => $limit,
 			'orderby'        => 'date',
-			'order'          => 'queued' === $state ? 'ASC' : 'DESC',
+			'order'          => $active ? 'ASC' : 'DESC',
 			'no_found_rows'  => true,
 		];
-		if ( 'all' !== $state ) {
-			$args['meta_key']   = PieceRequestPostType::META_STATE; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Small private table.
-			$args['meta_value'] = $state; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Small private table.
+		if ( [ 'all' ] !== $states ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Small private table.
+			$args['meta_query'] = [
+				[
+					'key'     => PieceRequestPostType::META_STATE,
+					'value'   => $states,
+					'compare' => 'IN',
+				],
+			];
 		}
 
-		return array_map( [ $this, 'row' ], get_posts( $args ) );
+		$rows = array_map( [ $this, 'row' ], get_posts( $args ) );
+		if ( ! $active ) {
+			$when = static fn( array $row ): string => '' !== $row['changed'] ? $row['changed'] : $row['date'];
+			usort( $rows, static fn( array $a, array $b ): int => strcmp( $when( $b ), $when( $a ) ) );
+		}
+
+		return $rows;
 	}
 
 	/**
@@ -96,42 +110,93 @@ final class PieceRequestRepository {
 	}
 
 	/**
-	 * Mark a queued request done with the piece that fulfilled it.
+	 * Claude Code started drawing.
+	 *
+	 * @param int $id Request ID.
+	 * @return bool
+	 */
+	public function start( int $id ): bool {
+		return $this->move( $id, 'drawing' );
+	}
+
+	/**
+	 * A draft is ready for the requester to review.
+	 *
+	 * @param int    $id   Request ID.
+	 * @param string $name Draft file name (without .svg).
+	 * @return bool
+	 */
+	public function submit_draft( int $id, string $name ): bool {
+		return $this->move( $id, 'review', [ PieceRequestPostType::META_DRAFT => $name ] );
+	}
+
+	/**
+	 * The draft was kept and is now this library piece.
 	 *
 	 * @param int    $id    Request ID.
 	 * @param string $piece Piece ID.
 	 * @return bool
 	 */
-	public function complete( int $id, string $piece ): bool {
-		return $this->finish( $id, 'done', [ PieceRequestPostType::META_PIECE => $piece ] );
+	public function keep( int $id, string $piece ): bool {
+		return $this->move( $id, 'done', [ PieceRequestPostType::META_PIECE => $piece ] );
 	}
 
 	/**
-	 * Decline a queued request with a note for the requester.
+	 * The draft was discarded.
+	 *
+	 * @param int $id Request ID.
+	 * @return bool
+	 */
+	public function discard( int $id ): bool {
+		return $this->move( $id, 'discarded', [ PieceRequestPostType::META_DRAFT => '' ] );
+	}
+
+	/**
+	 * Send a discarded or declined request back to the queue with optional feedback.
+	 *
+	 * @param int    $id       Request ID.
+	 * @param string $feedback What to change.
+	 * @return bool
+	 */
+	public function retry( int $id, string $feedback ): bool {
+		return $this->move(
+			$id,
+			'queued',
+			[
+				PieceRequestPostType::META_FEEDBACK => mb_substr( PieceRequest::clean( $feedback ), 0, PieceRequest::MAX_LENGTH ),
+				PieceRequestPostType::META_NOTE     => '',
+			]
+		);
+	}
+
+	/**
+	 * Decline with a note for the requester.
 	 *
 	 * @param int    $id   Request ID.
 	 * @param string $note Why, and what to try instead.
 	 * @return bool
 	 */
 	public function decline( int $id, string $note ): bool {
-		return $this->finish( $id, 'declined', [ PieceRequestPostType::META_NOTE => PieceRequest::clean( $note ) ] );
+		return $this->move( $id, 'declined', [ PieceRequestPostType::META_NOTE => PieceRequest::clean( $note ) ] );
 	}
 
 	/**
-	 * Move a queued request to a final state.
+	 * Move a request to another state when the transition is allowed.
 	 *
-	 * @param int                   $id    Request ID.
-	 * @param string                $state Final state.
-	 * @param array<string, string> $meta  Extra meta.
+	 * @param int                   $id   Request ID.
+	 * @param string                $to   Target state.
+	 * @param array<string, string> $meta Extra meta.
 	 * @return bool
 	 */
-	private function finish( int $id, string $state, array $meta ): bool {
+	public function move( int $id, string $to, array $meta = [] ): bool {
 		$request = $this->get( $id );
-		if ( null === $request || 'queued' !== $request['state'] ) {
+		if ( null === $request || ! PieceRequest::can_move( $request['state'], $to ) ) {
 			return false;
 		}
 
-		foreach ( $meta + [ PieceRequestPostType::META_STATE => $state ] as $key => $value ) {
+		$meta[ PieceRequestPostType::META_STATE ]   = $to;
+		$meta[ PieceRequestPostType::META_CHANGED ] = gmdate( 'Y-m-d H:i:s' );
+		foreach ( $meta as $key => $value ) {
 			update_post_meta( $id, $key, $value );
 		}
 
@@ -142,7 +207,7 @@ final class PieceRequestRepository {
 	 * Row for a post.
 	 *
 	 * @param \WP_Post $post Post.
-	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, author: int, date: string}
+	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string}
 	 */
 	private function row( \WP_Post $post ): array {
 		$state = (string) get_post_meta( $post->ID, PieceRequestPostType::META_STATE, true );
@@ -154,8 +219,11 @@ final class PieceRequestRepository {
 			'state'       => in_array( $state, PieceRequest::STATES, true ) ? $state : 'queued',
 			'piece'       => (string) get_post_meta( $post->ID, PieceRequestPostType::META_PIECE, true ),
 			'note'        => (string) get_post_meta( $post->ID, PieceRequestPostType::META_NOTE, true ),
+			'draft'       => (string) get_post_meta( $post->ID, PieceRequestPostType::META_DRAFT, true ),
+			'feedback'    => (string) get_post_meta( $post->ID, PieceRequestPostType::META_FEEDBACK, true ),
 			'author'      => (int) $post->post_author,
 			'date'        => $post->post_date_gmt,
+			'changed'     => (string) get_post_meta( $post->ID, PieceRequestPostType::META_CHANGED, true ),
 		];
 	}
 }
