@@ -148,3 +148,8 @@
 .si-b-layer__tools .components-button.is-pressed{background:#2271b1;color:#fff}
 .si-b-layer__tools .components-dropdown:last-child{margin-left:auto}
 .si-b-layers .si-b-slot--child{padding-left:24px}
+
+/* Save as template dialog. */
+.si-b-template-form{display:grid;gap:14px;min-width:min(420px,80vw)}
+.si-b-template-form .si-b-muted{margin:0}
+.si-b-template-form__actions{display:flex;justify-content:flex-end;gap:8px}

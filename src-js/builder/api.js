@@ -47,6 +47,13 @@ export const exportPng = ( blob, { illustrationId, title, alt } ) => {
 	return apiFetch( { path: `${ NS }/media/png`, method: 'POST', body } );
 };
 
+export const saveTemplate = ( name, spec ) =>
+	apiFetch( {
+		path: `${ NS }/templates`,
+		method: 'POST',
+		data: { name, spec },
+	} );
+
 export const suggest = ( content, seed ) =>
 	apiFetch( {
 		path: `${ NS }/ai/suggest`,

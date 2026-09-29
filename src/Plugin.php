@@ -34,6 +34,7 @@ use SprintIllustrations\Rest\IllustrationsController;
 use SprintIllustrations\Rest\LibraryController;
 use SprintIllustrations\Rest\MediaController;
 use SprintIllustrations\Rest\SuggestController;
+use SprintIllustrations\Rest\TemplatesController;
 use SprintIllustrations\Settings\SitePalette;
 use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
@@ -171,7 +172,8 @@ final class Plugin {
 	 */
 	public function services(): Services {
 		if ( null === $this->services ) {
-			$this->services = Services::create( $this->dir(), $this->user_manifests() );
+			$templates      = is_dir( $this->user_templates_dir() ) ? [ $this->user_templates_dir() ] : [];
+			$this->services = Services::create( $this->dir(), $this->user_manifests(), $templates );
 		}
 
 		return $this->services;
@@ -388,6 +390,15 @@ final class Plugin {
 	}
 
 	/**
+	 * Templates saved on this site when the plugin folder isn't writable.
+	 *
+	 * @return string
+	 */
+	public function user_templates_dir(): string {
+		return $this->user_library_dir() . '/templates';
+	}
+
+	/**
 	 * Extra manifest files, filterable.
 	 *
 	 * @return array<string>
@@ -415,6 +426,7 @@ final class Plugin {
 		( new IllustrationsController( $this ) )->register();
 		( new MediaController( $this ) )->register();
 		( new SuggestController( $this ) )->register();
+		( new TemplatesController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
 		( new Shortcode( $this ) )->register();
 		( new Block( $this ) )->register();

@@ -13,6 +13,10 @@ import {
 	TextControl,
 } from '@wordpress/components';
 import { listIllustrations } from './api';
+import SaveTemplate from './SaveTemplate';
+
+// Only admins may save templates (they are written into the plugin).
+const canManage = !! window.sprintIllustrationsBuilder?.canManage;
 
 function OpenMenu( { onOpen } ) {
 	const [ search, setSearch ] = useState( '' );
@@ -303,6 +307,9 @@ export default function TopBar( {
 					? __( 'Copied', 'sprint-illustrations' )
 					: __( 'Copy shortcode', 'sprint-illustrations' ) }
 			</Button>
+			{ canManage && (
+				<SaveTemplate state={ state } dispatch={ dispatch } />
+			) }
 			<ExportMenu
 				canExport={ !! state.result?.svg }
 				animated={ Object.keys( state.spec.animations ).length > 0 }

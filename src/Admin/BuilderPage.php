@@ -60,6 +60,7 @@ final class BuilderPage {
 				'initialId'       => $initial,
 				'initialTemplate' => $template,
 				'aiReady'         => $this->plugin->ai()->ready(),
+				'canManage'       => current_user_can( 'manage_options' ),
 				'settingsUrl'     => current_user_can( SettingsPage::CAPABILITY ) ? admin_url( 'admin.php?page=' . Menu::SETTINGS_SLUG ) : '',
 			]
 		);
