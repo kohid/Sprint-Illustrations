@@ -39,6 +39,7 @@ use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
 use SprintIllustrations\Storage\PieceDrafts;
 use SprintIllustrations\Storage\PieceRequestPostType;
+use SprintIllustrations\Storage\DrawerHeartbeat;
 use SprintIllustrations\Storage\PieceRequestRepository;
 
 /**
@@ -130,6 +131,13 @@ final class Plugin {
 	 * @var PieceRequestRepository|null
 	 */
 	private ?PieceRequestRepository $piece_requests = null;
+
+	/**
+	 * Request watcher heartbeat.
+	 *
+	 * @var DrawerHeartbeat|null
+	 */
+	private ?DrawerHeartbeat $drawer_heartbeat = null;
 
 	/**
 	 * Boot on plugins_loaded.
@@ -252,6 +260,15 @@ final class Plugin {
 	 */
 	public function piece_requests(): PieceRequestRepository {
 		return $this->piece_requests ??= new PieceRequestRepository();
+	}
+
+	/**
+	 * Heartbeat of the Claude Code request watcher.
+	 *
+	 * @return DrawerHeartbeat
+	 */
+	public function drawer_heartbeat(): DrawerHeartbeat {
+		return $this->drawer_heartbeat ??= new DrawerHeartbeat();
 	}
 
 	/**

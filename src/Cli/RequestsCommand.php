@@ -9,11 +9,12 @@ declare( strict_types=1 );
 
 namespace SprintIllustrations\Cli;
 
+use SprintIllustrations\Library\WatchQueue;
 use SprintIllustrations\Plugin;
 use SprintIllustrations\Storage\PieceDrafts;
 
 /**
- * Claude Code's side of the queue: list, start, submit a draft for review, decline.
+ * Claude Code's side of the queue: list, start, submit a draft for review, decline, watch.
  */
 final class RequestsCommand {
 
@@ -162,6 +163,114 @@ final class RequestsCommand {
 			\WP_CLI::error( sprintf( 'Request %d cannot be declined now.', $id ) );
 		}
 		\WP_CLI::success( sprintf( 'Request %d declined.', $id ) );
+	}
+
+	/**
+	 * Watch the queue for a Claude Code Monitor: one JSON line on STDOUT per waiting request.
+	 *
+	 * Keeps the Library page's "Claude Code is watching" status on while it runs. On start, requests
+	 * left drawing for 30 minutes (their session closed) go back to the queue.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--interval=<seconds>]
+	 * : Seconds between checks (2–60).
+	 * ---
+	 * default: 5
+	 * ---
+	 *
+	 * [--once]
+	 * : Check once and exit.
+	 *
+	 * [--max-runtime=<seconds>]
+	 * : Exit after this long (0 = never). A Claude Code Monitor lasts at most 30 minutes.
+	 * ---
+	 * default: 0
+	 * ---
+	 *
+	 * [--parent=<pid>]
+	 * : Exit when this process ends (Windows doesn't stop child processes with their parent).
+	 *
+	 * @param array<int, string>         $args       Positional args.
+	 * @param array<string, string|bool> $assoc_args Options.
+	 */
+	public function watch( array $args, array $assoc_args ): void {
+		$interval = max( 2, min( 60, (int) ( $assoc_args['interval'] ?? 5 ) ) );
+		$once     = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'once', false );
+		$runtime  = max( 0, (int) ( $assoc_args['max-runtime'] ?? 0 ) );
+		$parent   = absint( $assoc_args['parent'] ?? 0 );
+		$started  = time();
+		$requests = $this->plugin->piece_requests();
+
+		foreach ( WatchQueue::stale( $requests->list( 'drawing', 200 ), time() ) as $id ) {
+			if ( $requests->move( $id, 'queued' ) ) {
+				\WP_CLI::warning( sprintf( 'Requeued %d (drawing stalled).', $id ) );
+			}
+		}
+
+		$seen = [];
+		while ( true ) {
+			$seen = $this->tick( $seen );
+			if ( $once || ( $runtime && time() - $started >= $runtime ) ) {
+				return;
+			}
+			sleep( $interval );
+			if ( ! $this->running( $parent ) ) {
+				return;
+			}
+			// Long-running: read fresh options and posts on every check.
+			wp_cache_flush();
+		}
+	}
+
+	/**
+	 * One watch check: heartbeat, then one JSON line per request not announced yet.
+	 *
+	 * @param array<int, string> $seen Keys already announced.
+	 * @return array<int, string> Keys to remember.
+	 */
+	private function tick( array $seen ): array {
+		try {
+			$this->plugin->drawer_heartbeat()->beat();
+			$next = WatchQueue::announce( $this->plugin->piece_requests()->list( 'queued', 200 ), $seen );
+		} catch ( \Throwable $e ) {
+			\WP_CLI::warning( 'Queue check failed: ' . $e->getMessage() );
+			return $seen;
+		}
+
+		foreach ( $next['rows'] as $row ) {
+			$event = [
+				'event'       => 'request',
+				'id'          => $row['id'],
+				'category'    => $row['category'],
+				'description' => $row['description'],
+				'feedback'    => $row['feedback'],
+			];
+			\WP_CLI::line( (string) wp_json_encode( $event, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) );
+		}
+
+		return $next['seen'];
+	}
+
+	/**
+	 * Whether a process is still running (true when no PID was given or it can't be checked).
+	 *
+	 * @param int $pid Process ID (0 = none).
+	 * @return bool
+	 */
+	private function running( int $pid ): bool {
+		if ( 0 === $pid ) {
+			return true;
+		}
+		if ( function_exists( 'posix_kill' ) ) {
+			return posix_kill( $pid, 0 );
+		}
+		if ( 'Windows' === PHP_OS_FAMILY ) {
+			$list = (string) shell_exec( sprintf( 'tasklist /FI "PID eq %d" /NH /FO CSV', $pid ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Fixed command with an integer PID.
+			return str_contains( $list, '"' . $pid . '"' );
+		}
+
+		return true;
 	}
 
 	/**
