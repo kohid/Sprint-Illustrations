@@ -64,10 +64,10 @@ final class Recolorer {
 	/**
 	 * Recolour $root and its descendants in place and strip slot classes.
 	 *
-	 * @param \DOMElement $root       Subtree root.
-	 * @param Palette     $palette    Palette.
-	 * @param int         $skin_index Skin index for this piece instance.
-	 * @param int         $hair_index Hair index for this piece instance.
+	 * @param \DOMElement           $root       Subtree root.
+	 * @param Palette               $palette    Palette.
+	 * @param int                   $skin_index Skin index for this piece instance.
+	 * @param int                   $hair_index Hair index for this piece instance.
 	 * @param array<string, string> $overrides Slot => colour or url(#gradient) replacing the palette's.
 	 */
 	public function apply( \DOMElement $root, Palette $palette, int $skin_index = 0, int $hair_index = 0, array $overrides = [] ): void {

@@ -89,8 +89,8 @@ final class Paint {
 	 * values usable as fill/stroke: the colour itself, or "url(#id)". The ids are scoped afterwards
 	 * by IdScoper, so they are unique per placed piece.
 	 *
-	 * @param \DOMElement                                                                   $group Piece group.
-	 * @param array<string, string|array{from: string, to: string, angle: int}>             $paints Slot => paint.
+	 * @param \DOMElement                                                       $group Piece group.
+	 * @param array<string, string|array{from: string, to: string, angle: int}> $paints Slot => paint.
 	 * @return array<string, string> Slot => colour or url reference.
 	 */
 	public static function apply_defs( \DOMElement $group, array $paints ): array {
@@ -108,10 +108,18 @@ final class Paint {
 			$dy       = -cos( $radians ) / 2;
 			$gradient = $doc->createElementNS( $group->namespaceURI, 'linearGradient' );
 			$gradient->setAttribute( 'id', $id );
-			foreach ( [ 'x1' => 0.5 - $dx, 'y1' => 0.5 - $dy, 'x2' => 0.5 + $dx, 'y2' => 0.5 + $dy ] as $name => $value ) {
+			foreach ( [
+				'x1' => 0.5 - $dx,
+				'y1' => 0.5 - $dy,
+				'x2' => 0.5 + $dx,
+				'y2' => 0.5 + $dy,
+			] as $name => $value ) {
 				$gradient->setAttribute( $name, (string) round( $value, 4 ) );
 			}
-			foreach ( [ '0' => $paint['from'], '1' => $paint['to'] ] as $offset => $color ) {
+			foreach ( [
+				'0' => $paint['from'],
+				'1' => $paint['to'],
+			] as $offset => $color ) {
 				$stop = $doc->createElementNS( $group->namespaceURI, 'stop' );
 				$stop->setAttribute( 'offset', (string) $offset );
 				$stop->setAttribute( 'stop-color', $color );
@@ -120,7 +128,7 @@ final class Paint {
 			$group->insertBefore( $gradient, $group->firstChild );
 
 			$values[ $slot ] = 'url(#' . $id . ')';
-		}
+		}//end foreach
 
 		return $values;
 	}
