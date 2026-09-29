@@ -94,3 +94,14 @@
 - **Live demo:** request #442 was fulfilled with `obj-car`:
   - It's a flat side view on 2× units, so it's realistic next to 310-unit people. Its tags are car, vehicle, taxi, transport, travel and hero, with a `base` anchor and a surface mount.
   - It built with zero warnings, composed into Featured object, appears in the Builder library, and can be locked into Feature card's hero slot.
+
+### Amendment (spec §7): review before keeping, and visible progress
+
+- **Transitions and sample scenes:** pure `PieceRequest::can_move` and `sample`, with 2 new tests.
+- **Drafts:** `Storage\PieceDrafts` builds each draft into `drafts/` with `ManifestBuilder` and previews it through `Services::create`, using the user manifests plus the draft's manifest. Keep rebuilds the site manifest in PHP.
+- **Verification:**
+  - **CLI:** `start` twice is refused. A draft with a literal colour, one that clashes with `obj-car`, and one whose name another draft already uses are all refused. A good draft isn't in the library before Keep.
+  - **Handlers, 17 checks:** another author can't Keep. The page renders its previews, track and live-update data. Keep adds the piece to the library and redirects to it. Discard deletes the draft, and Try again stores cleaned feedback.
+  - **Visual review** at 1440 and 782 px.
+  - All throwaway data was removed.
+- **Live:** the owner's "taxi" request (#452) was started, drawn (a black cab with roof sign and check stripe, zero warnings) and submitted as draft `obj-taxi`. It's left at **Ready for review** for the owner to Keep or Discard.
