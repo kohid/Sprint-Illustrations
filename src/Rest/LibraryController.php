@@ -57,14 +57,19 @@ final class LibraryController {
 		$previews = new PiecePreviews( new PieceLoader( $services->sanitizer ), $services->sanitizer );
 		$palette  = $this->plugin->site_palette()->palette();
 		$pieces   = [];
+		$custom   = wp_normalize_path( $this->plugin->user_library_dir() );
 
 		foreach ( $services->manifest->all() as $piece ) {
-			$pieces[] = $piece->to_array() + [ 'preview' => $previews->svg( $piece, $palette ) ];
+			$pieces[] = $piece->to_array() + [
+				'preview' => $previews->svg( $piece, $palette ),
+				'size'    => [ $piece->width(), $piece->height() ],
+				'custom'  => str_starts_with( wp_normalize_path( $piece->path ), $custom ),
+			];
 		}
 
 		return new \WP_REST_Response(
 			[
-				'templates' => array_map( static fn( Template $template ): array => $template->to_array(), array_values( $services->templates->all() ) ),
+				'templates' => array_map( static fn( Template $template ): array => $template->to_array() + [ 'unit' => $template->unit ], array_values( $services->templates->all() ) ),
 				'pieces'    => $pieces,
 				'presets'   => $this->plugin->editor_choices()['presets'],
 			]

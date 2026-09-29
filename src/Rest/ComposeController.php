@@ -75,6 +75,15 @@ final class ComposeController {
 			];
 		}
 
+		$items = [];
+		foreach ( $result->spec->items as $item ) {
+			$items[] = [
+				'key'   => $item['key'],
+				'piece' => $item['piece'],
+				'box'   => $result->boxes[ 'item:' . $item['key'] ][0] ?? null,
+			];
+		}
+
 		return new \WP_REST_Response(
 			[
 				'svg'        => $result->with_instance_id( 'si-b' . substr( md5( uniqid( '', true ) ), 0, 10 ) ),
@@ -84,7 +93,11 @@ final class ComposeController {
 					'id'     => $template->id,
 					'label'  => $template->label,
 					'canvas' => $template->canvas,
+					'unit'   => $template->unit,
 				],
+				'canvas'     => $result->spec->canvas ?? ( null === $template ? null : $template->canvas ),
+				'layers'     => $result->layers,
+				'items'      => $items,
 				'slots'      => $slots,
 				'background' => (string) $palette->resolve( 'background' ),
 			]
