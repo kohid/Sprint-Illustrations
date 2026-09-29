@@ -33,32 +33,31 @@ export default function TemplatePicker( { templates, selected, onSelect } ) {
 	}, [ templates ] );
 
 	return (
-		<section className="si-b-panel" aria-labelledby="si-b-templates">
-			<h2 className="si-b-panel__title" id="si-b-templates">
-				{ __( 'Template', 'sprint-illustrations' ) }
-			</h2>
-			<div className="si-b-templates">
-				{ templates.map( ( template ) => (
-					<button
-						type="button"
-						key={ template.id }
-						className="si-b-template"
-						aria-pressed={ selected === template.id }
-						onClick={ () => onSelect( template.id ) }
-					>
-						<span
-							className="si-b-template__art"
-							// Sanitized server-side by the composer.
-							dangerouslySetInnerHTML={ {
-								__html: thumbs[ template.id ] || '',
-							} }
-						/>
-						<span className="si-b-template__label">
-							{ template.label }
-						</span>
-					</button>
-				) ) }
-			</div>
-		</section>
+		<div
+			className="si-b-templates"
+			role="group"
+			aria-label={ __( 'Templates', 'sprint-illustrations' ) }
+		>
+			{ templates.map( ( template ) => (
+				<button
+					type="button"
+					key={ template.id }
+					className="si-b-template"
+					aria-pressed={ selected === template.id }
+					onClick={ () => onSelect( template.id ) }
+				>
+					<span
+						className="si-b-template__art"
+						// Sanitized server-side by the composer.
+						dangerouslySetInnerHTML={ {
+							__html: thumbs[ template.id ] || '',
+						} }
+					/>
+					<span className="si-b-template__label">
+						{ template.label }
+					</span>
+				</button>
+			) ) }
+		</div>
 	);
 }

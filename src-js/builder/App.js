@@ -16,7 +16,10 @@ import {
 } from './api';
 import { svgToPngBlob } from './exportPng';
 import { initialState, reducer, specBody } from './state';
+import { canvasOf, landingSize, round } from './geometry';
 import TopBar from './TopBar';
+import Section from './panels';
+import LibraryPanel from './LibraryPanel';
 import TemplatePicker from './TemplatePicker';
 import SlotList from './SlotList';
 import Stage from './Stage';
@@ -30,6 +33,7 @@ export default function App() {
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const [ exporting, setExporting ] = useState( false );
 	const [ suggesting, setSuggesting ] = useState( false );
+	const [ dragging, setDragging ] = useState( null );
 	const latest = useRef( 0 );
 	const body = specBody( state );
 	const bodyKey = JSON.stringify( body );
@@ -206,7 +210,8 @@ export default function App() {
 			if ( 'svg' === format ) {
 				media = await exportSvg( { ...meta, spec } );
 			} else {
-				const canvas = result.template?.canvas || [ 800, 600 ];
+				const canvas = result.canvas ||
+					result.template?.canvas || [ 800, 600 ];
 				let blob;
 				try {
 					blob =
@@ -283,6 +288,26 @@ export default function App() {
 		);
 	}
 
+	const byId = Object.fromEntries(
+		state.library.pieces.map( ( piece ) => [ piece.id, piece ] )
+	);
+
+	// Library → canvas without dragging: the piece lands in the middle.
+	const addToCentre = ( piece ) => {
+		const canvas = canvasOf( state.spec, state.result );
+		const [ w, h ] = landingSize( piece, canvas, state.result );
+		dispatch( {
+			type: 'ADD_ITEM',
+			item: {
+				piece: piece.id,
+				x: round( ( canvas[ 0 ] - w ) / 2 ),
+				y: round( ( canvas[ 1 ] - h ) / 2 ),
+				w: round( w ),
+				flip: false,
+			},
+		} );
+	};
+
 	return (
 		<div className="si-builder">
 			<TopBar
@@ -306,23 +331,49 @@ export default function App() {
 				</Notice>
 			) }
 			<div className="si-b-left">
-				<TemplatePicker
-					templates={ state.library.templates }
-					selected={
-						state.spec.template || state.result?.spec?.template
-					}
-					onSelect={ ( template ) =>
-						dispatch( { type: 'SET_TEMPLATE', template } )
-					}
-				/>
-				<SlotList
-					result={ state.result }
-					library={ state.library }
-					picks={ state.picks }
-					dispatch={ dispatch }
-				/>
+				<Section
+					name="library"
+					title={ __( 'Library', 'sprint-illustrations' ) }
+				>
+					<LibraryPanel
+						pieces={ state.library.pieces }
+						count={ state.spec.items.length }
+						onAdd={ addToCentre }
+						onDrag={ setDragging }
+					/>
+				</Section>
+				<Section
+					name="template"
+					title={ __( 'Template', 'sprint-illustrations' ) }
+				>
+					<TemplatePicker
+						templates={ state.library.templates }
+						selected={
+							state.spec.template || state.result?.spec?.template
+						}
+						onSelect={ ( template ) =>
+							dispatch( { type: 'SET_TEMPLATE', template } )
+						}
+					/>
+				</Section>
+				<Section
+					name="slots"
+					title={ __( 'Slots', 'sprint-illustrations' ) }
+				>
+					<SlotList
+						state={ state }
+						library={ state.library }
+						byId={ byId }
+						dispatch={ dispatch }
+					/>
+				</Section>
 			</div>
-			<Stage state={ state } />
+			<Stage
+				state={ state }
+				byId={ byId }
+				dragging={ dragging }
+				dispatch={ dispatch }
+			/>
 			<SidePanel
 				state={ state }
 				dispatch={ dispatch }

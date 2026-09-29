@@ -3,6 +3,8 @@
  */
 import { __ } from '@wordpress/i18n';
 
+export const MAX_ITEMS = 30;
+
 export const initialState = {
 	library: null,
 	spec: {
@@ -12,8 +14,12 @@ export const initialState = {
 		keywords: '',
 		title: '',
 		decorative: false,
+		canvas: null,
+		items: [],
+		layers: [],
 	},
 	picks: {},
+	selected: null,
 	result: null,
 	status: 'loading',
 	error: '',
@@ -49,11 +55,41 @@ function defaultTemplate( library, preferred = '' ) {
  * @return {Object} SceneSpec-shaped body.
  */
 export function specBody( state ) {
+	const { canvas, items, layers, ...spec } = state.spec;
 	return {
-		...state.spec,
-		template: state.spec.template || undefined,
+		...spec,
+		template: spec.template || undefined,
 		picks: state.picks,
+		...( canvas ? { canvas } : {} ),
+		...( items.length ? { items } : {} ),
+		...( layers.length ? { layers } : {} ),
 	};
+}
+
+/**
+ * Lowest free item key (0–99), so a dropped piece keeps its look when others change.
+ *
+ * @param {Array} items Items.
+ * @return {number} Key.
+ */
+function freeKey( items ) {
+	let key = 0;
+	while ( items.some( ( item ) => item.key === key ) ) {
+		key++;
+	}
+	return key;
+}
+
+/**
+ * Copy of the state with new items (and layers), marked dirty.
+ *
+ * @param {Object} state  State.
+ * @param {Array}  items  Items.
+ * @param {Array}  layers Layers.
+ * @return {Object} State.
+ */
+function withItems( state, items, layers = state.spec.layers ) {
+	return { ...state, spec: { ...state.spec, items, layers }, dirty: true };
 }
 
 export function reducer( state, action ) {
@@ -76,9 +112,10 @@ export function reducer( state, action ) {
 				dirty: true,
 			};
 		case 'SET_TEMPLATE':
+			// Dropped pieces and the canvas size stay; the layer order belonged to the old template.
 			return {
 				...state,
-				spec: { ...state.spec, template: action.template },
+				spec: { ...state.spec, template: action.template, layers: [] },
 				picks: {},
 				dirty: true,
 			};
@@ -107,6 +144,61 @@ export function reducer( state, action ) {
 			};
 		case 'FAILED':
 			return { ...state, status: 'failed', error: action.message };
+		case 'ADD_ITEM': {
+			const items = state.spec.items;
+			if ( items.length >= MAX_ITEMS ) {
+				return state;
+			}
+			const key = freeKey( items );
+			// With an explicit order, a new piece goes on top; without one it is on top anyway.
+			const layers = state.spec.layers.length
+				? [ ...state.spec.layers, `item:${ key }` ]
+				: state.spec.layers;
+			return {
+				...withItems(
+					state,
+					[ ...items, { ...action.item, key } ],
+					layers
+				),
+				selected: key,
+			};
+		}
+		case 'UPDATE_ITEM':
+			return withItems(
+				state,
+				state.spec.items.map( ( item ) =>
+					item.key === action.key
+						? { ...item, ...action.changes }
+						: item
+				)
+			);
+		case 'REMOVE_ITEM':
+			return {
+				...withItems(
+					state,
+					state.spec.items.filter(
+						( item ) => item.key !== action.key
+					),
+					state.spec.layers.filter(
+						( layer ) => layer !== `item:${ action.key }`
+					)
+				),
+				selected: state.selected === action.key ? null : state.selected,
+			};
+		case 'SELECT':
+			return { ...state, selected: action.key };
+		case 'SET_LAYERS':
+			return {
+				...state,
+				spec: { ...state.spec, layers: action.layers },
+				dirty: true,
+			};
+		case 'SET_CANVAS':
+			return {
+				...state,
+				spec: { ...state.spec, canvas: action.canvas },
+				dirty: true,
+			};
 		case 'HOVER':
 			return { ...state, hover: action.slot };
 		case 'NAME':
@@ -124,7 +216,11 @@ export function reducer( state, action ) {
 					keywords: ( s.keywords || [] ).join( ', ' ),
 					title: s.title || '',
 					decorative: !! s.decorative,
+					canvas: Array.isArray( s.canvas ) ? s.canvas : null,
+					items: Array.isArray( s.items ) ? s.items : [],
+					layers: Array.isArray( s.layers ) ? s.layers : [],
 				},
+				selected: null,
 				picks: Array.isArray( s.picks ) ? {} : s.picks || {},
 				dirty: false,
 				notice: null,

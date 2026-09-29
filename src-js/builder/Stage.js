@@ -1,16 +1,33 @@
 /**
- * The live composition, with the hovered slot outlined.
+ * The live composition: canvas size bar, the rendered scene, and the editing layer over it.
  */
 import { __ } from '@wordpress/i18n';
 import { Spinner } from '@wordpress/components';
+import CanvasEditor from './CanvasEditor';
+import CanvasSize from './CanvasSize';
+import { canvasOf, itemHeight } from './geometry';
 
-export default function Stage( { state } ) {
-	const { result, status, error, hover } = state;
-	const canvas = result?.template?.canvas || [ 800, 600 ];
-	const boxes =
-		( hover &&
-			result?.slots.find( ( slot ) => slot.name === hover )?.boxes ) ||
-		[];
+export default function Stage( { state, byId, dragging, dispatch } ) {
+	const { result, status, error, hover, spec } = state;
+	const canvas = canvasOf( spec, result );
+
+	let hoverBoxes = [];
+	if ( hover?.startsWith( 'item:' ) ) {
+		const item = spec.items.find( ( i ) => `item:${ i.key }` === hover );
+		hoverBoxes = item
+			? [
+					[
+						item.x,
+						item.y,
+						item.w,
+						itemHeight( item, byId[ item.piece ] ),
+					],
+			  ]
+			: [];
+	} else if ( hover ) {
+		hoverBoxes =
+			result?.slots.find( ( slot ) => slot.name === hover )?.boxes || [];
+	}
 
 	return (
 		<section
@@ -22,8 +39,15 @@ export default function Stage( { state } ) {
 			<h2 className="screen-reader-text" id="si-b-stage-title">
 				{ __( 'Preview', 'sprint-illustrations' ) }
 			</h2>
+			<CanvasSize
+				canvas={ canvas }
+				custom={ !! spec.canvas }
+				dispatch={ dispatch }
+			/>
 			<div
-				className="si-b-stage__canvas"
+				className={ `si-b-stage__canvas${
+					dragging ? ' is-dropping' : ''
+				}` }
 				style={ { aspectRatio: `${ canvas[ 0 ] } / ${ canvas[ 1 ] }` } }
 			>
 				{ result ? (
@@ -35,23 +59,16 @@ export default function Stage( { state } ) {
 				) : (
 					<Spinner />
 				) }
-				<svg
-					className="si-b-stage__overlay"
-					viewBox={ `0 0 ${ canvas[ 0 ] } ${ canvas[ 1 ] }` }
-					aria-hidden="true"
-					focusable="false"
-				>
-					{ boxes.map( ( [ x, y, w, h ], i ) => (
-						<rect
-							key={ i }
-							x={ x }
-							y={ y }
-							width={ w }
-							height={ h }
-							rx="6"
-						/>
-					) ) }
-				</svg>
+				<CanvasEditor
+					canvas={ canvas }
+					items={ spec.items }
+					byId={ byId }
+					selected={ state.selected }
+					hoverBoxes={ hoverBoxes }
+					dragging={ dragging }
+					result={ result }
+					dispatch={ dispatch }
+				/>
 			</div>
 			<div className="si-b-stage__status" aria-live="polite">
 				{ 'failed' === status && (
