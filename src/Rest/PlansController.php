@@ -101,7 +101,7 @@ final class PlansController {
 	 */
 	public function create( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		$content = AiRequest::clean( (string) ( $request['content'] ?? '' ) );
-		$objects = array_slice( array_values( array_filter( array_map( static fn( $object ): string => is_string( $object ) ? PieceRequest::clean( $object ) : '', (array) ( $request['objects'] ?? [] ) ) ) ), 0, self::MAX_OBJECTS );
+		$objects = array_slice( array_values( array_filter( array_map( static fn( $item ): string => is_string( $item ) ? PieceRequest::clean( $item ) : '', (array) ( $request['objects'] ?? [] ) ) ) ), 0, self::MAX_OBJECTS );
 
 		if ( '' === $content || [] === $objects ) {
 			return new \WP_Error( 'sprint_illustrations_invalid_plan', __( 'Describe the scene and choose at least one object to draw.', 'sprint-illustrations' ), [ 'status' => 400 ] );
@@ -208,7 +208,7 @@ final class PlansController {
 	 */
 	private function owned( string $id ): array|\WP_Error {
 		$plan = $this->plugin->scene_plans()->get( $id );
-		if ( null === $plan || ( (int) $plan['user'] !== get_current_user_id() && ! current_user_can( 'manage_options' ) ) ) {
+		if ( null === $plan || ( get_current_user_id() !== (int) $plan['user'] && ! current_user_can( 'manage_options' ) ) ) {
 			return new \WP_Error( 'sprint_illustrations_not_found', __( 'That scene plan no longer exists.', 'sprint-illustrations' ), [ 'status' => 404 ] );
 		}
 

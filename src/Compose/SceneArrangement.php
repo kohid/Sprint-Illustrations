@@ -19,8 +19,8 @@ final class SceneArrangement {
 	 * Row of free items.
 	 *
 	 * @param array<string, array{0: float, 1: float}> $sizes  Piece ID => natural [width, height].
-	 * @param array{0: int, 1: int}                     $canvas Canvas size.
-	 * @param array<int>                                $taken  Item keys already used.
+	 * @param array{0: int, 1: int}                    $canvas Canvas size.
+	 * @param array<int>                               $taken  Item keys already used.
 	 * @return array<int, array{key: int, piece: string, x: float, y: float, w: float, flip: bool}>
 	 */
 	public static function row( array $sizes, array $canvas, array $taken = [] ): array {
