@@ -12,6 +12,7 @@ namespace SprintIllustrations\Rest;
 use SprintIllustrations\Compose\SceneArrangement;
 use SprintIllustrations\Library\Piece;
 use SprintIllustrations\Library\PieceRequest;
+use SprintIllustrations\Library\ReferenceImage;
 use SprintIllustrations\Library\Template;
 use SprintIllustrations\Plugin;
 use SprintIllustrations\Selection\AiRequest;
@@ -132,7 +133,7 @@ final class PlansController {
 	 * The pieces to draw: strings (objects) or {description, category}, cleaned and capped.
 	 *
 	 * @param array<mixed> $raw Request input.
-	 * @return array<int, array{description: string, category: string}>
+	 * @return array<int, array{description: string, category: string, reference: string}>
 	 */
 	private static function objects( array $raw ): array {
 		$pieces = [];
@@ -144,9 +145,11 @@ final class PlansController {
 				continue;
 			}
 
-			$pieces[] = [
+			$reference = is_array( $item ) && is_string( $item['reference'] ?? null ) ? $item['reference'] : '';
+			$pieces[]  = [
 				'description' => $text,
 				'category'    => in_array( $category, Piece::CATEGORIES, true ) ? $category : 'objects',
+				'reference'   => ReferenceImage::is_name( $reference ) ? $reference : '',
 			];
 		}
 
@@ -182,10 +185,14 @@ final class PlansController {
 			// Short objects get a note about the scene; long ones (a split layer with style notes) keep their room.
 			$object      = $piece['description'];
 			$description = mb_strlen( $object . $scene_note ) <= PieceRequest::MAX_LENGTH ? $object . $scene_note : mb_substr( $object, 0, PieceRequest::MAX_LENGTH );
-			$id          = $requests->create( $piece['category'], $description, $user );
+			$reference   = $this->plugin->reference_images()->exists( $piece['reference'] ) ? $piece['reference'] : '';
+			$id          = $requests->create( $piece['category'], $description, $user, $reference );
 			if ( is_wp_error( $id ) ) {
 				foreach ( $ids as $done ) {
-					$requests->cancel( $done );
+					$made = $requests->get( $done );
+					if ( $requests->cancel( $done ) && null !== $made ) {
+						$this->plugin->reference_images()->delete( $made['reference'] );
+					}
 				}
 
 				return new \WP_Error( 'sprint_illustrations_invalid_plan', $id->get_error_message(), [ 'status' => 400 ] );
@@ -382,7 +389,7 @@ final class PlansController {
 	 *
 	 * @param string               $id   Plan ID.
 	 * @param array<string, mixed> $plan Stored plan.
-	 * @return array{id: string, description: string, template: string, title: string, requests: array<int, array{id: int, description: string, category: string, state: string, piece: string, note: string, can_act: bool, preview: string}>, ready: bool, waiting: int}
+	 * @return array{id: string, description: string, template: string, title: string, requests: array<int, array{id: int, description: string, category: string, state: string, piece: string, note: string, reference: string, can_act: bool, preview: string}>, ready: bool, waiting: int}
 	 */
 	private function present( string $id, array $plan ): array {
 		$repo     = $this->plugin->piece_requests();
@@ -397,6 +404,7 @@ final class PlansController {
 					'state'       => $row['state'],
 					'piece'       => $row['piece'],
 					'note'        => $row['note'],
+					'reference'   => $this->plugin->reference_images()->url( $row['reference'] ),
 					'can_act'     => $this->can_act( $row ),
 					'preview'     => 'review' === $row['state'] ? $this->preview( $row ) : '',
 				];

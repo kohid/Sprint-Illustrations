@@ -164,6 +164,10 @@ final class PieceRequestPanel {
 			echo '<div class="si-requests__row si-reference"><label for="si-request-reference">' . esc_html__( 'Reference image (optional, for the first piece)', 'sprint-illustrations' ) . '</label>';
 			echo '<input type="file" id="si-request-reference" name="reference" accept="image/png,image/jpeg,image/webp" aria-describedby="si-request-reference-help" data-invalid="' . esc_attr__( 'Choose a PNG, JPEG or WebP image of 5 MB or less.', 'sprint-illustrations' ) . '">';
 			echo '<span class="si-reference__preview" hidden><img alt=""><button type="button" class="button-link si-reference__remove">' . esc_html__( 'Remove', 'sprint-illustrations' ) . '</button></span>';
+			echo '<input type="hidden" name="reference_name" id="si-request-reference-name" value="">';
+			echo '<label class="si-reference__paste-label" for="si-request-reference-paste">' . esc_html__( 'Or paste a screenshot or an image address', 'sprint-illustrations' ) . '</label>';
+			echo '<input type="text" id="si-request-reference-paste" class="si-reference__paste" autocomplete="off" placeholder="' . esc_attr__( 'Click here, then Ctrl+V (⌘V)', 'sprint-illustrations' ) . '">';
+			echo '<span class="si-reference__status" role="status"></span>';
 			echo '<span class="si-requests__help" id="si-request-reference-help">' . esc_html__( 'PNG, JPEG or WebP, up to 5 MB. Claude Code draws from it in the library’s flat style.', 'sprint-illustrations' ) . '</span></div>';
 		}
 
@@ -502,8 +506,13 @@ final class PieceRequestPanel {
 
 		// Optional reference image (for the first piece): stored (re-encoded) before the request, removed again if that fails.
 		$reference = '';
-		$file      = isset( $_FILES['reference'] ) && is_array( $_FILES['reference'] ) ? $_FILES['reference'] : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated and re-encoded in ReferenceImages::store().
-		if ( $file && current_user_can( 'upload_files' ) && UPLOAD_ERR_NO_FILE !== ( is_int( $file['error'] ?? null ) ? $file['error'] : UPLOAD_ERR_NO_FILE ) ) {
+		// A screenshot or address pasted on the page was already stored through the REST endpoint.
+		$pasted = isset( $_POST['reference_name'] ) ? sanitize_text_field( wp_unslash( $_POST['reference_name'] ) ) : '';
+		if ( '' !== $pasted && current_user_can( 'upload_files' ) && $this->plugin->reference_images()->exists( $pasted ) ) {
+			$reference = $pasted;
+		}
+		$file = isset( $_FILES['reference'] ) && is_array( $_FILES['reference'] ) ? $_FILES['reference'] : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated and re-encoded in ReferenceImages::store().
+		if ( '' === $reference && $file && current_user_can( 'upload_files' ) && UPLOAD_ERR_NO_FILE !== ( is_int( $file['error'] ?? null ) ? $file['error'] : UPLOAD_ERR_NO_FILE ) ) {
 			$stored = $this->plugin->reference_images()->store( $file );
 			if ( is_wp_error( $stored ) ) {
 				Notices::add_for_user( get_current_user_id(), $stored->get_error_message(), 'error' );

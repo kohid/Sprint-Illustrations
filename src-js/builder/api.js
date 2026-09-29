@@ -90,3 +90,25 @@ export const discardPiece = ( requestId ) =>
 		path: `${ NS }/plans/requests/${ requestId }/discard`,
 		method: 'POST',
 	} );
+
+/**
+ * Store a reference image for a piece request: a file (chosen, or a pasted screenshot) or text
+ * (an image address or an inline image).
+ *
+ * @param {Object} source      What to store.
+ * @param {File}   source.file An image file.
+ * @param {string} source.text An image address.
+ * @return {Promise<{name: string, url: string}>} The stored image.
+ */
+export const uploadReference = ( { file, text } ) => {
+	if ( file ) {
+		const body = new window.FormData();
+		body.append( 'file', file, file.name || 'screenshot.png' );
+		return apiFetch( { path: `${ NS }/references`, method: 'POST', body } );
+	}
+	return apiFetch( {
+		path: `${ NS }/references`,
+		method: 'POST',
+		data: { text },
+	} );
+};

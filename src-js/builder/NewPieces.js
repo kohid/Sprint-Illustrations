@@ -14,6 +14,7 @@ import {
 	keepPiece,
 	listPlans,
 	splitBrief,
+	uploadReference,
 } from './api';
 
 const POLL_MS = 8000;
@@ -29,6 +30,108 @@ const KINDS = [
 const kindLabel = ( value ) =>
 	KINDS.find( ( kind ) => kind.value === value )?.label || value;
 
+/**
+ * Optional reference image for the piece being added: paste a screenshot (Ctrl+V) or an image
+ * address, or choose a file. The image is stored first; the request then attaches it.
+ *
+ * @param {Object}   props         Props.
+ * @param {Object}   props.value   Stored image {name, url}, or null.
+ * @param {boolean}  props.busy    Whether an image is being added.
+ * @param {Function} props.onStore Called with {file} or {text}.
+ * @param {Function} props.onClear Remove the image.
+ * @return {Element} Field.
+ */
+function ReferenceField( { value, busy, onStore, onClear } ) {
+	const [ text, setText ] = useState( '' );
+	const fileInput = useRef( null );
+
+	if ( value ) {
+		return (
+			<div className="si-b-ref">
+				<img className="si-b-ref__thumb" src={ value.url } alt="" />
+				<span>
+					{ __( 'Reference image added.', 'sprint-illustrations' ) }
+				</span>
+				<Button
+					size="small"
+					icon="no-alt"
+					label={ __(
+						'Remove the reference image',
+						'sprint-illustrations'
+					) }
+					onClick={ onClear }
+				/>
+			</div>
+		);
+	}
+
+	const paste = ( event ) => {
+		const clip = event.clipboardData;
+		const images = [ ...( clip?.files || [] ) ].filter( ( file ) =>
+			file.type.startsWith( 'image/' )
+		);
+		if ( images.length ) {
+			event.preventDefault();
+			onStore( { file: images[ 0 ] } );
+			return;
+		}
+		const pasted = clip?.getData( 'text' ) || '';
+		if ( pasted ) {
+			event.preventDefault();
+			onStore( { text: pasted } );
+		}
+	};
+
+	return (
+		<div className="si-b-row si-b-ref-field">
+			<TextControl
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+				label={ __(
+					'Reference image (optional)',
+					'sprint-illustrations'
+				) }
+				placeholder={ __(
+					'Paste a screenshot, or an image address',
+					'sprint-illustrations'
+				) }
+				value={ text }
+				disabled={ busy }
+				onChange={ setText }
+				onPaste={ paste }
+				onKeyDown={ ( event ) => {
+					if ( 'Enter' === event.key && text.trim() ) {
+						event.preventDefault();
+						onStore( { text: text.trim() } );
+						setText( '' );
+					}
+				} }
+			/>
+			<Button
+				variant="secondary"
+				__next40pxDefaultSize
+				isBusy={ busy }
+				disabled={ busy }
+				onClick={ () => fileInput.current?.click() }
+			>
+				{ __( 'Choose image', 'sprint-illustrations' ) }
+			</Button>
+			<input
+				ref={ fileInput }
+				type="file"
+				hidden
+				accept="image/png,image/jpeg,image/webp"
+				onChange={ ( event ) => {
+					const file = event.target.files?.[ 0 ];
+					event.target.value = '';
+					if ( file ) {
+						onStore( { file } );
+					}
+				} }
+			/>
+		</div>
+	);
+}
 const STEPS = [
 	{ state: 'queued', label: __( 'Requested', 'sprint-illustrations' ) },
 	{ state: 'drawing', label: __( 'Drawing', 'sprint-illustrations' ) },
@@ -82,6 +185,13 @@ function Request( { request, busy, onKeep, onDiscard } ) {
 			<span className="si-b-badge si-b-badge--quiet">
 				{ kindLabel( request.category ) }
 			</span>
+			{ request.reference && (
+				<img
+					className="si-b-req__ref"
+					src={ request.reference }
+					alt={ __( 'Reference image', 'sprint-illustrations' ) }
+				/>
+			) }
 			<Track state={ request.state } />
 			{ ( 'discarded' === request.state ||
 				'declined' === request.state ) && (
@@ -220,6 +330,8 @@ export default function NewPieces( {
 	const [ picked, setPicked ] = useState( [] );
 	const [ custom, setCustom ] = useState( '' );
 	const [ kind, setKind ] = useState( 'objects' );
+	const [ reference, setReference ] = useState( null );
+	const [ refBusy, setRefBusy ] = useState( false );
 	const [ plans, setPlans ] = useState( [] );
 	const [ sending, setSending ] = useState( false );
 	const [ building, setBuilding ] = useState( '' );
@@ -320,13 +432,48 @@ export default function NewPieces( {
 						)
 				)
 			);
+	const storeReference = ( source ) => {
+		setRefBusy( true );
+		uploadReference( source )
+			.then( setReference )
+			.catch( ( error ) =>
+				notify(
+					'error',
+					error.message ||
+						__(
+							'That image couldn’t be added.',
+							'sprint-illustrations'
+						)
+				)
+			)
+			.finally( () => setRefBusy( false ) );
+	};
+	// A screenshot pasted into the piece field attaches straight away; other text pastes normally.
+	const pasteScreenshot = ( event ) => {
+		const image = [ ...( event.clipboardData?.files || [] ) ].find(
+			( file ) => file.type.startsWith( 'image/' )
+		);
+		if ( image ) {
+			event.preventDefault();
+			storeReference( { file: image } );
+		}
+	};
 	const addCustom = () => {
 		const text = custom.trim();
 		if (
 			text.length >= 3 &&
 			! picked.some( ( item ) => item.text === text )
 		) {
-			setPicked( ( list ) => [ ...list, { text, category: kind } ] );
+			setPicked( ( list ) => [
+				...list,
+				{
+					text,
+					category: kind,
+					reference: reference?.name || '',
+					referenceUrl: reference?.url || '',
+				},
+			] );
+			setReference( null );
 		}
 		setCustom( '' );
 	};
@@ -338,6 +485,7 @@ export default function NewPieces( {
 			objects: picked.map( ( item ) => ( {
 				description: item.text,
 				category: item.category,
+				reference: item.reference || '',
 			} ) ),
 			template: state.spec.template || '',
 			keywords: state.spec.keywords
@@ -490,6 +638,7 @@ export default function NewPieces( {
 					) }
 					value={ custom }
 					onChange={ setCustom }
+					onPaste={ pasteScreenshot }
 					onKeyDown={ ( event ) => {
 						if ( 'Enter' === event.key ) {
 							event.preventDefault();
@@ -515,11 +664,24 @@ export default function NewPieces( {
 					{ __( 'Add', 'sprint-illustrations' ) }
 				</Button>
 			</div>
+			<ReferenceField
+				value={ reference }
+				busy={ refBusy }
+				onStore={ storeReference }
+				onClear={ () => setReference( null ) }
+			/>
 			{ picked.length > 0 && (
 				<ul className="si-b-picked">
 					{ picked.map( ( item ) => (
 						<li key={ item.text }>
 							<span>
+								{ item.referenceUrl && (
+									<img
+										className="si-b-picked__ref"
+										src={ item.referenceUrl }
+										alt=""
+									/>
+								) }
 								{ item.text }
 								<span className="si-b-badge si-b-badge--quiet">
 									{ kindLabel( item.category ) }

@@ -36,6 +36,7 @@ use SprintIllustrations\Rest\MediaController;
 use SprintIllustrations\Rest\Permissions;
 use SprintIllustrations\Rest\RequestsController;
 use SprintIllustrations\Rest\PlansController;
+use SprintIllustrations\Rest\ReferencesController;
 use SprintIllustrations\Rest\SuggestController;
 use SprintIllustrations\Rest\TemplatesController;
 use SprintIllustrations\Settings\SitePalette;
@@ -453,6 +454,7 @@ final class Plugin {
 		( new MediaController( $this ) )->register();
 		( new SuggestController( $this ) )->register();
 		( new PlansController( $this ) )->register();
+		( new ReferencesController( $this ) )->register();
 		( new TemplatesController( $this ) )->register();
 		( new RequestsController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
