@@ -4,13 +4,13 @@
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 remote=""
-if [ -z "${SI_LOCAL:-}" ] && { [ -f "$dir/remote.conf" ] || [ -n "${SI_SSH_TARGET:-}" ]; }; then
-	remote="$( ( [ -f "$dir/remote.conf" ] && . "$dir/remote.conf"; echo "${SI_SSH_TARGET:-}" ) )"
+if [ -z "${SI_LOCAL:-}" ]; then
+	remote="$( [ -f "$dir/remote.conf" ] && . "$dir/remote.conf"; echo "${SI_REST_URL:-${SI_SSH_TARGET:-}}" )"
 fi
 
 if ! queued="$("$dir/wp.sh" sprint-illustrations requests list --format=json 2>/dev/null)"; then
 	if [ -n "$remote" ]; then
-		echo "Sprint Illustrations: the live site ($remote) isn't reachable over SSH, so piece requests can't be drawn yet. Check bin/claude/remote.conf, the SSH key and the network, then run /draw-requests."
+		echo "Sprint Illustrations: the live site ($remote) isn't reachable, so piece requests can't be drawn yet. Check the connection settings (bin/claude/remote.conf or the SI_REST_* / SSH settings) and the network, then run /draw-requests."
 		exit 0
 	fi
 	echo "Sprint Illustrations: the Local site isn't reachable, so piece requests can't be drawn yet. When the owner has started the site in Local, run /draw-requests."

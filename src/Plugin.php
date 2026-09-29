@@ -33,6 +33,8 @@ use SprintIllustrations\Rest\ComposeController;
 use SprintIllustrations\Rest\IllustrationsController;
 use SprintIllustrations\Rest\LibraryController;
 use SprintIllustrations\Rest\MediaController;
+use SprintIllustrations\Rest\Permissions;
+use SprintIllustrations\Rest\RequestsController;
 use SprintIllustrations\Rest\SuggestController;
 use SprintIllustrations\Rest\TemplatesController;
 use SprintIllustrations\Settings\SitePalette;
@@ -356,6 +358,10 @@ final class Plugin {
 		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::CRON_HOOK );
 		}
+		// A minimal account for a remote drawer: it can use the piece request endpoints and nothing else.
+		if ( null === get_role( Permissions::DRAWER_ROLE ) ) {
+			add_role( Permissions::DRAWER_ROLE, __( 'Sprint Illustrations drawer', 'sprint-illustrations' ), [ Permissions::DRAWER_CAP => true ] );
+		}
 	}
 
 	/**
@@ -429,6 +435,7 @@ final class Plugin {
 		( new MediaController( $this ) )->register();
 		( new SuggestController( $this ) )->register();
 		( new TemplatesController( $this ) )->register();
+		( new RequestsController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
 		( new Shortcode( $this ) )->register();
 		( new Block( $this ) )->register();

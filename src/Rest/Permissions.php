@@ -18,6 +18,10 @@ final class Permissions {
 
 	public const NAMESPACE = 'sprint-illustrations/v1';
 
+	/** Role and capability for the account a remote Claude Code session draws pieces with. */
+	public const DRAWER_ROLE = 'sprint_illustrations_drawer';
+	public const DRAWER_CAP  = 'sprint_illustrations_draw';
+
 	/**
 	 * Base check for every route.
 	 *
@@ -53,5 +57,16 @@ final class Permissions {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Piece request endpoints: the drawer account or an administrator.
+	 *
+	 * @return bool|\WP_Error
+	 */
+	public static function drawer(): bool|\WP_Error {
+		return current_user_can( self::DRAWER_CAP ) || current_user_can( 'manage_options' )
+			? true
+			: new \WP_Error( 'sprint_illustrations_rest_forbidden', __( 'You are not allowed to draw pieces.', 'sprint-illustrations' ), [ 'status' => rest_authorization_required_code() ] );
 	}
 }
