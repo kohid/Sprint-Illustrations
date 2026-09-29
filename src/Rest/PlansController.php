@@ -13,6 +13,7 @@ use SprintIllustrations\Compose\SceneArrangement;
 use SprintIllustrations\Library\PieceRequest;
 use SprintIllustrations\Plugin;
 use SprintIllustrations\Selection\AiRequest;
+use SprintIllustrations\Selection\BriefSplitter;
 
 /**
  * POST /plans queues one piece request per object (Claude Code draws them, the requester keeps or
@@ -61,6 +62,15 @@ final class PlansController {
 		);
 		register_rest_route(
 			Permissions::NAMESPACE,
+			'/plans/split',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'split' ],
+				'permission_callback' => $permission,
+			]
+		);
+		register_rest_route(
+			Permissions::NAMESPACE,
 			'/plans/(?P<id>[a-f0-9]{12})',
 			[
 				'methods'             => 'DELETE',
@@ -94,6 +104,16 @@ final class PlansController {
 	}
 
 	/**
+	 * Split a long numbered brief into one short request per layer, each with the shared style notes.
+	 *
+	 * @param \WP_REST_Request $request Request {content}.
+	 * @return \WP_REST_Response
+	 */
+	public function split( \WP_REST_Request $request ): \WP_REST_Response {
+		return new \WP_REST_Response( BriefSplitter::split( AiRequest::clean( (string) ( $request['content'] ?? '' ) ) ) );
+	}
+
+	/**
 	 * Create a plan and queue a request per object.
 	 *
 	 * @param \WP_REST_Request $request Request {content, objects[], template, keywords[], title, seed}.
@@ -117,7 +137,8 @@ final class PlansController {
 		$requests   = $this->plugin->piece_requests();
 		$ids        = [];
 		foreach ( $objects as $object ) {
-			$description = mb_substr( $object, 0, PieceRequest::MAX_LENGTH - mb_strlen( $scene_note ) ) . $scene_note;
+			// Short objects get a note about the scene; long ones (a split layer with style notes) keep their room.
+			$description = mb_strlen( $object . $scene_note ) <= PieceRequest::MAX_LENGTH ? $object . $scene_note : mb_substr( $object, 0, PieceRequest::MAX_LENGTH );
 			$id          = $requests->create( 'objects', $description, $user );
 			if ( is_wp_error( $id ) ) {
 				foreach ( $ids as $done ) {

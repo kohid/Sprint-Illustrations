@@ -66,6 +66,13 @@ export const listPlans = () => apiFetch( { path: `${ NS }/plans` } );
 export const createPlan = ( data ) =>
 	apiFetch( { path: `${ NS }/plans`, method: 'POST', data } );
 
+export const splitBrief = ( content ) =>
+	apiFetch( {
+		path: `${ NS }/plans/split`,
+		method: 'POST',
+		data: { content },
+	} );
+
 export const buildPlan = ( id ) =>
 	apiFetch( { path: `${ NS }/plans/${ id }/build`, method: 'POST' } );
 

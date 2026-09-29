@@ -6,7 +6,13 @@
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { useCallback, useEffect, useState } from '@wordpress/element';
 import { Button, TextControl } from '@wordpress/components';
-import { buildPlan, createPlan, deletePlan, listPlans } from './api';
+import {
+	buildPlan,
+	createPlan,
+	deletePlan,
+	listPlans,
+	splitBrief,
+} from './api';
 
 const config = window.sprintIllustrationsBuilder || {};
 
@@ -122,6 +128,46 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 				? list.filter( ( item ) => item !== word )
 				: [ ...list, word ]
 		);
+	// A long brief with numbered layers, (1) … (2) …, becomes one short request per layer.
+	const looksLikeBrief =
+		describe.length > 300 ||
+		/\(\s*1\s*\)|(^|\n)\s*1[.)]\s/.test( describe );
+	const split = () =>
+		splitBrief( describe )
+			.then( ( result ) => {
+				if ( ! result.layers.length ) {
+					notify(
+						'info',
+						__(
+							'No numbered layers found. Number them like (1) …, (2) … or 1. … 2. … and try again.',
+							'sprint-illustrations'
+						)
+					);
+					return;
+				}
+				setPicked( result.layers );
+				notify(
+					'success',
+					sprintf(
+						/* translators: %d: number of layer requests. */
+						__(
+							'Split into %d layer requests, each with your style notes. Remove any you do not want, then request the drawings.',
+							'sprint-illustrations'
+						),
+						result.layers.length
+					)
+				);
+			} )
+			.catch( ( error ) =>
+				notify(
+					'error',
+					error.message ||
+						__(
+							'Could not split the brief.',
+							'sprint-illustrations'
+						)
+				)
+			);
 	const addCustom = () => {
 		const text = custom.trim();
 		if ( text.length >= 3 && ! picked.includes( text ) ) {
@@ -229,6 +275,16 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 						</button>
 					) ) }
 				</div>
+			) }
+			{ looksLikeBrief && (
+				<p>
+					<Button variant="secondary" onClick={ split }>
+						{ __(
+							'Split my description into layer requests',
+							'sprint-illustrations'
+						) }
+					</Button>
+				</p>
 			) }
 			<div className="si-b-row">
 				<TextControl

@@ -5,14 +5,20 @@
 
 /* Layer animation (phase 9). Classes come from Compose\Animation; still for reduced motion. */
 .si-a-layer,.si-a-layer>g{transform-box:fill-box;transform-origin:50% 100%}
-.si-a-loop-spin,.si-a-loop-pulse,.si-a-loop-twinkle,.si-a-enter-pop{transform-origin:50% 50%}
+.si-a-layer>.si-a-loop-spin,.si-a-layer>.si-a-loop-pulse,.si-a-layer>.si-a-loop-twinkle,.si-a-layer>.si-a-loop-ping,.si-a-layer>.si-a-loop-orbit,.si-a-enter-pop,.si-a-enter-zoom,.si-a-enter-turn{transform-origin:50% 50%}
+.si-a-layer>.si-a-loop-swing{transform-origin:50% 0}
 .si-a-s-slow{--si-speed:1.6}.si-a-s-normal{--si-speed:1}.si-a-s-fast{--si-speed:.6}
 .si-a-d-0{--si-delay:0s}.si-a-d-1{--si-delay:0.1s}.si-a-d-2{--si-delay:0.2s}.si-a-d-3{--si-delay:0.3s}.si-a-d-4{--si-delay:0.4s}.si-a-d-5{--si-delay:0.5s}.si-a-d-6{--si-delay:0.6s}.si-a-d-7{--si-delay:0.7s}.si-a-d-8{--si-delay:0.8s}.si-a-d-9{--si-delay:0.9s}.si-a-d-10{--si-delay:1s}.si-a-d-11{--si-delay:1.1s}.si-a-d-12{--si-delay:1.2s}.si-a-d-13{--si-delay:1.3s}.si-a-d-14{--si-delay:1.4s}.si-a-d-15{--si-delay:1.5s}.si-a-d-16{--si-delay:1.6s}.si-a-d-17{--si-delay:1.7s}.si-a-d-18{--si-delay:1.8s}.si-a-d-19{--si-delay:1.9s}.si-a-d-20{--si-delay:2s}.si-a-d-21{--si-delay:2.1s}.si-a-d-22{--si-delay:2.2s}.si-a-d-23{--si-delay:2.3s}.si-a-d-24{--si-delay:2.4s}.si-a-d-25{--si-delay:2.5s}.si-a-d-26{--si-delay:2.6s}.si-a-d-27{--si-delay:2.7s}.si-a-d-28{--si-delay:2.8s}.si-a-d-29{--si-delay:2.9s}.si-a-d-30{--si-delay:3s}
 @media (prefers-reduced-motion:no-preference){
-.si-a-enter-fade,.si-a-enter-rise,.si-a-enter-pop{animation:.8s cubic-bezier(.2,.7,.3,1) calc(var(--si-delay,0s)) both;animation-duration:calc(.8s * var(--si-speed,1))}
+.si-a-enter-fade,.si-a-enter-rise,.si-a-enter-pop,.si-a-enter-slide-left,.si-a-enter-slide-right,.si-a-enter-drop,.si-a-enter-zoom,.si-a-enter-turn{animation:.8s cubic-bezier(.2,.7,.3,1) calc(var(--si-delay,0s)) both;animation-duration:calc(.8s * var(--si-speed,1))}
 .si-a-enter-fade{animation-name:si-a-fade}
 .si-a-enter-rise{animation-name:si-a-rise}
 .si-a-enter-pop{animation-name:si-a-pop}
+.si-a-enter-slide-left{animation-name:si-a-slide-left}
+.si-a-enter-slide-right{animation-name:si-a-slide-right}
+.si-a-enter-drop{animation-name:si-a-drop;animation-duration:calc(1.1s * var(--si-speed,1));animation-timing-function:ease-out}
+.si-a-enter-zoom{animation-name:si-a-zoom}
+.si-a-enter-turn{animation-name:si-a-turn}
 .si-a-layer>[class^="si-a-loop-"]{animation-iteration-count:infinite;animation-delay:var(--si-delay,0s);animation-fill-mode:both}
 .si-a-layer[class*="si-a-enter-"]>[class^="si-a-loop-"]{animation-delay:calc(var(--si-delay,0s) + .8s * var(--si-speed,1))}
 .si-a-loop-float{animation-name:si-a-float;animation-duration:calc(4s * var(--si-speed,1));animation-timing-function:ease-in-out}
@@ -20,12 +26,29 @@
 .si-a-loop-pulse{animation-name:si-a-pulse;animation-duration:calc(2.4s * var(--si-speed,1));animation-timing-function:ease-in-out}
 .si-a-loop-spin{animation-name:si-a-spin;animation-duration:calc(14s * var(--si-speed,1));animation-timing-function:linear}
 .si-a-loop-twinkle{animation-name:si-a-twinkle;animation-duration:calc(1.8s * var(--si-speed,1));animation-timing-function:ease-in-out}
+.si-a-loop-bounce{animation-name:si-a-bounce;animation-duration:calc(1.6s * var(--si-speed,1));animation-timing-function:ease-out}
+.si-a-loop-wobble{animation-name:si-a-wobble;animation-duration:calc(2.6s * var(--si-speed,1));animation-timing-function:ease-in-out}
+.si-a-loop-swing{animation-name:si-a-swing;animation-duration:calc(3s * var(--si-speed,1));animation-timing-function:ease-in-out}
+.si-a-loop-drive{animation-name:si-a-drive;animation-duration:calc(7s * var(--si-speed,1));animation-timing-function:linear}
+.si-a-loop-ping{animation-name:si-a-ping;animation-duration:calc(2s * var(--si-speed,1));animation-timing-function:ease-out}
+.si-a-loop-orbit{animation-name:si-a-orbit;animation-duration:calc(6s * var(--si-speed,1));animation-timing-function:linear}
 }
 @keyframes si-a-fade{from{opacity:0}}
 @keyframes si-a-rise{from{opacity:0;transform:translateY(24px)}}
 @keyframes si-a-pop{from{opacity:0;transform:scale(.6)}}
+@keyframes si-a-slide-left{from{opacity:0;transform:translateX(-80px)}}
+@keyframes si-a-slide-right{from{opacity:0;transform:translateX(80px)}}
+@keyframes si-a-drop{0%{opacity:0;transform:translateY(-90px)}50%{opacity:1;transform:translateY(0)}68%{transform:translateY(-16px)}84%{transform:translateY(0)}92%{transform:translateY(-5px)}100%{transform:translateY(0)}}
+@keyframes si-a-zoom{0%{opacity:0;transform:scale(.2)}70%{opacity:1;transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes si-a-turn{from{opacity:0;transform:rotate(-120deg) scale(.4)}}
 @keyframes si-a-float{50%{transform:translateY(-10px)}}
 @keyframes si-a-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes si-a-pulse{50%{transform:scale(1.06)}}
 @keyframes si-a-spin{to{transform:rotate(360deg)}}
 @keyframes si-a-twinkle{50%{opacity:.35;transform:scale(.9)}}
+@keyframes si-a-bounce{0%,60%,100%{transform:translateY(0)}20%{transform:translateY(-18px)}40%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes si-a-wobble{0%,100%{transform:rotate(0)}15%{transform:rotate(-5deg)}30%{transform:rotate(4deg)}45%{transform:rotate(-3deg)}60%{transform:rotate(2deg)}75%{transform:rotate(-1deg)}}
+@keyframes si-a-swing{0%,100%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}}
+@keyframes si-a-drive{0%{opacity:0;transform:translateX(-60px)}10%,85%{opacity:1}100%{opacity:0;transform:translateX(60px)}}
+@keyframes si-a-ping{0%{opacity:1;transform:scale(.9)}70%,100%{opacity:0;transform:scale(1.5)}}
+@keyframes si-a-orbit{0%,100%{transform:translate(0,-8px)}25%{transform:translate(8px,0)}50%{transform:translate(0,8px)}75%{transform:translate(-8px,0)}}
