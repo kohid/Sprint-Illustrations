@@ -39,6 +39,7 @@ use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
 use SprintIllustrations\Storage\PieceDrafts;
 use SprintIllustrations\Storage\PieceRequestPostType;
+use SprintIllustrations\Storage\BundledLibrary;
 use SprintIllustrations\Storage\DrawerHeartbeat;
 use SprintIllustrations\Storage\PieceRequestRepository;
 use SprintIllustrations\Storage\ReferenceImages;
@@ -288,6 +289,15 @@ final class Plugin {
 	 */
 	public function reference_images(): ReferenceImages {
 		return new ReferenceImages( $this );
+	}
+
+	/**
+	 * The plugin's own library (kept pieces and saved templates ship with the plugin).
+	 *
+	 * @return BundledLibrary
+	 */
+	public function bundled_library(): BundledLibrary {
+		return new BundledLibrary( $this );
 	}
 
 	/**

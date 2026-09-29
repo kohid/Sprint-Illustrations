@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 320" data-si-label="Iona, instructor explaining" data-si-tags="person,woman,instructor,teacher,trainer,explain,standing,holding" data-si-accepts="hold:handheld">
+  <ellipse class="slot-neutral" cx="80" cy="311" rx="46" ry="6" opacity="0.12"/>
+  <path class="slot-stroke-neutral-dark" d="M69 204 V296 M91 204 V296" fill="none" stroke-width="18" stroke-linecap="round"/>
+  <rect class="slot-neutral-dark" x="58" y="298" width="24" height="12" rx="6"/>
+  <rect class="slot-neutral-dark" x="84" y="298" width="24" height="12" rx="6"/>
+  <circle class="slot-hair" cx="80" cy="14" r="11"/>
+  <rect class="slot-skin-dark" x="73" y="56" width="14" height="22" rx="4"/>
+  <path class="slot-neutral-light" d="M64 78 H96 L92 150 H68 Z"/>
+  <path class="slot-primary" d="M48 96 Q48 78 66 78 H70 L78 132 L74 208 H54 Q50 208 50 204 Z"/>
+  <path class="slot-primary" d="M112 96 Q112 78 94 78 H90 L82 132 L86 208 H106 Q110 208 110 204 Z"/>
+  <path class="slot-primary-dark" d="M66 78 L78 132 L70 110 L62 84 Z"/>
+  <path class="slot-primary-dark" d="M94 78 L82 132 L90 110 L98 84 Z"/>
+  <path class="slot-stroke-accent" d="M70 80 L80 120 L90 80" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect class="slot-accent" x="74" y="120" width="12" height="16" rx="2"/>
+  <rect class="slot-neutral-light" x="76.5" y="126" width="7" height="2.5" rx="1"/>
+  <path class="slot-stroke-primary-dark" d="M54 94 L45 144 L51 184" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="slot-skin" cx="52" cy="190" r="8"/>
+  <path class="slot-stroke-primary-dark" d="M106 94 L122 128 L136 104" fill="none" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="slot-skin" d="M131 100 Q134 86 140 88 Q146 86 146 96 Q146 104 140 106 Q133 106 131 100 Z"/>
+  <circle class="slot-skin" cx="80" cy="38" r="22"/>
+  <path class="slot-hair" d="M57 40 C54 20 68 12 82 13 C96 14 106 24 103 42 C100 34 92 27 80 28 C70 29 62 33 57 40 Z"/>
+  <path class="slot-hair" d="M58 36 C56 44 57 52 60 56 C61 48 61 42 62 36 Z"/>
+  <path class="slot-hair" d="M102 36 C104 44 103 52 100 56 C99 48 99 42 98 36 Z"/>
+  <circle id="anchor-hold" cx="52" cy="190" r="3"/>
+  <circle id="anchor-ground" cx="80" cy="310" r="3"/>
+</svg>

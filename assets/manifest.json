@@ -1,5 +1,5 @@
 {
-    "version": 5,
+    "version": 12,
     "pieces": [
         {
             "id": "bg-blob",
@@ -478,6 +478,56 @@
             "person": "dev"
         },
         {
+            "id": "char-iona-instructor",
+            "label": "Iona, instructor explaining",
+            "category": "characters",
+            "file": "pieces/characters/iona-instructor.svg",
+            "tags": [
+                "person",
+                "woman",
+                "instructor",
+                "teacher",
+                "trainer",
+                "explain",
+                "standing",
+                "holding"
+            ],
+            "viewBox": [
+                0,
+                0,
+                160,
+                320
+            ],
+            "size": [
+                160,
+                320
+            ],
+            "z": 30,
+            "anchors": {
+                "ground": [
+                    80,
+                    310
+                ],
+                "hold": [
+                    52,
+                    190
+                ]
+            },
+            "accepts": {
+                "hold": "handheld"
+            },
+            "mounts": {},
+            "slots": [
+                "accent",
+                "hair",
+                "neutral",
+                "primary",
+                "skin"
+            ],
+            "hash": "ae6feb2e365aa0a97e40934c058300c151865262",
+            "person": "iona"
+        },
+        {
             "id": "decor-confetti",
             "label": "Confetti",
             "category": "decor",
@@ -534,6 +584,37 @@
                 "primary"
             ],
             "hash": "86f773aa356431719a1b7c91c3d52f21f00e0983"
+        },
+        {
+            "id": "decor-heart",
+            "label": "Heart",
+            "category": "decor",
+            "file": "pieces/decor/heart.svg",
+            "tags": [
+                "heart",
+                "love",
+                "care",
+                "like",
+                "favourite"
+            ],
+            "viewBox": [
+                0,
+                0,
+                60,
+                56
+            ],
+            "size": [
+                60,
+                56
+            ],
+            "z": 5,
+            "anchors": {},
+            "accepts": {},
+            "mounts": {},
+            "slots": [
+                "accent"
+            ],
+            "hash": "39371bd07f1285da70c7731b65e5cd65e65ed953"
         },
         {
             "id": "decor-plus",
@@ -648,6 +729,140 @@
                 "accent"
             ],
             "hash": "bbf4125094bf82d9dc46b6ae5dddd75eed7c6f25"
+        },
+        {
+            "id": "obj-aberdeen-taxi",
+            "label": "Aberdeen taxi, side view",
+            "category": "objects",
+            "file": "pieces/objects/aberdeen-taxi.svg",
+            "tags": [
+                "taxi",
+                "cab",
+                "car",
+                "saloon",
+                "vehicle",
+                "transport",
+                "aberdeen",
+                "hero"
+            ],
+            "viewBox": [
+                0,
+                0,
+                500,
+                240
+            ],
+            "size": [
+                500,
+                240
+            ],
+            "z": 20,
+            "anchors": {
+                "base": [
+                    250,
+                    228
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "surface": "base"
+            },
+            "slots": [
+                "accent",
+                "background",
+                "neutral",
+                "outline",
+                "primary"
+            ],
+            "hash": "a4ee38136fa7ca0a25685fc5b3dc993ddd5e9c88"
+        },
+        {
+            "id": "obj-car",
+            "label": "Car",
+            "category": "objects",
+            "file": "pieces/objects/car.svg",
+            "tags": [
+                "car",
+                "vehicle",
+                "taxi",
+                "transport",
+                "travel",
+                "hero"
+            ],
+            "viewBox": [
+                0,
+                0,
+                480,
+                240
+            ],
+            "size": [
+                480,
+                240
+            ],
+            "z": 20,
+            "anchors": {
+                "base": [
+                    240,
+                    224
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "surface": "base"
+            },
+            "slots": [
+                "accent",
+                "background",
+                "neutral",
+                "outline",
+                "primary"
+            ],
+            "hash": "9527a7f3d00832debe9a419295aea6b5771f8184"
+        },
+        {
+            "id": "obj-castle",
+            "label": "Granite castle with spire and clock tower",
+            "category": "objects",
+            "file": "pieces/objects/castle.svg",
+            "tags": [
+                "castle",
+                "building",
+                "church",
+                "landmark",
+                "granite",
+                "aberdeen",
+                "city",
+                "tower",
+                "hero"
+            ],
+            "viewBox": [
+                0,
+                0,
+                520,
+                420
+            ],
+            "size": [
+                520,
+                420
+            ],
+            "z": 20,
+            "anchors": {
+                "base": [
+                    260,
+                    402
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "surface": "base"
+            },
+            "slots": [
+                "accent",
+                "background",
+                "neutral",
+                "outline",
+                "secondary"
+            ],
+            "hash": "54ad8cf68e6066465ea6fa4629e20e9ae56bc94a"
         },
         {
             "id": "obj-chart",
@@ -810,6 +1025,51 @@
                 "primary"
             ],
             "hash": "1f45ab304dd0fc92c35a0535b7fdf3eac73eeca7"
+        },
+        {
+            "id": "obj-driving-licence",
+            "label": "Driving licence",
+            "category": "objects",
+            "file": "pieces/objects/driving-licence.svg",
+            "tags": [
+                "licence",
+                "license",
+                "card",
+                "id",
+                "driver",
+                "document",
+                "taxi",
+                "handheld",
+                "hero"
+            ],
+            "viewBox": [
+                0,
+                0,
+                66,
+                50
+            ],
+            "size": [
+                66,
+                50
+            ],
+            "z": 20,
+            "anchors": {
+                "grip": [
+                    10,
+                    44
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "handheld": "grip"
+            },
+            "slots": [
+                "accent",
+                "background",
+                "neutral",
+                "primary"
+            ],
+            "hash": "d5cd2f8701caf69ef25b75541e6d9a1d4acc85ed"
         },
         {
             "id": "obj-gear",
@@ -1042,6 +1302,48 @@
                 "secondary"
             ],
             "hash": "3ab3ddea8459032791e2d6e79bbfd21e66f2096f"
+        },
+        {
+            "id": "obj-taxi",
+            "label": "Taxi",
+            "category": "objects",
+            "file": "pieces/objects/taxi.svg",
+            "tags": [
+                "taxi",
+                "cab",
+                "car",
+                "vehicle",
+                "transport",
+                "hero"
+            ],
+            "viewBox": [
+                0,
+                0,
+                480,
+                260
+            ],
+            "size": [
+                480,
+                260
+            ],
+            "z": 20,
+            "anchors": {
+                "base": [
+                    240,
+                    244
+                ]
+            },
+            "accepts": {},
+            "mounts": {
+                "surface": "base"
+            },
+            "slots": [
+                "accent",
+                "background",
+                "neutral",
+                "outline"
+            ],
+            "hash": "16ee36f6f763152bc65fffe7206191aabe0b57d0"
         }
     ]
 }

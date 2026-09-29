@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 240" data-si-label="Car" data-si-tags="car,vehicle,taxi,transport,travel,hero" data-si-mounts="surface:base">
+  <g transform="scale(2)">
+  <ellipse class="slot-neutral" cx="120" cy="114" rx="106" ry="5" opacity="0.12"/>
+  <path class="slot-primary" d="M54 60 L80 24 Q85 17 94 17 H150 Q159 17 165 24 L194 60 Z"/>
+  <path class="slot-background" d="M86 56 L100 30 Q102 27 106 27 H124 V56 Z"/>
+  <path class="slot-background" d="M132 27 H152 Q157 27 160 31 L180 56 H132 Z"/>
+  <rect class="slot-primary" x="8" y="56" width="224" height="40" rx="14"/>
+  <rect class="slot-primary-dark" x="8" y="80" width="224" height="8"/>
+  <path class="slot-outline" d="M128 60 V90" fill="none" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+  <rect class="slot-primary-dark" x="92" y="65" width="14" height="4" rx="2"/>
+  <rect class="slot-primary-dark" x="138" y="65" width="14" height="4" rx="2"/>
+  <rect class="slot-accent" x="221" y="62" width="11" height="9" rx="3"/>
+  <rect class="slot-accent-dark" x="8" y="62" width="8" height="9" rx="3"/>
+  <rect class="slot-neutral" x="2" y="84" width="18" height="9" rx="4.5"/>
+  <rect class="slot-neutral" x="220" y="84" width="18" height="9" rx="4.5"/>
+  <circle class="slot-primary-dark" cx="62" cy="94" r="22"/>
+  <circle class="slot-primary-dark" cx="182" cy="94" r="22"/>
+  <circle class="slot-neutral-dark" cx="62" cy="96" r="17"/>
+  <circle class="slot-neutral-dark" cx="182" cy="96" r="17"/>
+  <circle class="slot-neutral-light" cx="62" cy="96" r="7"/>
+  <circle class="slot-neutral-light" cx="182" cy="96" r="7"/>
+  <circle id="anchor-base" cx="120" cy="112" r="2"/>
+  </g>
+</svg>

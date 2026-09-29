@@ -190,7 +190,7 @@ final class PieceDrafts {
 	 * Move the draft into the library and rebuild the site manifest.
 	 *
 	 * @param array<string, mixed> $request Request row.
-	 * @return array{ok: bool, piece: string, messages: array<string>}
+	 * @return array{ok: bool, piece: string, where?: string, messages: array<string>}
 	 */
 	public function keep( array $request ): array {
 		$category = (string) $request['category'];
@@ -202,8 +202,25 @@ final class PieceDrafts {
 		if ( '' === $name || ! is_readable( $source ) ) {
 			return $this->fail( [ 'The draft is missing. Ask Claude Code to draw it again.' ] );
 		}
-		if ( is_file( $target ) ) {
+		if ( is_file( $target ) || null !== $this->plugin->services()->manifest->get( $piece ) ) {
 			return $this->fail( [ sprintf( '"%s" already exists in the library.', $piece ) ] );
+		}
+
+		// Kept pieces join the plugin's own library, so they ship with the plugin to other sites.
+		$bundled = $this->plugin->bundled_library();
+		if ( $bundled->writable() ) {
+			$report = $bundled->add_piece( $category, $name, $source );
+			if ( is_string( $report ) ) {
+				return $this->fail( [ $report ] );
+			}
+			$this->discard( $request );
+
+			return [
+				'ok'       => true,
+				'piece'    => $piece,
+				'where'    => 'plugin',
+				'messages' => $report->warnings,
+			];
 		}
 
 		wp_mkdir_p( dirname( $target ) );
@@ -220,6 +237,7 @@ final class PieceDrafts {
 		return [
 			'ok'       => true,
 			'piece'    => $piece,
+			'where'    => 'site',
 			'messages' => $report->warnings,
 		];
 	}

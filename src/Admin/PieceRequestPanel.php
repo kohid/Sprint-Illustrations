@@ -507,7 +507,13 @@ final class PieceRequestPanel {
 
 		$this->plugin->piece_requests()->keep( (int) $request['id'], $result['piece'] );
 		$this->plugin->reference_images()->delete( (string) $request['reference'] );
-		Notices::add_for_user( get_current_user_id(), __( 'Kept. The piece is now in the library and the Builder.', 'sprint-illustrations' ), 'success' );
+		Notices::add_for_user(
+			get_current_user_id(),
+			'plugin' === ( $result['where'] ?? '' )
+				? __( 'Kept. The piece is now in the plugin’s library, so it ships with the plugin to every site. Ask Claude Code to commit it.', 'sprint-illustrations' )
+				: __( 'Kept. The piece is in this site’s library (the plugin folder isn’t writable here).', 'sprint-illustrations' ),
+			'success'
+		);
 		$this->back( (string) $request['category'], $result['piece'] );
 	}
 

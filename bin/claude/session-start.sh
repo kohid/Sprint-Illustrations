@@ -8,6 +8,8 @@ if ! queued="$("$dir/wp.sh" sprint-illustrations requests list --format=json 2>/
 	exit 0
 fi
 count="$(php -r 'echo count( (array) json_decode( stream_get_contents( STDIN ), true ) );' <<<"$queued")"
+# Kept pieces and saved templates live in the plugin's assets/ and need committing to ship.
+uncommitted="$(git -C "$dir/../.." status --porcelain -- assets/pieces-src assets/templates 2>/dev/null | wc -l | tr -d ' ')"
 
 cat <<EOF
 Sprint Illustrations: automatic piece drawing is on for this session (the owner's standing instruction; don't ask before drawing).
@@ -16,3 +18,6 @@ Sprint Illustrations: automatic piece drawing is on for this session (the owner'
 - For each {"event":"request",...} line, draw that piece following "Piece requests" in CLAUDE.md: bin/claude/wp.sh sprint-illustrations requests start <id>; draw the SVG; render and check it; requests draft <id> --file=<svg> (zero warnings); or requests decline <id> --note="..." when the flat style can't do it. Read "feedback" when it isn't empty. When "reference" is a file path, open that image first and draw from it (shape, proportions, pose, livery) in the flat slot-colour style; don't trace it. Then say in one line what you drew.
 - Use bin/claude/wp.sh for every wp command. Carry on with anything the owner asks in between.
 EOF
+if [ "${uncommitted:-0}" -gt 0 ]; then
+	echo "- $uncommitted kept piece or template file(s) in assets/ aren't committed yet. Mention it once, and commit them (with assets/pieces and assets/manifest.json) when the owner agrees."
+fi

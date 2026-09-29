@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 56" data-si-label="Heart" data-si-tags="heart,love,care,like,favourite">
+  <path class="slot-accent" d="M30 52 C22 45 4 34 4 19 C4 10 11 4 19 4 C24 4 28 7 30 11 C32 7 36 4 41 4 C49 4 56 10 56 19 C56 34 38 45 30 52 Z"/>
+  <path class="slot-accent-dark" d="M30 52 C38 45 56 34 56 19 C56 15 55 12 53 9 C54 24 40 38 30 45 Z"/>
+  <path class="slot-stroke-accent-light" d="M13 14 C15 11 18 10 21 10" fill="none" stroke-width="3" stroke-linecap="round"/>
+</svg>

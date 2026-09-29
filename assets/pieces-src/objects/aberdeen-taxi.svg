@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 240" data-si-label="Aberdeen taxi, side view" data-si-tags="taxi,cab,car,saloon,vehicle,transport,aberdeen,hero" data-si-mounts="surface:base">
+  <g transform="scale(2)">
+    <ellipse class="slot-neutral" cx="125" cy="114" rx="116" ry="5" opacity="0.12"/>
+    <rect class="slot-accent-dark" x="112" y="16" width="30" height="5" rx="2"/>
+    <rect class="slot-accent" x="108" y="7" width="38" height="11" rx="5"/>
+    <rect class="slot-accent-dark" x="116" y="11" width="22" height="3" rx="1.5"/>
+    <path class="slot-primary-dark" d="M62 58 L88 26 Q93 20 101 20 H160 Q168 20 174 26 L200 58 Z"/>
+    <path class="slot-background" d="M78 56 L96 32 Q99 28 104 28 H126 V56 Z"/>
+    <path class="slot-background" d="M134 28 H158 Q163 28 167 32 L186 56 H134 Z"/>
+    <path class="slot-primary" d="M10 74 Q10 60 26 58 L62 56 H200 L230 60 Q242 62 242 76 V92 Q242 100 234 100 H18 Q10 100 10 92 Z"/>
+    <path class="slot-primary-dark" d="M10 84 H242 V92 Q242 100 234 100 H18 Q10 100 10 92 Z"/>
+    <rect class="slot-accent" x="10" y="72" width="232" height="6"/>
+    <rect class="slot-neutral-light" x="104" y="80" width="30" height="10" rx="2"/>
+    <rect class="slot-primary-dark" x="108" y="83" width="22" height="4" rx="1"/>
+    <path class="slot-outline" d="M130 58 V96 M72 60 L70 96 M188 58 L192 96" fill="none" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <rect class="slot-neutral-dark" x="112" y="64" width="12" height="3" rx="1.5"/>
+    <rect class="slot-neutral-dark" x="174" y="64" width="12" height="3" rx="1.5"/>
+    <path class="slot-accent-light" d="M232 64 H241 Q242 64 242 66 V70 H232 Z"/>
+    <path class="slot-accent-dark" d="M10 64 Q11 61 14 61 H20 V70 H10 Z"/>
+    <rect class="slot-neutral" x="4" y="90" width="16" height="8" rx="4"/>
+    <rect class="slot-neutral" x="232" y="90" width="16" height="8" rx="4"/>
+    <circle class="slot-neutral" cx="60" cy="96" r="21"/>
+    <circle class="slot-neutral" cx="196" cy="96" r="21"/>
+    <circle class="slot-neutral-dark" cx="60" cy="98" r="16"/>
+    <circle class="slot-neutral-dark" cx="196" cy="98" r="16"/>
+    <circle class="slot-neutral-light" cx="60" cy="98" r="6"/>
+    <circle class="slot-neutral-light" cx="196" cy="98" r="6"/>
+    <circle id="anchor-base" cx="125" cy="114" r="2"/>
+  </g>
+</svg>
