@@ -1,4 +1,4 @@
-/* Sprint Illustrations: Library page — refresh when a piece request changes state. No build step. */
+/* Sprint Illustrations: Library page — show whether Claude Code is watching, and refresh when a piece request changes state. No build step. */
 ( function () {
 	'use strict';
 
@@ -9,12 +9,6 @@
 	}
 
 	var known = JSON.parse( panel.getAttribute( 'data-si-requests' ) || '{}' );
-	var waiting = Object.keys( known ).some( function ( id ) {
-		return 'queued' === known[ id ] || 'drawing' === known[ id ];
-	} );
-	if ( ! waiting ) {
-		return;
-	}
 
 	function changed( current ) {
 		var ids = Object.keys( known ).concat( Object.keys( current ) );
@@ -36,7 +30,11 @@
 				return response.json();
 			} )
 			.then( function ( result ) {
-				if ( result && result.success && changed( result.data || {} ) ) {
+				if ( ! result || ! result.success || ! result.data ) {
+					return;
+				}
+				panel.classList.toggle( 'is-drawer-online', !! result.data.online );
+				if ( changed( result.data.states || {} ) ) {
 					window.location.reload();
 				}
 			} )

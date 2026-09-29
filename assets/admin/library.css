@@ -76,8 +76,19 @@
 .si-track__step.is-done::before{content:"✓";background:#00a32a;color:#fff}
 .si-track__step.is-current{background:#2271b1;color:#fff}
 .si-track__step.is-current::before{background:#fff;color:#2271b1}
-@media (prefers-reduced-motion:no-preference){.is-drawing .si-track__step.is-current{animation:si-pulse 1.6s ease-in-out infinite}}
-@keyframes si-pulse{50%{box-shadow:0 0 0 4px rgba(34,113,177,.2)}}
+.is-drawing .si-track{margin-bottom:6px}
+.si-track__pen{position:absolute;left:10px;bottom:-7px;width:calc(100% - 20px);height:6px;overflow:visible}
+.si-track__pen path{fill:none;stroke:#2271b1;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:0;vector-effect:non-scaling-stroke}
+@media (prefers-reduced-motion:no-preference){.si-track__pen path{animation:si-pen 1.6s ease-in-out infinite}}
+@keyframes si-pen{0%{stroke-dashoffset:100;opacity:1}60%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+/* Whether a Claude Code session is watching the queue (heartbeat from `requests watch`). */
+.si-drawer{display:flex;align-items:baseline;gap:8px;margin:0 0 16px;padding:8px 12px;border-radius:4px;background:#f6f7f7;color:#50575e;font-size:12px}
+.si-drawer strong{color:#1d2327;font-weight:600}
+.si-drawer__dot{flex:none;width:6px;height:6px;border:2px solid #8c8f94;border-radius:50%;transform:translateY(1px)}
+.si-requests.is-drawer-online .si-drawer{background:#f0f6fc}
+.si-requests.is-drawer-online .si-drawer__dot{border-color:#2271b1;background:#2271b1}
+.si-requests .si-when-online,.si-requests.is-drawer-online .si-when-offline{display:none}
+.si-requests.is-drawer-online .si-when-online{display:inline}
 
 /* Review: the piece and a sample scene, then Keep / Discard. */
 .si-review{grid-column:2;display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 0}

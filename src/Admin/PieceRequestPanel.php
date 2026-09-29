@@ -97,12 +97,14 @@ final class PieceRequestPanel {
 		$selected = isset( $this->categories()[ $tab ] ) ? $tab : 'objects';
 
 		printf(
-			'<section class="si-panel si-requests" aria-labelledby="si-requests-title" data-si-requests="%s">',
+			'<section class="si-panel si-requests%1$s" aria-labelledby="si-requests-title" data-si-requests="%2$s">',
+			$this->plugin->drawer_heartbeat()->online() ? ' is-drawer-online' : '',
 			esc_attr( (string) wp_json_encode( (object) $this->states() ) )
 		);
 		$this->render_form( $selected );
 
 		echo '<div class="si-requests__queue">';
+		$this->render_drawer();
 		/* translators: %d: number of requests in progress. */
 		echo '<h3 class="si-requests__heading">' . esc_html( sprintf( __( 'In progress (%d)', 'sprint-illustrations' ), count( $active ) ) ) . '</h3>';
 		if ( ! $active ) {
@@ -160,8 +162,19 @@ final class PieceRequestPanel {
 		);
 
 		echo '<p class="si-requests__actions"><button type="submit" class="button button-primary">' . esc_html__( 'Add request', 'sprint-illustrations' ) . '</button></p>';
-		echo '<p class="si-requests__hint">' . esc_html__( 'Then ask Claude Code: “make the requested pieces”. You’ll see each piece here before it joins the library.', 'sprint-illustrations' ) . '</p>';
+		echo '<p class="si-requests__hint">' . esc_html__( 'Claude Code draws it while a session is open. You’ll see it here before it joins the library.', 'sprint-illustrations' ) . '</p>';
 		echo '</form></div>';
+	}
+
+	/**
+	 * Whether a Claude Code session is watching the queue. Both messages are rendered; CSS shows one
+	 * (the `is-drawer-online` class on the panel) so library.js can switch them without a reload.
+	 */
+	private function render_drawer(): void {
+		echo '<div class="si-drawer" role="status"><span class="si-drawer__dot" aria-hidden="true"></span>';
+		echo '<span class="si-when-online"><strong>' . esc_html__( 'Claude Code is watching', 'sprint-illustrations' ) . '</strong> ' . esc_html__( 'New requests start within a few seconds.', 'sprint-illustrations' ) . '</span>';
+		echo '<span class="si-when-offline"><strong>' . esc_html__( 'No Claude Code session open', 'sprint-illustrations' ) . '</strong> ' . esc_html__( 'Requests wait here until you open one in this project.', 'sprint-illustrations' ) . '</span>';
+		echo '</div>';
 	}
 
 	/**
@@ -187,12 +200,17 @@ final class PieceRequestPanel {
 
 		$this->render_track( $state );
 
-		$status = [
-			'queued'  => __( 'Waiting for you to ask Claude Code: “make the requested pieces”.', 'sprint-illustrations' ),
-			'drawing' => __( 'Claude Code is drawing this…', 'sprint-illustrations' ),
-			'review'  => __( 'Ready for review. Keep it to add it to the library, or discard it.', 'sprint-illustrations' ),
-		];
-		echo '<p class="si-request__status" role="status">' . esc_html( $status[ $state ] ?? '' ) . '</p>';
+		if ( 'queued' === $state ) {
+			$status = '<span class="si-when-online">' . esc_html__( 'Claude Code will start this in a moment.', 'sprint-illustrations' ) . '</span>'
+				. '<span class="si-when-offline">' . esc_html__( 'It’ll be drawn the next time you open a Claude Code session.', 'sprint-illustrations' ) . '</span>';
+		} elseif ( 'drawing' === $state ) {
+			$since = '' !== $row['changed'] ? (string) $row['changed'] : (string) $row['date'];
+			/* translators: %s: time ago, e.g. "2 mins". */
+			$status = esc_html( sprintf( __( 'Claude Code started drawing this %s ago.', 'sprint-illustrations' ), $this->ago( $since ) ) );
+		} else {
+			$status = esc_html__( 'Ready for review. Keep it to add it to the library, or discard it.', 'sprint-illustrations' );
+		}
+		echo '<p class="si-request__status" role="status">' . $status . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
 
 		if ( 'review' === $state ) {
 			$this->render_review( $row );
@@ -325,7 +343,11 @@ final class PieceRequestPanel {
 			} elseif ( $i === $current ) {
 				$class = 'is-current';
 			}
-			printf( '<li class="si-track__step %1$s"%2$s>%3$s</li>', esc_attr( $class ), $i === $current ? ' aria-current="step"' : '', esc_html( $label ) );
+			// While drawing, a pen line draws itself under the current step (static with reduced motion).
+			$pen = 'drawing' === $state && $i === $current
+				? '<svg class="si-track__pen" viewBox="0 0 60 6" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M1 4C10 1 18 6 28 3S46 1 59 4" pathLength="100"/></svg>'
+				: '';
+			printf( '<li class="si-track__step %1$s"%2$s>%3$s%4$s</li>', esc_attr( $class ), $i === $current ? ' aria-current="step"' : '', esc_html( $label ), $pen ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $pen is a fixed string.
 		}
 		echo '</ol>';
 	}
@@ -499,7 +521,12 @@ final class PieceRequestPanel {
 			wp_send_json_error( null, 403 );
 		}
 
-		wp_send_json_success( (object) $this->states() );
+		wp_send_json_success(
+			[
+				'states' => (object) $this->states(),
+				'online' => $this->plugin->drawer_heartbeat()->online(),
+			]
+		);
 	}
 
 	/**
