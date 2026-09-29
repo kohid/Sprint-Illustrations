@@ -38,7 +38,7 @@ function Swatch( { background } ) {
 	);
 }
 
-function PaintEditor( { slot, paint, fallback, onChange } ) {
+function PaintEditor( { slot, paint, fallback, partner, onChange } ) {
 	const gradient = isGradient( paint );
 	const solid = gradient ? paint.from : paint || fallback;
 	const [ end, setEnd ] = useState( 'from' );
@@ -57,7 +57,7 @@ function PaintEditor( { slot, paint, fallback, onChange } ) {
 			] }
 			onSelect={ ( name ) => {
 				if ( 'gradient' === name && ! gradient ) {
-					onChange( { from: solid, to: fallback, angle: 90 } );
+					onChange( { from: solid, to: partner, angle: 90 } );
 				} else if ( 'solid' === name && gradient ) {
 					onChange( paint.from );
 				}
@@ -155,6 +155,14 @@ export default function PaintControl( {
 		dispatch( { type: 'SET_PAINT', key: layerKey, value: all } );
 	};
 	const fallback = colors?.[ slot ] || '#2271b1';
+	// A new gradient ends on the next palette colour, so it is visible straight away.
+	const partner =
+		colors?.[
+			SLOTS[
+				( SLOTS.findIndex( ( o ) => o.value === slot ) + 1 ) %
+					SLOTS.length
+			].value
+		] || '#ffffff';
 
 	return (
 		<Dropdown
@@ -206,6 +214,7 @@ export default function PaintControl( {
 						slot={ slot }
 						paint={ paints[ slot ] }
 						fallback={ fallback }
+						partner={ partner }
 						onChange={ set }
 					/>
 					<Button
