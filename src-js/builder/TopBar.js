@@ -197,12 +197,46 @@ export default function TopBar( {
 					/>
 				) }
 			/>
-			<Button
-				variant="tertiary"
-				onClick={ () => dispatch( { type: 'NEW' } ) }
-			>
-				{ __( 'New', 'sprint-illustrations' ) }
-			</Button>
+			<Dropdown
+				popoverProps={ { placement: 'bottom-start' } }
+				renderToggle={ ( { isOpen, onToggle } ) => (
+					<Button
+						variant="tertiary"
+						onClick={ onToggle }
+						aria-expanded={ isOpen }
+					>
+						{ __( 'New', 'sprint-illustrations' ) }
+					</Button>
+				) }
+				renderContent={ ( { onClose } ) => (
+					<MenuGroup className="si-b-export__menu">
+						<MenuItem
+							info={ __(
+								'Start empty and add pieces from the Library',
+								'sprint-illustrations'
+							) }
+							onClick={ () => {
+								onClose();
+								dispatch( { type: 'NEW', blank: true } );
+							} }
+						>
+							{ __( 'Blank canvas', 'sprint-illustrations' ) }
+						</MenuItem>
+						<MenuItem
+							info={ __(
+								'Start from a ready-made scene',
+								'sprint-illustrations'
+							) }
+							onClick={ () => {
+								onClose();
+								dispatch( { type: 'NEW' } );
+							} }
+						>
+							{ __( 'From a template', 'sprint-illustrations' ) }
+						</MenuItem>
+					</MenuGroup>
+				) }
+			/>
 			<div className="si-b-top__name">
 				<TextControl
 					__nextHasNoMarginBottom

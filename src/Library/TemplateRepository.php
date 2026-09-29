@@ -57,7 +57,7 @@ final class TemplateRepository {
 	 * @return Template|null
 	 */
 	public function get( string $id ): ?Template {
-		return $this->templates[ $id ] ?? null;
+		return $this->templates[ $id ] ?? ( Template::BLANK_ID === $id ? Template::blank() : null );
 	}
 
 	/**

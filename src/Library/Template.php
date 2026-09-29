@@ -14,6 +14,8 @@ namespace SprintIllustrations\Library;
  */
 final class Template {
 
+	public const BLANK_ID = 'blank';
+
 	/**
 	 * Constructor.
 	 *
@@ -32,6 +34,16 @@ final class Template {
 		public readonly array $tags,
 		public readonly array $slots,
 	) {}
+
+	/**
+	 * The built-in empty template ("Create new → Blank canvas"): no slots, filled with free items.
+	 * Reachable by ID only, so automatic choice and template lists never offer it.
+	 *
+	 * @return self
+	 */
+	public static function blank(): self {
+		return new self( self::BLANK_ID, 'Blank canvas', [ 800.0, 600.0 ], 1.0, [], [] );
+	}
 
 	/**
 	 * Build from template JSON.

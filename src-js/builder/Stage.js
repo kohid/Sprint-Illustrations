@@ -6,6 +6,7 @@ import { Spinner } from '@wordpress/components';
 import CanvasEditor from './CanvasEditor';
 import CanvasSize from './CanvasSize';
 import { canvasOf, itemHeight } from './geometry';
+import { BLANK } from './state';
 
 export default function Stage( { state, byId, dragging, dispatch } ) {
 	const { result, status, error, hover, spec } = state;
@@ -50,6 +51,14 @@ export default function Stage( { state, byId, dragging, dispatch } ) {
 				}` }
 				style={ { aspectRatio: `${ canvas[ 0 ] } / ${ canvas[ 1 ] }` } }
 			>
+				{ BLANK === spec.template && ! spec.items.length && (
+					<p className="si-b-stage__hint">
+						{ __(
+							'Drag pieces here from the Library',
+							'sprint-illustrations'
+						) }
+					</p>
+				) }
 				{ result ? (
 					<div
 						className="si-b-stage__art"

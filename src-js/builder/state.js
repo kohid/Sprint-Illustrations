@@ -5,6 +5,9 @@ import { __ } from '@wordpress/i18n';
 
 export const MAX_ITEMS = 30;
 
+// Built-in empty template on the server (Template::BLANK_ID).
+export const BLANK = 'blank';
+
 export const initialState = {
 	library: null,
 	spec: {
@@ -232,7 +235,9 @@ export function reducer( state, action ) {
 				library: state.library,
 				spec: {
 					...initialState.spec,
-					template: defaultTemplate( state.library ),
+					template: action.blank
+						? BLANK
+						: defaultTemplate( state.library ),
 				},
 			};
 		case 'SAVING':

@@ -126,3 +126,8 @@
 .si-b-slot>.components-button+.components-button{grid-area:change;justify-self:end}
 .si-b-slot--child{padding-left:24px}
 .si-b-slot--child .si-b-layer__grip{visibility:hidden}
+
+/* Blank canvas: dashed empty frame in the Template panel, and a hint on the empty stage. */
+.si-b-template--blank .si-b-template__art{flex:1 1 auto;aspect-ratio:auto;min-height:60px;margin:8px 8px 0;border:2px dashed #c3c4c7;border-radius:3px;background:#fff}
+.si-b-template--blank[aria-pressed="true"] .si-b-template__art{border-color:#2271b1}
+.si-b-stage__hint{position:absolute;inset:0;z-index:1;display:grid;place-items:center;margin:0;color:#8c8f94;font-size:14px;pointer-events:none}
