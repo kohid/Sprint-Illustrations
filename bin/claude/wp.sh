@@ -4,6 +4,13 @@
 set -euo pipefail
 
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Remote mode: bin/claude/remote.conf (or SI_SSH_TARGET) sends piece-request commands to a live site over SSH.
+# SI_LOCAL=1 forces the Local site for one command.
+if [ -z "${SI_LOCAL:-}" ] && { [ -f "$dir/remote.conf" ] || [ -n "${SI_SSH_TARGET:-}" ]; }; then
+	exec bash "$dir/wp-remote.sh" "$@"
+fi
+
 env_lines="$(php "$dir/local-env.php")"
 
 value() { sed -n "s/^$1=//p" <<<"$env_lines"; }

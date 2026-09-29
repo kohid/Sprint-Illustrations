@@ -5,3 +5,4 @@
 .phpunit.cache/
 .playwright-mcp/
 .claude/settings.local.json
+/bin/claude/remote.conf

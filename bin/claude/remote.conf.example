@@ -1,0 +1,12 @@
+# Copy to bin/claude/remote.conf (git-ignored) to draw piece requests against a LIVE site over SSH
+# instead of the Local site. Delete or rename remote.conf to go back to Local.
+#
+# SSH must log in with a key (no password prompts). Put port / key / jump-host settings in ~/.ssh/config
+# and use its Host alias here, e.g.  Host kolab  →  SI_SSH_TARGET=kolab
+SI_SSH_TARGET=user@knowledge.kolab.works
+# Absolute path of the WordPress root on the server (where wp-config.php lives).
+SI_REMOTE_WP_PATH=/var/www/html
+# Optional: full path of WP-CLI on the server when `wp` isn't on the non-interactive PATH.
+#SI_REMOTE_WP_BIN=/usr/local/bin/wp
+# Optional: extra ssh options, space separated.
+#SI_SSH_OPTS="-p 2222"
