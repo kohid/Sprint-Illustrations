@@ -44,6 +44,7 @@ use SprintIllustrations\Storage\BundledLibrary;
 use SprintIllustrations\Storage\DrawerHeartbeat;
 use SprintIllustrations\Storage\PieceRequestRepository;
 use SprintIllustrations\Storage\ReferenceImages;
+use SprintIllustrations\Update\GitHubUpdater;
 
 /**
  * Singleton that owns the service container and registers hooks.
@@ -419,6 +420,7 @@ final class Plugin {
 	 */
 	private function register_hooks(): void {
 		( new Sync( $this->site_palette(), new ColorSource() ) )->register();
+		( new GitHubUpdater( SPRINT_ILLUSTRATIONS_FILE, $this->dir() ) )->register();
 		( new IllustrationPostType() )->register();
 		( new PieceRequestPostType() )->register();
 		( new ComposeController( $this ) )->register();

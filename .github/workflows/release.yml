@@ -1,0 +1,69 @@
+# Publishes the plugin zip that the WordPress Plugins page updates from (see src/Update/GitHubUpdater.php).
+# Release: bump the version (plugin header, SPRINT_ILLUSTRATIONS_VERSION, blocks/illustration/block.json),
+# commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`.
+name: Release
+
+on:
+  push:
+    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag must match the plugin version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          header="$(sed -n 's/^ \* Version: *//p' sprint-illustrations.php | head -1 | tr -d '\r ')"
+          const="$(sed -n "s/.*'SPRINT_ILLUSTRATIONS_VERSION', '\([^']*\)'.*/\1/p" sprint-illustrations.php)"
+          block="$(php -r 'echo json_decode( file_get_contents( "blocks/illustration/block.json" ) )->version;')"
+          echo "tag=$tag header=$header constant=$const block.json=$block"
+          [ "$tag" = "$header" ] && [ "$tag" = "$const" ] && [ "$tag" = "$block" ] || { echo "::error::Version mismatch"; exit 1; }
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install, prefix, lint, test
+        run: |
+          composer install --no-interaction --prefer-dist
+          composer prefix
+          composer lint
+          composer test
+
+      - name: Builder bundle must be up to date
+        run: |
+          npm ci
+          npm run lint:js
+          npm run build
+          git diff --exit-code -- build || { echo "::error::build/ is stale: run npm run build and commit it"; exit 1; }
+
+      - name: Build the plugin zip
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+          rm -rf dist && mkdir -p dist/sprint-illustrations
+          git archive HEAD | tar -x -C dist/sprint-illustrations
+          cd dist/sprint-illustrations
+          rm -rf tests docs src-js .github .gitattributes .gitignore CLAUDE.md package.json package-lock.json composer.lock phpunit.xml.dist phpcs.xml.dist
+          cp -r "$GITHUB_WORKSPACE/vendor" "$GITHUB_WORKSPACE/vendor-prefixed" .
+          # Strauss copies whole packages: drop their git data and test fixtures (sample malicious SVGs).
+          find vendor vendor-prefixed -name .git -prune -exec rm -rf {} +
+          find vendor-prefixed -type d \( -name tests -o -name Tests \) -prune -exec rm -rf {} +
+          test -f vendor/autoload.php && test -f vendor-prefixed/autoload.php && test -f build/builder.js
+          cd .. && zip -qr sprint-illustrations.zip sprint-illustrations
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/sprint-illustrations.zip
+          generate_release_notes: true
