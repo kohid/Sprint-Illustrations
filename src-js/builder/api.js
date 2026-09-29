@@ -60,3 +60,14 @@ export const suggest = ( content, seed ) =>
 		method: 'POST',
 		data: { content, seed },
 	} );
+
+export const listPlans = () => apiFetch( { path: `${ NS }/plans` } );
+
+export const createPlan = ( data ) =>
+	apiFetch( { path: `${ NS }/plans`, method: 'POST', data } );
+
+export const buildPlan = ( id ) =>
+	apiFetch( { path: `${ NS }/plans/${ id }/build`, method: 'POST' } );
+
+export const deletePlan = ( id ) =>
+	apiFetch( { path: `${ NS }/plans/${ id }`, method: 'DELETE' } );

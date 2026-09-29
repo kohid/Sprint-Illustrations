@@ -35,6 +35,7 @@ use SprintIllustrations\Rest\LibraryController;
 use SprintIllustrations\Rest\MediaController;
 use SprintIllustrations\Rest\Permissions;
 use SprintIllustrations\Rest\RequestsController;
+use SprintIllustrations\Rest\PlansController;
 use SprintIllustrations\Rest\SuggestController;
 use SprintIllustrations\Rest\TemplatesController;
 use SprintIllustrations\Settings\SitePalette;
@@ -45,6 +46,7 @@ use SprintIllustrations\Storage\PieceRequestPostType;
 use SprintIllustrations\Storage\BundledLibrary;
 use SprintIllustrations\Storage\DrawerHeartbeat;
 use SprintIllustrations\Storage\PieceRequestRepository;
+use SprintIllustrations\Storage\ScenePlanRepository;
 use SprintIllustrations\Storage\ReferenceImages;
 use SprintIllustrations\Update\GitHubUpdater;
 
@@ -137,6 +139,13 @@ final class Plugin {
 	 * @var PieceRequestRepository|null
 	 */
 	private ?PieceRequestRepository $piece_requests = null;
+
+	/**
+	 * Scene plans store.
+	 *
+	 * @var ScenePlanRepository|null
+	 */
+	private ?ScenePlanRepository $scene_plans = null;
 
 	/**
 	 * Request watcher heartbeat.
@@ -267,6 +276,15 @@ final class Plugin {
 	 */
 	public function piece_requests(): PieceRequestRepository {
 		return $this->piece_requests ??= new PieceRequestRepository();
+	}
+
+	/**
+	 * Scene plans (described scenes waiting for their new pieces).
+	 *
+	 * @return ScenePlanRepository
+	 */
+	public function scene_plans(): ScenePlanRepository {
+		return $this->scene_plans ??= new ScenePlanRepository();
 	}
 
 	/**
@@ -434,6 +452,7 @@ final class Plugin {
 		( new IllustrationsController( $this ) )->register();
 		( new MediaController( $this ) )->register();
 		( new SuggestController( $this ) )->register();
+		( new PlansController( $this ) )->register();
 		( new TemplatesController( $this ) )->register();
 		( new RequestsController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );

@@ -3,6 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
+import NewPieces from './NewPieces';
 import {
 	Button,
 	RadioControl,
@@ -59,6 +60,7 @@ export default function SidePanel( {
 	aiReady,
 	suggesting,
 	onSuggest,
+	onPlanBuilt,
 } ) {
 	const set = ( spec ) => dispatch( { type: 'SET_SPEC', spec } );
 	const [ describe, setDescribe ] = useState( '' );
@@ -102,6 +104,12 @@ export default function SidePanel( {
 					</span>
 				</div>
 			</section>
+			<NewPieces
+				state={ state }
+				describe={ describe }
+				dispatch={ dispatch }
+				onBuilt={ onPlanBuilt }
+			/>
 			{ layers }
 
 			<section className="si-b-panel" aria-labelledby="si-b-variation">

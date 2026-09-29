@@ -15,6 +15,7 @@ use SprintIllustrations\Plugin;
 use SprintIllustrations\Selection\AiFailure;
 use SprintIllustrations\Selection\AiRequest;
 use SprintIllustrations\Selection\AiResponse;
+use SprintIllustrations\Selection\MissingObjects;
 
 /**
  * Claude when ready and under the rate limit; otherwise (or on any failure) the rules selector.
@@ -81,6 +82,7 @@ final class SuggestController {
 						$result + [
 							'source'  => 'ai',
 							'message' => '',
+							'missing' => $this->missing( $content ),
 						]
 					);
 				}
@@ -103,8 +105,21 @@ final class SuggestController {
 				'title'    => '',
 				'source'   => 'rules',
 				'message'  => $reason,
+				'missing'  => $this->missing( $content ),
 			]
 		);
+	}
+
+	/**
+	 * Objects in the description the library has nothing for (a starting list the user edits).
+	 *
+	 * @param string $content Clean content.
+	 * @return array<string>
+	 */
+	private function missing( string $content ): array {
+		$services = $this->plugin->services();
+
+		return MissingObjects::find( $content, $services->keywords, AiRequest::tags( $services->manifest->all(), array_values( $services->templates->all() ) ) );
 	}
 
 	/**

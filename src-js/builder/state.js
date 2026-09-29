@@ -24,6 +24,7 @@ export const initialState = {
 		paints: {},
 	},
 	picks: {},
+	missing: [],
 	selected: null,
 	result: null,
 	status: 'loading',
@@ -239,6 +240,29 @@ export function reducer( state, action ) {
 			}
 			return { ...state, spec: { ...state.spec, paints }, dirty: true };
 		}
+		case 'APPLY_PLAN':
+			// A built scene plan: its template and keywords, with the new pieces as free items.
+			return {
+				...state,
+				spec: {
+					...state.spec,
+					template: action.scene.template,
+					seed: action.scene.seed || state.spec.seed,
+					keywords: ( action.scene.keywords || [] ).join( ', ' ),
+					title: action.scene.title || state.spec.title,
+					items: action.scene.items || [],
+					layers: [],
+					animations: {},
+					paints: {},
+				},
+				picks: {},
+				selected: null,
+				dirty: true,
+				notice: {
+					status: 'success',
+					text: action.text,
+				},
+			};
 		case 'SELECT':
 			return { ...state, selected: action.key };
 		case 'SET_LAYERS':
@@ -321,6 +345,7 @@ export function reducer( state, action ) {
 					paints: itemAnimations( state.spec.paints ),
 				},
 				picks: {},
+				missing: action.suggestion.missing || [],
 				dirty: true,
 				notice: {
 					status:
