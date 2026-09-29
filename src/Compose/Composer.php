@@ -164,7 +164,8 @@ final class Composer implements ComposesSvg {
 				}
 			}
 
-			$this->recolorer->apply( $group, $palette, $placement->skin_index, $placement->hair_index );
+			$overrides = isset( $spec->paints[ $key ] ) ? Paint::apply_defs( $group, $spec->paints[ $key ] ) : [];
+			$this->recolorer->apply( $group, $palette, $placement->skin_index, $placement->hair_index, $overrides );
 			$this->scoper->scope( $group, $token . '-p' . $index . '-' );
 			$target->appendChild( $group );
 

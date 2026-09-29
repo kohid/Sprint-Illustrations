@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace SprintIllustrations\Rest;
 
+use SprintIllustrations\Compose\Paint;
 use SprintIllustrations\Compose\CompositionException;
 use SprintIllustrations\Compose\SceneSpec;
 use SprintIllustrations\Plugin;
@@ -100,6 +101,7 @@ final class ComposeController {
 				'items'      => $items,
 				'slots'      => $slots,
 				'background' => (string) $palette->resolve( 'background' ),
+				'colors'     => array_map( static fn( string $slot ): string => (string) $palette->resolve( $slot ), array_combine( Paint::SLOTS, Paint::SLOTS ) ),
 			]
 		);
 	}

@@ -220,6 +220,22 @@ export default function App() {
 			.finally( () => setSuggesting( false ) );
 	};
 
+	// A scene plan whose pieces were kept: refresh the library and show the scene with them placed.
+	const planBuilt = ( scene ) =>
+		getLibrary()
+			.then( ( library ) => dispatch( { type: 'LIBRARY', library } ) )
+			.catch( () => {} )
+			.then( () =>
+				dispatch( {
+					type: 'APPLY_PLAN',
+					scene,
+					text: __(
+						'Scene built with your new pieces. Move them where you like, then save it, or use Save as template.',
+						'sprint-illustrations'
+					),
+				} )
+			);
+
 	// Export the scene on the stage; the illustration is linked as the source only once saved.
 	const exportAs = async ( format ) => {
 		const result = state.result;
@@ -426,6 +442,7 @@ export default function App() {
 				aiReady={ !! config.aiReady }
 				suggesting={ suggesting }
 				onSuggest={ suggestFrom }
+				onPlanBuilt={ planBuilt }
 			/>
 		</div>
 	);
