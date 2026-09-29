@@ -24,7 +24,7 @@
 .si-b-template:hover{border-color:#8c8f94}
 .si-b-template[aria-pressed="true"]{border-color:#2271b1;box-shadow:0 0 0 1px #2271b1}
 .si-b-template[aria-pressed="true"] .si-b-template__label{color:#2271b1;font-weight:500}
-.si-b-template:focus-visible,.si-b-piece:focus-visible{outline:2px solid #2271b1;outline-offset:2px}
+.si-b-template:focus-visible,.si-b-piece:focus-visible,.si-b-library__piece:focus-visible{outline:2px solid #2271b1;outline-offset:2px}
 
 .si-b-slots{margin:0;padding:0;list-style:none}
 .si-b-slot{display:grid;grid-template-columns:10px minmax(0,1fr) auto 32px auto;grid-template-areas:"grip name move lock change" "grip piece move lock change";align-items:center;column-gap:4px;padding:6px 8px;margin:0 -8px;border-radius:4px}
@@ -82,7 +82,7 @@
 .si-b-library__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:340px;overflow:auto;padding:2px;margin:0 -2px}
 .si-b-library__piece{position:relative;cursor:grab}
 .si-b-library__piece:active{cursor:grabbing}
-.si-b-library__piece:disabled{cursor:not-allowed;opacity:.5}
+.si-b-library__piece[aria-disabled=true]{cursor:not-allowed;opacity:.5}
 .si-b-library__piece:hover{border-color:#2271b1}
 .si-b-badge{position:absolute;top:3px;right:3px;padding:0 4px;border-radius:2px;background:#2271b1;color:#fff;font-size:9px;line-height:14px;text-transform:uppercase;letter-spacing:.02em}
 .si-b-badge--quiet{position:static;display:inline-block;margin-left:6px;background:#f0f0f1;color:#50575e;vertical-align:1px}

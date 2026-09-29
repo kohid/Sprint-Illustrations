@@ -96,7 +96,7 @@ final class SceneSpecEditsTest extends TestCase {
 	}
 
 	public function test_layers_are_normalized(): void {
-		$spec = SceneSpec::from_array( [ 'layers' => [ 'bg', 'item:3', 'bg', 'Bad!', 'item:100', 7 ] ] );
+		$spec = SceneSpec::from_array( [ 'layers' => [ 'bg', 'item:3', 'bg', 'Bad!', 'item:100', 7, 'item:05' ] ] );
 
 		$this->assertSame( [ 'bg', 'item:3' ], $spec->layers );
 	}

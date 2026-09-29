@@ -23,6 +23,12 @@ export default function CanvasEditor( {
 	const svg = useRef( null );
 	const action = useRef( null );
 	const [ draft, setDraft ] = useState( null );
+	// The latest draft, readable in pointerup even before React re-renders.
+	const latest = useRef( null );
+	const update = ( next ) => {
+		latest.current = next;
+		setDraft( next );
+	};
 	const [ ghost, setGhost ] = useState( null );
 	const [ W, H ] = canvas;
 
@@ -76,7 +82,7 @@ export default function CanvasEditor( {
 		const { x, y, w, h } = act.box;
 
 		if ( 'move' === act.mode ) {
-			setDraft( {
+			update( {
 				key: act.key,
 				x: round( x + dx ),
 				y: round( y + dy ),
@@ -90,7 +96,7 @@ export default function CanvasEditor( {
 		const ratio = h / w;
 		const nextW = Math.max( 12 * px, w + sx * dx, ( h + sy * dy ) / ratio );
 		const nextH = nextW * ratio;
-		setDraft( {
+		update( {
 			key: act.key,
 			x: round( sx > 0 ? x : x + w - nextW ),
 			y: round( sy > 0 ? y : y + h - nextH ),
@@ -99,12 +105,12 @@ export default function CanvasEditor( {
 	};
 
 	const end = () => {
-		if ( action.current && draft ) {
-			const { key, ...changes } = draft;
+		if ( action.current && latest.current ) {
+			const { key, ...changes } = latest.current;
 			dispatch( { type: 'UPDATE_ITEM', key, changes } );
 		}
 		action.current = null;
-		setDraft( null );
+		update( null );
 	};
 
 	const keys = ( event, item ) => {

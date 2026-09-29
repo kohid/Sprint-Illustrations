@@ -87,13 +87,25 @@ export default function LibraryPanel( { pieces, count, onAdd, onDrag } ) {
 			{ list.length ? (
 				<div className="si-b-library__grid">
 					{ list.map( ( piece ) => (
-						<button
-							type="button"
+						// A div, not a <button>: Firefox won't start a drag from a button.
+						<div
+							role="button"
+							tabIndex={ full ? -1 : 0 }
 							key={ piece.id }
 							className="si-b-piece si-b-library__piece"
 							draggable={ ! full }
-							disabled={ full }
-							onClick={ () => onAdd( piece ) }
+							aria-disabled={ full }
+							onClick={ () => ! full && onAdd( piece ) }
+							onKeyDown={ ( event ) => {
+								if (
+									! full &&
+									( 'Enter' === event.key ||
+										' ' === event.key )
+								) {
+									event.preventDefault();
+									onAdd( piece );
+								}
+							} }
 							onDragStart={ ( event ) => {
 								event.dataTransfer.setData(
 									DRAG_TYPE,
@@ -120,7 +132,7 @@ export default function LibraryPanel( { pieces, count, onAdd, onDrag } ) {
 							<span className="si-b-piece__label">
 								{ piece.label }
 							</span>
-						</button>
+						</div>
 					) ) }
 				</div>
 			) : (

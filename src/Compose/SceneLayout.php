@@ -35,9 +35,10 @@ final class SceneLayout {
 	}
 
 	/**
-	 * Paint order. Placements are grouped by layer (a top-level slot with the slots attached to it, or
-	 * one free item); groups named in `$layers` take that order among the positions they already hold,
-	 * the rest stay put, and each group keeps its own internal order.
+	 * Paint order. Without a usable `$layers`, placements are returned exactly as resolved. Otherwise
+	 * they are grouped by layer (a top-level slot with the slots attached to it, or one free item) and
+	 * painted group by group, so a held prop stays with its person; groups named in `$layers` take that
+	 * order among the group positions they already hold, and the other groups keep theirs.
 	 *
 	 * @param array<Placement>      $placements Placements in natural order (back to front).
 	 * @param array<string, string> $roots      Slot name => layer key (attached slots map to their root).

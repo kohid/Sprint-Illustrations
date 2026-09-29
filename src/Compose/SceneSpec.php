@@ -218,7 +218,7 @@ final class SceneSpec {
 			return [];
 		}
 
-		$clean = array_filter( $layers, static fn( mixed $key ): bool => is_string( $key ) && (bool) preg_match( '/^(?:[a-z][a-z0-9_-]*|item:[0-9]{1,2})$/D', $key ) );
+		$clean = array_filter( $layers, static fn( mixed $key ): bool => is_string( $key ) && (bool) preg_match( '/^(?:[a-z][a-z0-9_-]*|item:(?:0|[1-9][0-9]?))$/D', $key ) );
 
 		return array_slice( array_values( array_unique( $clean ) ), 0, self::MAX_LAYERS );
 	}

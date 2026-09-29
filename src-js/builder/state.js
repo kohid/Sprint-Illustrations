@@ -254,6 +254,7 @@ export function reducer( state, action ) {
 					template: action.suggestion.template || state.spec.template,
 					keywords: ( action.suggestion.keywords || [] ).join( ', ' ),
 					title: action.suggestion.title || state.spec.title,
+					layers: [],
 				},
 				picks: {},
 				dirty: true,
