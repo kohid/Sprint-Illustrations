@@ -78,3 +78,15 @@ export const buildPlan = ( id ) =>
 
 export const deletePlan = ( id ) =>
 	apiFetch( { path: `${ NS }/plans/${ id }`, method: 'DELETE' } );
+
+export const keepPiece = ( requestId ) =>
+	apiFetch( {
+		path: `${ NS }/plans/requests/${ requestId }/keep`,
+		method: 'POST',
+	} );
+
+export const discardPiece = ( requestId ) =>
+	apiFetch( {
+		path: `${ NS }/plans/requests/${ requestId }/discard`,
+		method: 'POST',
+	} );

@@ -27,6 +27,10 @@ final class PieceRequestPanel {
 
 	public const RETRY_ACTION = 'sprint_illustrations_piece_request_retry';
 
+	public const REMOVE_ACTION = 'sprint_illustrations_piece_request_remove';
+
+	public const MAX_AT_ONCE = 10;
+
 	public const STATES_ACTION = 'sprint_illustrations_request_states';
 
 	private const ACTIVE = [ 'queued', 'drawing', 'review' ];
@@ -49,6 +53,7 @@ final class PieceRequestPanel {
 		add_action( 'admin_post_' . self::KEEP_ACTION, [ $this, 'handle_keep' ] );
 		add_action( 'admin_post_' . self::DISCARD_ACTION, [ $this, 'handle_discard' ] );
 		add_action( 'admin_post_' . self::RETRY_ACTION, [ $this, 'handle_retry' ] );
+		add_action( 'admin_post_' . self::REMOVE_ACTION, [ $this, 'handle_remove' ] );
 		add_action( 'wp_ajax_' . self::STATES_ACTION, [ $this, 'ajax_states' ] );
 	}
 
@@ -147,30 +152,56 @@ final class PieceRequestPanel {
 		echo '<input type="hidden" name="action" value="' . esc_attr( self::CREATE_ACTION ) . '">';
 		wp_nonce_field( self::CREATE_ACTION );
 
-		echo '<p class="si-requests__row"><label for="si-request-category">' . esc_html__( 'Category', 'sprint-illustrations' ) . '</label>';
-		echo '<select id="si-request-category" name="category">';
-		foreach ( $this->categories() as $value => $label ) {
-			printf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $value ), selected( $selected, $value, false ), esc_html( $label ) );
-		}
-		echo '</select></p>';
-
-		echo '<p class="si-requests__row"><label for="si-request-description">' . esc_html__( 'Describe it', 'sprint-illustrations' ) . '</label>';
-		printf(
-			'<textarea id="si-request-description" name="description" rows="3" maxlength="%1$d" required placeholder="%2$s"></textarea></p>',
-			(int) PieceRequest::MAX_LENGTH,
-			esc_attr__( 'e.g. A black Aberdeen taxi, side view', 'sprint-illustrations' )
-		);
+		printf( '<div class="si-requests__pieces" data-si-max="%d">', (int) self::MAX_AT_ONCE );
+		$this->render_piece_row( $selected, 0 );
+		echo '</div>';
+		echo '<p class="si-requests__more"><button type="button" class="button-link si-requests__add">' . esc_html__( '+ Add another piece', 'sprint-illustrations' ) . '</button></p>';
+		echo '<template id="si-request-row-template">';
+		$this->render_piece_row( $selected, 1 );
+		echo '</template>';
 
 		if ( current_user_can( 'upload_files' ) ) {
-			echo '<div class="si-requests__row si-reference"><label for="si-request-reference">' . esc_html__( 'Reference image (optional)', 'sprint-illustrations' ) . '</label>';
+			echo '<div class="si-requests__row si-reference"><label for="si-request-reference">' . esc_html__( 'Reference image (optional, for the first piece)', 'sprint-illustrations' ) . '</label>';
 			echo '<input type="file" id="si-request-reference" name="reference" accept="image/png,image/jpeg,image/webp" aria-describedby="si-request-reference-help" data-invalid="' . esc_attr__( 'Choose a PNG, JPEG or WebP image of 5 MB or less.', 'sprint-illustrations' ) . '">';
 			echo '<span class="si-reference__preview" hidden><img alt=""><button type="button" class="button-link si-reference__remove">' . esc_html__( 'Remove', 'sprint-illustrations' ) . '</button></span>';
 			echo '<span class="si-requests__help" id="si-request-reference-help">' . esc_html__( 'PNG, JPEG or WebP, up to 5 MB. Claude Code draws from it in the library’s flat style.', 'sprint-illustrations' ) . '</span></div>';
 		}
 
-		echo '<p class="si-requests__actions"><button type="submit" class="button button-primary">' . esc_html__( 'Add request', 'sprint-illustrations' ) . '</button></p>';
+		/* translators: %d: number of pieces requested at once. */
+		$plural = esc_attr__( 'Add %d requests', 'sprint-illustrations' );
+		echo '<p class="si-requests__actions"><button type="submit" class="button button-primary" data-plural="' . $plural . '">' . esc_html__( 'Add request', 'sprint-illustrations' ) . '</button></p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $plural is escaped above.
 		echo '<p class="si-requests__hint">' . esc_html__( 'Claude Code draws it while a session is open. You’ll see it here before it joins the library.', 'sprint-illustrations' ) . '</p>';
 		echo '</form></div>';
+	}
+
+	/**
+	 * One piece to request: category and description. Row 0 is the first (always shown) row.
+	 *
+	 * @param string $selected Preselected category.
+	 * @param int    $index    Row number (the template row uses a placeholder id).
+	 */
+	private function render_piece_row( string $selected, int $index ): void {
+		$suffix = 0 === $index ? '' : '-' . $index;
+
+		echo '<div class="si-requests__piece">';
+		echo '<p class="si-requests__row"><label for="si-request-category' . esc_attr( $suffix ) . '">' . esc_html__( 'Category', 'sprint-illustrations' ) . '</label>';
+		echo '<select id="si-request-category' . esc_attr( $suffix ) . '" name="category[]">';
+		foreach ( $this->categories() as $value => $label ) {
+			printf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $value ), selected( $selected, $value, false ), esc_html( $label ) );
+		}
+		echo '</select></p>';
+
+		echo '<p class="si-requests__row"><label for="si-request-description' . esc_attr( $suffix ) . '">' . esc_html__( 'Describe it', 'sprint-illustrations' ) . '</label>';
+		printf(
+			'<textarea id="si-request-description%1$s" name="description[]" rows="3" maxlength="%2$d" required placeholder="%3$s"></textarea></p>',
+			esc_attr( $suffix ),
+			(int) PieceRequest::MAX_LENGTH,
+			esc_attr__( 'e.g. A black Aberdeen taxi, side view', 'sprint-illustrations' )
+		);
+		if ( 0 !== $index ) {
+			echo '<p class="si-requests__row"><button type="button" class="button-link si-requests__remove-row">' . esc_html__( 'Remove this piece', 'sprint-illustrations' ) . '</button></p>';
+		}
+		echo '</div>';
 	}
 
 	/**
@@ -284,6 +315,9 @@ final class PieceRequestPanel {
 				admin_url( 'admin.php' )
 			) . '#piece-' . rawurlencode( (string) $row['piece'] );
 			printf( ' · <a href="%1$s">%2$s</a>', esc_url( $url ), esc_html__( 'View piece', 'sprint-illustrations' ) );
+		}
+		if ( PieceRequest::can_remove( $state ) && $this->can_act( $row ) ) {
+			echo ' · <span class="si-request__remove">' . $this->action_link( self::REMOVE_ACTION, $row, __( 'Remove', 'sprint-illustrations' ) ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in action_link().
 		}
 		echo '</span>';
 
@@ -447,31 +481,66 @@ final class PieceRequestPanel {
 			wp_die( esc_html__( 'You do not have permission to do that.', 'sprint-illustrations' ), 403 );
 		}
 
-		$category = isset( $_POST['category'] ) ? sanitize_key( wp_unslash( $_POST['category'] ) ) : '';
-		$text     = isset( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : '';
+		// One or more pieces: parallel category[] and description[] fields (a single string still works).
+		$categories   = isset( $_POST['category'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['category'] ) ) : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by array_map.
+		$descriptions = isset( $_POST['description'] ) ? array_map( 'sanitize_textarea_field', (array) wp_unslash( $_POST['description'] ) ) : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by array_map.
+		$pieces       = [];
+		foreach ( array_values( $descriptions ) as $index => $text ) {
+			if ( '' !== trim( $text ) && count( $pieces ) < self::MAX_AT_ONCE ) {
+				$pieces[] = [
+					'category'    => array_values( $categories )[ $index ] ?? '',
+					'description' => $text,
+				];
+			}
+		}
+		$first = $pieces[0]['category'] ?? ( array_values( $categories )[0] ?? '' );
 
-		// Optional reference image: stored (re-encoded) before the request, removed again if that fails.
+		if ( ! $pieces ) {
+			Notices::add_for_user( get_current_user_id(), __( 'Describe at least one piece to request.', 'sprint-illustrations' ), 'error' );
+			$this->back( (string) $first );
+		}
+
+		// Optional reference image (for the first piece): stored (re-encoded) before the request, removed again if that fails.
 		$reference = '';
 		$file      = isset( $_FILES['reference'] ) && is_array( $_FILES['reference'] ) ? $_FILES['reference'] : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated and re-encoded in ReferenceImages::store().
 		if ( $file && current_user_can( 'upload_files' ) && UPLOAD_ERR_NO_FILE !== ( is_int( $file['error'] ?? null ) ? $file['error'] : UPLOAD_ERR_NO_FILE ) ) {
 			$stored = $this->plugin->reference_images()->store( $file );
 			if ( is_wp_error( $stored ) ) {
 				Notices::add_for_user( get_current_user_id(), $stored->get_error_message(), 'error' );
-				$this->back( $category );
+				$this->back( (string) $first );
 			}
 			$reference = (string) $stored;
 		}
 
-		$result = $this->plugin->piece_requests()->create( $category, $text, get_current_user_id(), $reference );
-
-		if ( is_wp_error( $result ) ) {
-			$this->plugin->reference_images()->delete( $reference );
-			Notices::add_for_user( get_current_user_id(), $result->get_error_message(), 'error' );
-		} else {
-			Notices::add_for_user( get_current_user_id(), __( 'Request added. Claude Code draws it while a session is open.', 'sprint-illustrations' ), 'success' );
+		$added  = 0;
+		$errors = [];
+		foreach ( $pieces as $index => $piece ) {
+			$result = $this->plugin->piece_requests()->create( $piece['category'], $piece['description'], get_current_user_id(), 0 === $index ? $reference : '' );
+			if ( is_wp_error( $result ) ) {
+				$errors[] = $result->get_error_message();
+			} else {
+				++$added;
+			}
 		}
 
-		$this->back( $category );
+		if ( 0 === $added ) {
+			$this->plugin->reference_images()->delete( $reference );
+		}
+		if ( $errors ) {
+			Notices::add_for_user( get_current_user_id(), implode( ' ', array_unique( $errors ) ), 'error' );
+		}
+		if ( $added ) {
+			Notices::add_for_user(
+				get_current_user_id(),
+				1 === $added
+					? __( 'Request added. Claude Code draws it while a session is open.', 'sprint-illustrations' )
+					/* translators: %d: number of requests. */
+					: sprintf( __( '%d requests added. Claude Code draws them while a session is open.', 'sprint-illustrations' ), $added ),
+				'success'
+			);
+		}
+
+		$this->back( (string) $first );
 	}
 
 	/**
@@ -499,14 +568,12 @@ final class PieceRequestPanel {
 			$this->back( (string) $request['category'] );
 		}
 
-		$result = $this->plugin->piece_drafts()->keep( $request );
+		$result = $this->plugin->piece_drafts()->accept( $request );
 		if ( ! $result['ok'] ) {
 			Notices::add_for_user( get_current_user_id(), implode( ' ', $result['messages'] ), 'error' );
 			$this->back( (string) $request['category'] );
 		}
 
-		$this->plugin->piece_requests()->keep( (int) $request['id'], $result['piece'] );
-		$this->plugin->reference_images()->delete( (string) $request['reference'] );
 		Notices::add_for_user(
 			get_current_user_id(),
 			'plugin' === ( $result['where'] ?? '' )
@@ -524,9 +591,22 @@ final class PieceRequestPanel {
 		$request = $this->authorized( self::DISCARD_ACTION, 'POST' );
 
 		if ( 'review' === $request['state'] ) {
-			$this->plugin->piece_drafts()->discard( $request );
-			$this->plugin->piece_requests()->discard( (int) $request['id'] );
+			$this->plugin->piece_drafts()->reject( $request );
 			Notices::add_for_user( get_current_user_id(), __( 'Discarded. Use Try again to ask for a new version.', 'sprint-illustrations' ), 'info' );
+		}
+
+		$this->back( (string) $request['category'] );
+	}
+
+	/**
+	 * Admin-post handler: remove a discarded or declined request from the list.
+	 */
+	public function handle_remove(): void {
+		$request = $this->authorized( self::REMOVE_ACTION, 'GET' );
+
+		if ( $this->plugin->piece_requests()->remove( (int) $request['id'] ) ) {
+			$this->plugin->reference_images()->delete( (string) $request['reference'] );
+			Notices::add_for_user( get_current_user_id(), __( 'Request removed.', 'sprint-illustrations' ), 'info' );
 		}
 
 		$this->back( (string) $request['category'] );

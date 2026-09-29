@@ -2,8 +2,6 @@
  * Suggest, palette, variation and accessibility controls.
  */
 import { __ } from '@wordpress/i18n';
-import { useState } from '@wordpress/element';
-import NewPieces from './NewPieces';
 import {
 	Button,
 	RadioControl,
@@ -59,11 +57,11 @@ export default function SidePanel( {
 	layers,
 	aiReady,
 	suggesting,
+	describe,
+	onDescribe,
 	onSuggest,
-	onPlanBuilt,
 } ) {
 	const set = ( spec ) => dispatch( { type: 'SET_SPEC', spec } );
-	const [ describe, setDescribe ] = useState( '' );
 
 	return (
 		<div className="si-b-side">
@@ -80,7 +78,7 @@ export default function SidePanel( {
 					) }
 					rows={ 3 }
 					value={ describe }
-					onChange={ setDescribe }
+					onChange={ onDescribe }
 				/>
 				<div className="si-b-suggest__bar">
 					<Button
@@ -104,12 +102,6 @@ export default function SidePanel( {
 					</span>
 				</div>
 			</section>
-			<NewPieces
-				state={ state }
-				describe={ describe }
-				dispatch={ dispatch }
-				onBuilt={ onPlanBuilt }
-			/>
 			{ layers }
 
 			<section className="si-b-panel" aria-labelledby="si-b-variation">

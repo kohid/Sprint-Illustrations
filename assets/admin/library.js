@@ -36,6 +36,64 @@
 			} );
 	}
 
+	// Request several pieces at once: extra rows are cloned from a template; each is category + description.
+	var rows = document.querySelector( '.si-requests__pieces' );
+	var addButton = document.querySelector( '.si-requests__add' );
+	var template = document.getElementById( 'si-request-row-template' );
+	var submit = document.querySelector( '.si-requests__actions .button-primary' );
+	if ( rows && addButton && template ) {
+		var max = parseInt( rows.getAttribute( 'data-si-max' ), 10 ) || 10;
+		var counter = 0;
+		var singular = submit ? submit.textContent : '';
+
+		var refresh = function () {
+			var count = rows.querySelectorAll( '.si-requests__piece' ).length;
+			addButton.hidden = count >= max;
+			if ( submit ) {
+				submit.textContent =
+					count > 1
+						? ( submit.getAttribute( 'data-plural' ) || '%d' ).replace( '%d', count )
+						: singular;
+			}
+		};
+
+		addButton.addEventListener( 'click', function () {
+			if ( rows.querySelectorAll( '.si-requests__piece' ).length >= max ) {
+				return;
+			}
+			counter += 1;
+			var row = template.content.firstElementChild.cloneNode( true );
+			// Unique ids so each label points at its own field.
+			[ 'category', 'description' ].forEach( function ( name ) {
+				var field = row.querySelector( '[id^="si-request-' + name + '"]' );
+				var label = row.querySelector( 'label[for^="si-request-' + name + '"]' );
+				var id = 'si-request-' + name + '-r' + counter;
+				if ( field ) {
+					field.id = id;
+				}
+				if ( label ) {
+					label.setAttribute( 'for', id );
+				}
+			} );
+			// New rows start on the same category as the last one.
+			var selects = rows.querySelectorAll( 'select' );
+			row.querySelector( 'select' ).value = selects[ selects.length - 1 ].value;
+			rows.appendChild( row );
+			row.querySelector( 'textarea' ).focus();
+			refresh();
+		} );
+
+		rows.addEventListener( 'click', function ( event ) {
+			if ( event.target.classList.contains( 'si-requests__remove-row' ) ) {
+				event.target.closest( '.si-requests__piece' ).remove();
+				refresh();
+				addButton.focus();
+			}
+		} );
+
+		refresh();
+	}
+
 	var panel = document.querySelector( '[data-si-requests]' );
 	var config = window.sprintIllustrationsLibrary;
 	if ( ! panel || ! config ) {

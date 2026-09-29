@@ -113,3 +113,8 @@
 .si-request__reference{float:right;margin:0 0 4px 8px}
 .si-request__reference img{display:block;width:40px;height:40px;object-fit:cover;border:1px solid #dcdcde;border-radius:4px}
 .si-request__reference:focus-visible{outline:2px solid #2271b1;outline-offset:2px}
+
+.si-requests__piece{margin:0 0 12px;padding:0 0 4px}
+.si-requests__piece+.si-requests__piece{border-top:1px solid #dcdcde;padding-top:12px}
+.si-requests__more{margin:0 0 12px}
+.si-request__remove a{color:#b32d2e}

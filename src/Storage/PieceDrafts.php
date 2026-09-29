@@ -243,6 +243,32 @@ final class PieceDrafts {
 	}
 
 	/**
+	 * Accept a draft: it joins the library, and the request and its reference image are closed.
+	 *
+	 * @param array<string, mixed> $request Request row (state review).
+	 * @return array{ok: bool, piece: string, where?: string, messages: array<string>}
+	 */
+	public function accept( array $request ): array {
+		$result = $this->keep( $request );
+		if ( $result['ok'] ) {
+			$this->plugin->piece_requests()->keep( (int) $request['id'], $result['piece'] );
+			$this->plugin->reference_images()->delete( (string) $request['reference'] );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Reject a draft: it is deleted and the request is marked discarded (Try again can re-queue it).
+	 *
+	 * @param array<string, mixed> $request Request row (state review).
+	 */
+	public function reject( array $request ): void {
+		$this->discard( $request );
+		$this->plugin->piece_requests()->discard( (int) $request['id'] );
+	}
+
+	/**
 	 * Delete a request's draft folders.
 	 *
 	 * @param array<string, mixed> $request Request row.

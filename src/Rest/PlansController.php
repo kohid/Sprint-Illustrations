@@ -24,6 +24,8 @@ final class PlansController {
 
 	public const MAX_OBJECTS = 6;
 
+	private const PREVIEW_TRANSIENT = 'si_draft_preview_';
+
 	/**
 	 * Constructor.
 	 *
@@ -78,6 +80,17 @@ final class PlansController {
 				'permission_callback' => $permission,
 			]
 		);
+		foreach ( [ 'keep', 'discard' ] as $action ) {
+			register_rest_route(
+				Permissions::NAMESPACE,
+				'/plans/requests/(?P<id>\d+)/' . $action,
+				[
+					'methods'             => 'POST',
+					'callback'            => [ $this, $action ],
+					'permission_callback' => $permission,
+				]
+			);
+		}
 		register_rest_route(
 			Permissions::NAMESPACE,
 			'/plans/(?P<id>[a-f0-9]{12})/build',
@@ -167,6 +180,50 @@ final class PlansController {
 	}
 
 	/**
+	 * Keep a drawn piece: it joins the library (the plugin's own assets when writable).
+	 *
+	 * @param \WP_REST_Request $request Request {id}: the piece request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function keep( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$row = $this->reviewable( (int) $request['id'] );
+		if ( is_wp_error( $row ) ) {
+			return $row;
+		}
+
+		$result = $this->plugin->piece_drafts()->accept( $row );
+		if ( ! $result['ok'] ) {
+			return new \WP_Error( 'sprint_illustrations_keep_failed', implode( ' ', $result['messages'] ), [ 'status' => 422 ] );
+		}
+		delete_transient( self::PREVIEW_TRANSIENT . $row['id'] );
+
+		return new \WP_REST_Response(
+			[
+				'piece' => $result['piece'],
+				'where' => $result['where'] ?? 'site',
+			]
+		);
+	}
+
+	/**
+	 * Discard a drawn piece (Try again on the Library page can re-queue it).
+	 *
+	 * @param \WP_REST_Request $request Request {id}: the piece request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function discard( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$row = $this->reviewable( (int) $request['id'] );
+		if ( is_wp_error( $row ) ) {
+			return $row;
+		}
+
+		$this->plugin->piece_drafts()->reject( $row );
+		delete_transient( self::PREVIEW_TRANSIENT . $row['id'] );
+
+		return new \WP_REST_Response( [ 'discarded' => true ] );
+	}
+
+	/**
 	 * Forget a plan.
 	 *
 	 * @param \WP_REST_Request $request Request {id}.
@@ -222,6 +279,60 @@ final class PlansController {
 	}
 
 	/**
+	 * A piece request the current user may keep or discard and that is waiting for review.
+	 *
+	 * @param int $id Request ID.
+	 * @return array<string, mixed>|\WP_Error
+	 */
+	private function reviewable( int $id ): array|\WP_Error {
+		$row = $this->plugin->piece_requests()->get( $id );
+		if ( null === $row || ! $this->can_act( $row ) ) {
+			return new \WP_Error( 'sprint_illustrations_not_found', __( 'That request no longer exists.', 'sprint-illustrations' ), [ 'status' => 404 ] );
+		}
+		if ( 'review' !== $row['state'] ) {
+			return new \WP_Error( 'sprint_illustrations_not_in_review', __( 'That piece is not waiting for review.', 'sprint-illustrations' ), [ 'status' => 409 ] );
+		}
+
+		return $row;
+	}
+
+	/**
+	 * Whether the current user may keep or discard a request (its requester, or an admin).
+	 *
+	 * @param array<string, mixed> $row Request.
+	 * @return bool
+	 */
+	private function can_act( array $row ): bool {
+		return current_user_can( 'manage_options' ) || get_current_user_id() === (int) $row['author'];
+	}
+
+	/**
+	 * The piece alone as a sanitized SVG, cached until the request changes.
+	 *
+	 * @param array<string, mixed> $row Request in review.
+	 * @return string
+	 */
+	private function preview( array $row ): string {
+		$key    = self::PREVIEW_TRANSIENT . $row['id'];
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) && ( $cached['changed'] ?? '' ) === $row['changed'] ) {
+			return (string) $cached['svg'];
+		}
+
+		$svg = $this->plugin->piece_drafts()->preview( $row )['piece'];
+		set_transient(
+			$key,
+			[
+				'changed' => $row['changed'],
+				'svg'     => $svg,
+			],
+			HOUR_IN_SECONDS
+		);
+
+		return $svg;
+	}
+
+	/**
 	 * A plan the current user may use, or a 404.
 	 *
 	 * @param string $id Plan ID.
@@ -241,7 +352,7 @@ final class PlansController {
 	 *
 	 * @param string               $id   Plan ID.
 	 * @param array<string, mixed> $plan Stored plan.
-	 * @return array{id: string, description: string, template: string, title: string, requests: array<int, array{id: int, description: string, state: string, piece: string, note: string}>, ready: bool, waiting: int}
+	 * @return array{id: string, description: string, template: string, title: string, requests: array<int, array{id: int, description: string, category: string, state: string, piece: string, note: string, can_act: bool, preview: string}>, ready: bool, waiting: int}
 	 */
 	private function present( string $id, array $plan ): array {
 		$repo     = $this->plugin->piece_requests();
@@ -252,9 +363,12 @@ final class PlansController {
 				$requests[] = [
 					'id'          => $row['id'],
 					'description' => $row['description'],
+					'category'    => $row['category'],
 					'state'       => $row['state'],
 					'piece'       => $row['piece'],
 					'note'        => $row['note'],
+					'can_act'     => $this->can_act( $row ),
+					'preview'     => 'review' === $row['state'] ? $this->preview( $row ) : '',
 				];
 			}
 		}

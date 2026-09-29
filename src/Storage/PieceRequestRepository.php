@@ -112,6 +112,18 @@ final class PieceRequestRepository {
 	}
 
 	/**
+	 * Delete a discarded or declined request from the list.
+	 *
+	 * @param int $id Request ID.
+	 * @return bool
+	 */
+	public function remove( int $id ): bool {
+		$request = $this->get( $id );
+
+		return null !== $request && PieceRequest::can_remove( $request['state'] ) && (bool) wp_delete_post( $id, true );
+	}
+
+	/**
 	 * Claude Code started drawing.
 	 *
 	 * @param int $id Request ID.
