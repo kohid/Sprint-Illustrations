@@ -3,3 +3,5 @@
 /vendor-prefixed/
 .phpunit.result.cache
 .phpunit.cache/
+.playwright-mcp/
+.claude/settings.local.json

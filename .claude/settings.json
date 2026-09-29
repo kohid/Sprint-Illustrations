@@ -1,0 +1,23 @@
+{
+	"hooks": {
+		"SessionStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash \"$CLAUDE_PROJECT_DIR/bin/claude/session-start.sh\"",
+						"timeout": 60
+					}
+				]
+			}
+		]
+	},
+	"permissions": {
+		"allow": [
+			"Bash(bin/claude/wp.sh *)",
+			"Bash(bash bin/claude/wp.sh *)",
+			"Bash(bash bin/claude/watch-requests.sh)",
+			"Bash(bash bin/claude/session-start.sh)"
+		]
+	}
+}
