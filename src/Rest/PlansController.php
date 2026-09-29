@@ -10,7 +10,9 @@ declare( strict_types=1 );
 namespace SprintIllustrations\Rest;
 
 use SprintIllustrations\Compose\SceneArrangement;
+use SprintIllustrations\Library\Piece;
 use SprintIllustrations\Library\PieceRequest;
+use SprintIllustrations\Library\Template;
 use SprintIllustrations\Plugin;
 use SprintIllustrations\Selection\AiRequest;
 use SprintIllustrations\Selection\BriefSplitter;
@@ -127,32 +129,60 @@ final class PlansController {
 	}
 
 	/**
+	 * The pieces to draw: strings (objects) or {description, category}, cleaned and capped.
+	 *
+	 * @param array<mixed> $raw Request input.
+	 * @return array<int, array{description: string, category: string}>
+	 */
+	private static function objects( array $raw ): array {
+		$pieces = [];
+		foreach ( $raw as $item ) {
+			$text     = is_array( $item ) ? $item['description'] ?? '' : $item;
+			$category = is_array( $item ) ? sanitize_key( (string) ( $item['category'] ?? '' ) ) : '';
+			$text     = is_string( $text ) ? PieceRequest::clean( $text ) : '';
+			if ( '' === $text ) {
+				continue;
+			}
+
+			$pieces[] = [
+				'description' => $text,
+				'category'    => in_array( $category, Piece::CATEGORIES, true ) ? $category : 'objects',
+			];
+		}
+
+		return array_slice( $pieces, 0, self::MAX_OBJECTS );
+	}
+
+	/**
 	 * Create a plan and queue a request per object.
 	 *
 	 * @param \WP_REST_Request $request Request {content, objects[], template, keywords[], title, seed}.
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function create( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		$content = AiRequest::clean( (string) ( $request['content'] ?? '' ) );
-		$objects = array_slice( array_values( array_filter( array_map( static fn( $item ): string => is_string( $item ) ? PieceRequest::clean( $item ) : '', (array) ( $request['objects'] ?? [] ) ) ) ), 0, self::MAX_OBJECTS );
+		$given   = AiRequest::clean( (string) ( $request['content'] ?? '' ) );
+		$objects = self::objects( (array) ( $request['objects'] ?? [] ) );
 
-		if ( '' === $content || [] === $objects ) {
-			return new \WP_Error( 'sprint_illustrations_invalid_plan', __( 'Describe the scene and choose at least one object to draw.', 'sprint-illustrations' ), [ 'status' => 400 ] );
+		if ( [] === $objects ) {
+			return new \WP_Error( 'sprint_illustrations_invalid_plan', __( 'Choose at least one object to draw.', 'sprint-illustrations' ), [ 'status' => 400 ] );
 		}
 
+		// Without a description or a valid template the plan still works: it describes itself by its objects and builds on a blank canvas.
+		$content  = '' !== $given ? $given : implode( ', ', array_column( $objects, 'description' ) );
 		$template = sanitize_key( (string) ( $request['template'] ?? '' ) );
 		if ( '' === $template || null === $this->plugin->services()->templates->get( $template ) ) {
-			return new \WP_Error( 'sprint_illustrations_invalid_plan', __( 'Pick a template first, for example with Suggest.', 'sprint-illustrations' ), [ 'status' => 400 ] );
+			$template = Template::BLANK_ID;
 		}
 
-		$scene_note = ' (for a scene: ' . mb_substr( $content, 0, 120 ) . ')';
+		$scene_note = '' !== $given ? ' (for a scene: ' . mb_substr( $given, 0, 120 ) . ')' : '';
 		$user       = get_current_user_id();
 		$requests   = $this->plugin->piece_requests();
 		$ids        = [];
-		foreach ( $objects as $object ) {
+		foreach ( $objects as $piece ) {
 			// Short objects get a note about the scene; long ones (a split layer with style notes) keep their room.
+			$object      = $piece['description'];
 			$description = mb_strlen( $object . $scene_note ) <= PieceRequest::MAX_LENGTH ? $object . $scene_note : mb_substr( $object, 0, PieceRequest::MAX_LENGTH );
-			$id          = $requests->create( 'objects', $description, $user );
+			$id          = $requests->create( $piece['category'], $description, $user );
 			if ( is_wp_error( $id ) ) {
 				foreach ( $ids as $done ) {
 					$requests->cancel( $done );

@@ -12,11 +12,17 @@ import {
 	TabPanel,
 } from '@wordpress/components';
 
-const SLOTS = [
+const PALETTE_SLOTS = [
 	{ value: 'primary', label: __( 'Primary', 'sprint-illustrations' ) },
 	{ value: 'secondary', label: __( 'Secondary', 'sprint-illustrations' ) },
 	{ value: 'accent', label: __( 'Accent', 'sprint-illustrations' ) },
 	{ value: 'neutral', label: __( 'Neutral', 'sprint-illustrations' ) },
+];
+
+// People only: skin and hair take a single colour, with the palette's own tones as quick picks.
+const PEOPLE_SLOTS = [
+	{ value: 'skin', label: __( 'Skin tone', 'sprint-illustrations' ) },
+	{ value: 'hair', label: __( 'Hair colour', 'sprint-illustrations' ) },
 ];
 
 import { useState } from '@wordpress/element';
@@ -38,11 +44,55 @@ function Swatch( { background } ) {
 	);
 }
 
-function PaintEditor( { slot, paint, fallback, partner, onChange } ) {
+function PaintEditor( {
+	slot,
+	paint,
+	fallback,
+	partner,
+	solidOnly,
+	swatches,
+	onChange,
+} ) {
 	const gradient = isGradient( paint );
 	const solid = gradient ? paint.from : paint || fallback;
 	const [ end, setEnd ] = useState( 'from' );
 	const current = gradient ? paint : { from: solid, to: solid, angle: 90 };
+
+	if ( solidOnly ) {
+		return (
+			<div className="si-b-paint__solid">
+				{ swatches?.length > 0 && (
+					<div
+						className="si-b-paint__quick"
+						role="group"
+						aria-label={ __(
+							'Palette tones',
+							'sprint-illustrations'
+						) }
+					>
+						{ swatches.map( ( tone ) => (
+							<button
+								type="button"
+								key={ tone }
+								className="si-b-paint__tone"
+								style={ { background: tone } }
+								aria-label={ tone }
+								aria-pressed={ paint === tone }
+								onClick={ () => onChange( tone ) }
+							/>
+						) ) }
+					</div>
+				) }
+				<ColorPicker
+					key={ slot }
+					color={ solid }
+					enableAlpha={ false }
+					defaultValue={ fallback }
+					onChange={ ( color ) => onChange( color.slice( 0, 7 ) ) }
+				/>
+			</div>
+		);
+	}
 
 	return (
 		<TabPanel
@@ -141,9 +191,15 @@ export default function PaintControl( {
 	name,
 	value,
 	colors,
+	people,
+	character,
 	dispatch,
 } ) {
-	const [ slot, setSlot ] = useState( 'primary' );
+	const slots = character
+		? [ ...PEOPLE_SLOTS, ...PALETTE_SLOTS ]
+		: PALETTE_SLOTS;
+	const [ slot, setSlot ] = useState( character ? 'skin' : 'primary' );
+	const solidOnly = 'skin' === slot || 'hair' === slot;
 	const paints = value || {};
 	const set = ( next ) => {
 		const all = { ...paints };
@@ -158,9 +214,9 @@ export default function PaintControl( {
 	// A new gradient ends on the next palette colour, so it is visible straight away.
 	const partner =
 		colors?.[
-			SLOTS[
-				( SLOTS.findIndex( ( o ) => o.value === slot ) + 1 ) %
-					SLOTS.length
+			PALETTE_SLOTS[
+				( PALETTE_SLOTS.findIndex( ( o ) => o.value === slot ) + 1 ) %
+					PALETTE_SLOTS.length
 			].value
 		] || '#ffffff';
 
@@ -170,14 +226,28 @@ export default function PaintControl( {
 			renderToggle={ ( { isOpen, onToggle } ) => (
 				<Button
 					size="small"
-					icon="art"
+					icon={ character ? 'admin-users' : 'art' }
 					isPressed={ !! value }
 					aria-expanded={ isOpen }
-					label={ sprintf(
-						/* translators: %s: layer name. */
-						__( 'Colour of %s', 'sprint-illustrations' ),
-						name
-					) }
+					label={
+						character
+							? sprintf(
+									/* translators: %s: layer name. */
+									__(
+										'Customise character %s',
+										'sprint-illustrations'
+									),
+									name
+							  )
+							: sprintf(
+									/* translators: %s: layer name. */
+									__(
+										'Colour of %s',
+										'sprint-illustrations'
+									),
+									name
+							  )
+					}
 					onClick={ onToggle }
 				/>
 			) }
@@ -191,7 +261,7 @@ export default function PaintControl( {
 							'sprint-illustrations'
 						) }
 					>
-						{ SLOTS.map( ( option ) => (
+						{ slots.map( ( option ) => (
 							<button
 								type="button"
 								key={ option.value }
@@ -209,12 +279,22 @@ export default function PaintControl( {
 							</button>
 						) ) }
 					</div>
+					{ character && (
+						<p className="si-b-muted">
+							{ __(
+								'Skin and hair take one colour. Primary, secondary and accent colour the clothes and what they hold.',
+								'sprint-illustrations'
+							) }
+						</p>
+					) }
 					<PaintEditor
 						key={ slot }
 						slot={ slot }
 						paint={ paints[ slot ] }
 						fallback={ fallback }
 						partner={ partner }
+						solidOnly={ solidOnly }
+						swatches={ solidOnly ? people?.[ slot ] : undefined }
 						onChange={ set }
 					/>
 					<Button
@@ -223,10 +303,15 @@ export default function PaintControl( {
 						disabled={ ! paints[ slot ] }
 						onClick={ () => set( null ) }
 					>
-						{ __(
-							'Use the palette colour',
-							'sprint-illustrations'
-						) }
+						{ solidOnly
+							? __(
+									'Back to the automatic look',
+									'sprint-illustrations'
+							  )
+							: __(
+									'Use the palette colour',
+									'sprint-illustrations'
+							  ) }
 					</Button>
 				</div>
 			) }

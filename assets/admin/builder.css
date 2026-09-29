@@ -200,3 +200,7 @@
 .si-b-req__art{flex:none;width:96px;height:96px;background:#f6f7f7;border-radius:2px;display:grid;place-items:center;padding:4px;box-sizing:border-box}
 .si-b-req__art svg{max-width:100%;max-height:100%}
 .si-b-req__actions{display:flex;gap:6px;flex-wrap:wrap}
+.si-b-paint__solid{display:grid;gap:10px}
+.si-b-paint__quick{display:flex;flex-wrap:wrap;gap:6px}
+.si-b-paint__tone{width:26px;height:26px;padding:0;border-radius:50%;border:1px solid rgba(0,0,0,.25);cursor:pointer}
+.si-b-paint__tone[aria-pressed="true"]{box-shadow:0 0 0 2px #fff,0 0 0 4px #2271b1}

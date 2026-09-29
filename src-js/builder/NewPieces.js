@@ -5,7 +5,7 @@
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
-import { Button, TextControl } from '@wordpress/components';
+import { Button, SelectControl, TextControl } from '@wordpress/components';
 import {
 	buildPlan,
 	createPlan,
@@ -17,6 +17,17 @@ import {
 } from './api';
 
 const POLL_MS = 8000;
+
+// What a request draws. A character is drawn with skin and hair colours you can change afterwards.
+const KINDS = [
+	{ value: 'objects', label: __( 'Object', 'sprint-illustrations' ) },
+	{ value: 'characters', label: __( 'Character', 'sprint-illustrations' ) },
+	{ value: 'decor', label: __( 'Decor', 'sprint-illustrations' ) },
+	{ value: 'backgrounds', label: __( 'Background', 'sprint-illustrations' ) },
+];
+
+const kindLabel = ( value ) =>
+	KINDS.find( ( kind ) => kind.value === value )?.label || value;
 
 const STEPS = [
 	{ state: 'queued', label: __( 'Requested', 'sprint-illustrations' ) },
@@ -67,6 +78,9 @@ function Request( { request, busy, onKeep, onDiscard } ) {
 		<li className={ `si-b-req is-${ request.state }` }>
 			<span className="si-b-req__text" title={ text }>
 				{ text }
+			</span>
+			<span className="si-b-badge si-b-badge--quiet">
+				{ kindLabel( request.category ) }
 			</span>
 			<Track state={ request.state } />
 			{ ( 'discarded' === request.state ||
@@ -205,6 +219,7 @@ export default function NewPieces( {
 	const missing = state.missing || [];
 	const [ picked, setPicked ] = useState( [] );
 	const [ custom, setCustom ] = useState( '' );
+	const [ kind, setKind ] = useState( 'objects' );
 	const [ plans, setPlans ] = useState( [] );
 	const [ sending, setSending ] = useState( false );
 	const [ building, setBuilding ] = useState( '' );
@@ -253,11 +268,12 @@ export default function NewPieces( {
 		return () => window.clearInterval( timer );
 	}, [ plans, refresh ] );
 
+	// Picked entries are { text, category }; the suggested words are objects.
 	const toggle = ( word ) =>
 		setPicked( ( list ) =>
-			list.includes( word )
-				? list.filter( ( item ) => item !== word )
-				: [ ...list, word ]
+			list.some( ( item ) => item.text === word )
+				? list.filter( ( item ) => item.text !== word )
+				: [ ...list, { text: word, category: 'objects' } ]
 		);
 	// A long brief with numbered layers, (1) … (2) …, becomes one short request per layer.
 	const looksLikeBrief =
@@ -276,7 +292,12 @@ export default function NewPieces( {
 					);
 					return;
 				}
-				setPicked( result.layers );
+				setPicked(
+					result.layers.map( ( text ) => ( {
+						text,
+						category: 'objects',
+					} ) )
+				);
 				notify(
 					'success',
 					sprintf(
@@ -301,8 +322,11 @@ export default function NewPieces( {
 			);
 	const addCustom = () => {
 		const text = custom.trim();
-		if ( text.length >= 3 && ! picked.includes( text ) ) {
-			setPicked( ( list ) => [ ...list, text ] );
+		if (
+			text.length >= 3 &&
+			! picked.some( ( item ) => item.text === text )
+		) {
+			setPicked( ( list ) => [ ...list, { text, category: kind } ] );
 		}
 		setCustom( '' );
 	};
@@ -310,9 +334,12 @@ export default function NewPieces( {
 	const requestDrawings = () => {
 		setSending( true );
 		createPlan( {
-			content: describe,
-			objects: picked,
-			template: state.spec.template,
+			content: describe.trim(),
+			objects: picked.map( ( item ) => ( {
+				description: item.text,
+				category: item.category,
+			} ) ),
+			template: state.spec.template || '',
 			keywords: state.spec.keywords
 				.split( ',' )
 				.map( ( word ) => word.trim() )
@@ -399,8 +426,8 @@ export default function NewPieces( {
 			.then( refresh )
 			.catch( () => {} );
 
-	const canRequest =
-		describe.trim() && picked.length > 0 && state.spec.template;
+	// Only the objects are required: the description and template are optional context for the scene.
+	const canRequest = picked.length > 0;
 
 	return (
 		<section className="si-b-panel" aria-labelledby="si-b-newpieces">
@@ -432,7 +459,9 @@ export default function NewPieces( {
 							type="button"
 							key={ word }
 							className="si-b-chip"
-							aria-pressed={ picked.includes( word ) }
+							aria-pressed={ picked.some(
+								( item ) => item.text === word
+							) }
 							onClick={ () => toggle( word ) }
 						>
 							{ word }
@@ -454,9 +483,9 @@ export default function NewPieces( {
 				<TextControl
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
-					label={ __( 'Your own object', 'sprint-illustrations' ) }
+					label={ __( 'Your own piece', 'sprint-illustrations' ) }
 					placeholder={ __(
-						'e.g. a delivery drone with a parcel',
+						'e.g. a taxi driver in a flat cap, or a delivery drone',
 						'sprint-illustrations'
 					) }
 					value={ custom }
@@ -467,6 +496,15 @@ export default function NewPieces( {
 							addCustom();
 						}
 					} }
+				/>
+				<SelectControl
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+					label={ __( 'Kind of piece', 'sprint-illustrations' ) }
+					hideLabelFromVision
+					value={ kind }
+					options={ KINDS }
+					onChange={ setKind }
 				/>
 				<Button
 					variant="secondary"
@@ -480,17 +518,22 @@ export default function NewPieces( {
 			{ picked.length > 0 && (
 				<ul className="si-b-picked">
 					{ picked.map( ( item ) => (
-						<li key={ item }>
-							{ item }
+						<li key={ item.text }>
+							<span>
+								{ item.text }
+								<span className="si-b-badge si-b-badge--quiet">
+									{ kindLabel( item.category ) }
+								</span>
+							</span>
 							<Button
 								size="small"
 								icon="no-alt"
 								label={ sprintf(
 									/* translators: %s: object. */
 									__( 'Remove %s', 'sprint-illustrations' ),
-									item
+									item.text
 								) }
-								onClick={ () => toggle( item ) }
+								onClick={ () => toggle( item.text ) }
 							/>
 						</li>
 					) ) }
