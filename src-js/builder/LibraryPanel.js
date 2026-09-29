@@ -44,7 +44,13 @@ function matches( piece, words ) {
 	return words.every( ( word ) => text.includes( word ) );
 }
 
-export default function LibraryPanel( { pieces, count, onAdd, onDrag } ) {
+export default function LibraryPanel( {
+	pieces,
+	count,
+	onAdd,
+	onDrag,
+	charactersUrl,
+} ) {
 	const [ search, setSearch ] = useState( '' );
 	const [ category, setCategory ] = useState( '' );
 	const full = count >= MAX_ITEMS;
@@ -116,6 +122,18 @@ export default function LibraryPanel( { pieces, count, onAdd, onDrag } ) {
 								<span className="si-b-library__n">
 									{ group.pieces.length }
 								</span>
+								{ 'characters' === group.value &&
+									charactersUrl && (
+										<a
+											className="si-b-library__link"
+											href={ charactersUrl }
+										>
+											{ __(
+												'Build a character',
+												'sprint-illustrations'
+											) }
+										</a>
+									) }
 							</h3>
 							<div className="si-b-library__grid">
 								{ group.pieces.map( ( piece ) => (

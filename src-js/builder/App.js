@@ -406,6 +406,7 @@ export default function App() {
 						count={ state.spec.items.length }
 						onAdd={ addToCentre }
 						onDrag={ setDragging }
+						charactersUrl={ config.charactersUrl }
 					/>
 				</Section>
 				<Section

@@ -29,6 +29,7 @@ use SprintIllustrations\Palette\Palette;
 use SprintIllustrations\Palette\PaletteSettings;
 use SprintIllustrations\Palette\PresetRepository;
 use SprintIllustrations\Render\Renderer;
+use SprintIllustrations\Rest\CharactersController;
 use SprintIllustrations\Rest\ComposeController;
 use SprintIllustrations\Rest\IllustrationsController;
 use SprintIllustrations\Rest\LibraryController;
@@ -43,6 +44,7 @@ use SprintIllustrations\Settings\SitePalette;
 use SprintIllustrations\Storage\IllustrationPostType;
 use SprintIllustrations\Storage\IllustrationRepository;
 use SprintIllustrations\Storage\PieceDrafts;
+use SprintIllustrations\Storage\PieceInstaller;
 use SprintIllustrations\Storage\PieceRequestPostType;
 use SprintIllustrations\Storage\BundledLibrary;
 use SprintIllustrations\Storage\DrawerHeartbeat;
@@ -307,6 +309,15 @@ final class Plugin {
 	}
 
 	/**
+	 * Puts finished pieces into the library.
+	 *
+	 * @return PieceInstaller
+	 */
+	public function piece_installer(): PieceInstaller {
+		return new PieceInstaller( $this );
+	}
+
+	/**
 	 * Reference images attached to piece requests.
 	 *
 	 * @return ReferenceImages
@@ -454,6 +465,7 @@ final class Plugin {
 		( new MediaController( $this ) )->register();
 		( new SuggestController( $this ) )->register();
 		( new PlansController( $this ) )->register();
+		( new CharactersController( $this ) )->register();
 		( new ReferencesController( $this ) )->register();
 		( new TemplatesController( $this ) )->register();
 		( new RequestsController( $this ) )->register();
