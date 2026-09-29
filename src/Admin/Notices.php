@@ -36,6 +36,25 @@ final class Notices {
 	}
 
 	/**
+	 * Queue a notice for one user (shown to them whatever their role).
+	 *
+	 * @param int    $user_id User.
+	 * @param string $message Plain text.
+	 * @param string $type    success, warning, error or info.
+	 */
+	public static function add_for_user( int $user_id, string $message, string $type = 'info' ): void {
+		$key    = self::TRANSIENT . '_u' . $user_id;
+		$list   = get_transient( $key );
+		$list   = is_array( $list ) ? $list : [];
+		$list[] = [
+			'type'    => in_array( $type, self::TYPES, true ) ? $type : 'info',
+			'message' => $message,
+		];
+
+		set_transient( $key, array_slice( $list, -5 ), HOUR_IN_SECONDS );
+	}
+
+	/**
 	 * Register hooks.
 	 */
 	public function register(): void {
@@ -43,19 +62,28 @@ final class Notices {
 	}
 
 	/**
-	 * Print and clear queued notices.
+	 * Print and clear queued notices: the admin queue for admins, and the current user's own queue.
 	 */
 	public function render(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
+		if ( current_user_can( 'manage_options' ) ) {
+			$this->flush( self::TRANSIENT );
 		}
 
-		$list = get_transient( self::TRANSIENT );
+		$this->flush( self::TRANSIENT . '_u' . get_current_user_id() );
+	}
+
+	/**
+	 * Print and clear one queue.
+	 *
+	 * @param string $key Transient key.
+	 */
+	private function flush( string $key ): void {
+		$list = get_transient( $key );
 		if ( ! is_array( $list ) || ! $list ) {
 			return;
 		}
 
-		delete_transient( self::TRANSIENT );
+		delete_transient( $key );
 
 		foreach ( $list as $notice ) {
 			printf(

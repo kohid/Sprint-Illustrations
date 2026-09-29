@@ -52,3 +52,7 @@ On the root `<svg>`:
 4. Check the result on **Sprint Illustrations → Test page**.
 
 Re-running is safe. Pieces are matched by ID (`<category prefix>-<file name>`, for example `char-sam-sit`), and a piece whose source file was removed stays in the manifest until you delete its entry.
+
+## Asking Claude Code instead
+
+Editors can request a piece on **Sprint Illustrations → Library** ("Request a piece"). Ask Claude Code to "make the requested pieces": it draws them to these same rules, builds the manifest and marks each request done. New pieces show a **Custom** badge.

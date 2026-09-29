@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A WordPress plugin (PHP 8.1+, WP 6.4+) that composes flat, brand-coloured SVG illustrations from a library of SVG "pieces" placed into JSON scene templates. Output is deterministic per seed, sanitized, accessible, and needs no front-end JS.
 
 - Design spec: `docs/superpowers/specs/2026-09-28-sprint-illustrations-design.md`. **§19 (amendments) overrides earlier sections.** §18 lists the build phases (1 core → 2 palette/cache → 3 REST/React builder → 4 block/shortcode/Elementor → 5 AI selector).
-- Phase plans: `docs/superpowers/plans/2026-09-28-phase-1-core.md` (done), `docs/superpowers/plans/2026-09-29-phase-2-palette-cache.md` (done), `docs/superpowers/plans/2026-09-29-phase-4-placement.md` (built before phase 3 at the user's request), `docs/superpowers/plans/2026-09-29-phase-3a-builder.md` (saved illustrations, REST, Builder), `docs/superpowers/plans/2026-09-29-phase-3b-media-library.md` (Media export, Library browser), `docs/superpowers/plans/2026-09-29-phase-5-ai.md` (AI suggestions). Specs in `docs/superpowers/specs/`. All phases in §18 are built.
+- Phase plans: `docs/superpowers/plans/2026-09-28-phase-1-core.md` (done), `docs/superpowers/plans/2026-09-29-phase-2-palette-cache.md` (done), `docs/superpowers/plans/2026-09-29-phase-4-placement.md` (built before phase 3 at the user's request), `docs/superpowers/plans/2026-09-29-phase-3a-builder.md` (saved illustrations, REST, Builder), `docs/superpowers/plans/2026-09-29-phase-3b-media-library.md` (Media export, Library browser), `docs/superpowers/plans/2026-09-29-phase-5-ai.md` (AI suggestions), `docs/superpowers/plans/2026-09-29-phase-6-piece-requests.md` (piece requests). Specs in `docs/superpowers/specs/`. All phases in §18 are built; phase 6 adds piece requests.
 - The plugin lives inside a Local (by Flywheel) site (`aberdeen-taxi-knowledge`). Run all commands from the plugin root.
 
 ## Commands
@@ -42,7 +42,7 @@ Both `vendor/autoload.php` **and** `vendor-prefixed/autoload.php` must exist; th
 
 ## Architecture
 
-**Boundary rule.** `Library`, `Compose`, `Palette`, `Security`, `Selection`, `Svg`, `Dev`, `Cache` and `Cli` (except `Cli\Command`, `Cli\CacheCommand`) are pure PHP with **no WordPress calls**. They run from PHPUnit and `bin/` scripts, and `phpcs.xml.dist` relaxes filesystem/escaping sniffs only for those paths. WordPress-facing code (`Plugin`, `Admin\*`, `Settings\*`, `Integrations\*`, the two CLI command classes) gets services from `Plugin` (`services()`, `composer()`, `site_palette()`, `presets()`, `cache()`).
+**Boundary rule.** `Library`, `Compose`, `Palette`, `Security`, `Selection`, `Svg`, `Dev`, `Cache` and `Cli` (except the `*Command` classes: `Command`, `CacheCommand`, `RequestsCommand`, `PieceCommand`) are pure PHP with **no WordPress calls**. They run from PHPUnit and `bin/` scripts, and `phpcs.xml.dist` relaxes filesystem/escaping sniffs only for those paths. WordPress-facing code (`Plugin`, `Admin\*`, `Settings\*`, `Integrations\*`, the two CLI command classes) gets services from `Plugin` (`services()`, `composer()`, `site_palette()`, `presets()`, `cache()`).
 
 **Wiring.** `Services::create( $root, $extra_manifests, $extra_template_dirs )` builds the whole core from a library root (`<root>/assets/{manifest.json,templates/,keywords/synonyms.json}`). Tests use it with `tests/fixtures/library`; `Plugin` uses it with the plugin dir plus user manifests from the `sprint_illustrations_library_paths` filter (default `uploads/sprint-illustrations/manifest.json`).
 
@@ -79,6 +79,18 @@ Both `vendor/autoload.php` **and** `vendor-prefixed/autoload.php` must exist; th
 3. Choose a template, 1–6 keywords **from the tag list only**, and alt text of at most 120 characters describing the scene.
 4. Apply with `wp sprint-illustrations apply <id> --template=… --keywords="a, b" --title="…" --user=<admin>`, which updates illustration block/widget `--index` (default 1). Add `--insert=top|bottom` for block pages with no illustration yet, and `--dry-run` to preview. Omitted `--keywords`/`--title`/`--seed` keep current values, and every save keeps a revision. Or use `wp sprint-illustrations save --name=… --template=… …` for a reusable saved illustration plus its shortcode.
 Validation is `Selection\Suggestion` (strict: unknown tags and templates are errors, not guesses); page edits are `Cli\PlacementEditor` (pure). Elementor pages are saved through Elementor's document API, and `--insert` isn't supported there.
+
+**Piece requests (Claude Code draws, the requester keeps or discards).** Editors queue requests on the Library page (`Admin\PieceRequestPanel`; private post type `si_piece_request` via `Storage\PieceRequestRepository`; pure rules and transitions in `Library\PieceRequest`). The states are `queued`, `drawing`, `review`, `done`, `discarded` and `declined`, and the page shows a Requested → Drawing → Ready for review → Added track. It live-updates through `assets/admin/library.js` while anything is queued or drawing. **Nothing joins the library until the requester clicks Keep**: drafts live in `uploads/sprint-illustrations/drafts/` (`Storage\PieceDrafts`). Keep copies the draft into `inbox/` and rebuilds the site manifest in PHP; Discard deletes it; Try again re-queues with feedback. When the owner says "make the requested pieces":
+1. `wp sprint-illustrations requests list` (add `--format=json` for details). Read any `feedback` left from an earlier Try again.
+2. `wp sprint-illustrations requests start <id>`, so the page shows "Drawing". Then draw the SVG to a scratch file whose name becomes the piece name (`taxi.svg` becomes `obj-taxi`), following `docs/importing-pieces.md` and the starter pack's style:
+   - Flat shapes, colour **only** from slot classes (no literal colours), and `data-si-label`/`data-si-tags` (single, singular, lower-case tags).
+   - Real-world scale: a standing adult is about 310 units tall.
+   - Characters: `anchor-ground`, `anchor-hold`, `data-si-accepts`, and a person name as the first part of the file name.
+   - Objects: `data-si-mounts` plus an `anchor-grip` or `anchor-base`. Add `hero` to tag big centrepiece objects and `floor` for standing props.
+3. `wp sprint-illustrations requests draft <id> --file=<svg>` builds the draft. It requires **zero warnings** and a name no piece or other draft uses. The request becomes "Ready for review", with the piece and a sample scene shown.
+4. Look at the result: render the SVG, or use `compose --no-cache --out=…` with the draft once kept. The requester decides in the Library.
+5. `wp sprint-illustrations requests decline <id> --note="why + what to ask instead"` is for things the flat style can't do. To keep processing requests while the session is open, the owner can run `/loop make the requested pieces`.
+6. `wp sprint-illustrations piece remove <id>` deletes a custom piece; bundled pieces are refused. Pieces in `uploads/` survive plugin updates and appear with a **Custom** badge. `Cli\RequestsCommand` and `Cli\PieceCommand` are WordPress-facing, like `Cli\Command`.
 
 **Library page.** `Admin\LibraryPage` (`sprint-illustrations-library`, `edit_posts`, server-rendered, `assets/admin/library.css`): tabs per category + Templates, search via pure `Library\LibraryFilter` (every word must appear in the label or tags).
 
