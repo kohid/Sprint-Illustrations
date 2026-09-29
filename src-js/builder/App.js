@@ -4,7 +4,7 @@
 import { __ } from '@wordpress/i18n';
 import { useEffect, useReducer, useRef, useState } from '@wordpress/element';
 import { Notice, Spinner } from '@wordpress/components';
-import { addQueryArgs } from '@wordpress/url';
+import { addQueryArgs, removeQueryArgs } from '@wordpress/url';
 import {
 	compose,
 	exportPng,
@@ -41,7 +41,27 @@ export default function App() {
 	const open = ( id ) =>
 		getIllustration( id )
 			.then( ( item ) => dispatch( { type: 'LOADED', item } ) )
-			.catch( ( error ) =>
+			.catch( ( error ) => {
+				if ( 'sprint_illustrations_not_found' === error.code ) {
+					// A deleted design left in the address would fail on every reload: drop it.
+					window.history.replaceState(
+						null,
+						'',
+						removeQueryArgs( window.location.href, 'illustration' )
+					);
+					dispatch( { type: 'NEW' } );
+					dispatch( {
+						type: 'NOTICE',
+						notice: {
+							status: 'info',
+							text: __(
+								'That illustration no longer exists, so a new one was started.',
+								'sprint-illustrations'
+							),
+						},
+					} );
+					return;
+				}
 				dispatch( {
 					type: 'NOTICE',
 					notice: {
@@ -53,8 +73,8 @@ export default function App() {
 								'sprint-illustrations'
 							),
 					},
-				} )
-			);
+				} );
+			} );
 
 	// Library (starting on ?template=ID), then the illustration from ?illustration=ID.
 	useEffect( () => {
