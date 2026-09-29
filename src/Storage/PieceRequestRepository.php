@@ -22,9 +22,10 @@ final class PieceRequestRepository {
 	 * @param string $category    Category.
 	 * @param string $description Description.
 	 * @param int    $author      Requesting user.
+	 * @param string $reference   Stored reference image name (optional).
 	 * @return int|\WP_Error Request ID.
 	 */
-	public function create( string $category, string $description, int $author ): int|\WP_Error {
+	public function create( string $category, string $description, int $author, string $reference = '' ): int|\WP_Error {
 		$error = PieceRequest::validate( $category, $description );
 		if ( '' !== $error ) {
 			return new \WP_Error( 'sprint_illustrations_invalid_request', $error );
@@ -37,8 +38,9 @@ final class PieceRequestRepository {
 				'post_title'  => PieceRequest::clean( $description ),
 				'post_author' => $author,
 				'meta_input'  => [
-					PieceRequestPostType::META_CATEGORY => $category,
-					PieceRequestPostType::META_STATE    => 'queued',
+					PieceRequestPostType::META_CATEGORY  => $category,
+					PieceRequestPostType::META_STATE     => 'queued',
+					PieceRequestPostType::META_REFERENCE => $reference,
 				],
 			],
 			true
@@ -51,7 +53,7 @@ final class PieceRequestRepository {
 	 * One request.
 	 *
 	 * @param int $id Request ID.
-	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string}|null
+	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string, reference: string}|null
 	 */
 	public function get( int $id ): ?array {
 		$post = get_post( $id );
@@ -64,7 +66,7 @@ final class PieceRequestRepository {
 	 *
 	 * @param string|array<string> $state State(s) or 'all'.
 	 * @param int                  $limit Maximum.
-	 * @return array<int, array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string}>
+	 * @return array<int, array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string, reference: string}>
 	 */
 	public function list( string|array $state, int $limit = 50 ): array {
 		$states = (array) $state;
@@ -207,7 +209,7 @@ final class PieceRequestRepository {
 	 * Row for a post.
 	 *
 	 * @param \WP_Post $post Post.
-	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string}
+	 * @return array{id: int, category: string, description: string, state: string, piece: string, note: string, draft: string, feedback: string, author: int, date: string, changed: string, reference: string}
 	 */
 	private function row( \WP_Post $post ): array {
 		$state = (string) get_post_meta( $post->ID, PieceRequestPostType::META_STATE, true );
@@ -224,6 +226,7 @@ final class PieceRequestRepository {
 			'author'      => (int) $post->post_author,
 			'date'        => $post->post_date_gmt,
 			'changed'     => (string) get_post_meta( $post->ID, PieceRequestPostType::META_CHANGED, true ),
+			'reference'   => (string) get_post_meta( $post->ID, PieceRequestPostType::META_REFERENCE, true ),
 		];
 	}
 }

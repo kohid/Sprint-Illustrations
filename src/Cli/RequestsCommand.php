@@ -59,10 +59,12 @@ final class RequestsCommand {
 	 * @param array<string, string|bool> $assoc_args Options.
 	 */
 	public function list_( array $args, array $assoc_args ): void {
-		$rows = array_map(
-			static function ( array $row ): array {
-				$author        = get_userdata( $row['author'] );
-				$row['author'] = $author ? $author->user_login : (string) $row['author'];
+		$images = $this->plugin->reference_images();
+		$rows   = array_map(
+			static function ( array $row ) use ( $images ): array {
+				$author           = get_userdata( $row['author'] );
+				$row['author']    = $author ? $author->user_login : (string) $row['author'];
+				$row['reference'] = '' !== $images->url( $row['reference'] ) ? $images->path( $row['reference'] ) : '';
 				return $row;
 			},
 			$this->plugin->piece_requests()->list( (string) ( $assoc_args['state'] ?? 'queued' ), 200 )
@@ -245,6 +247,7 @@ final class RequestsCommand {
 				'category'    => $row['category'],
 				'description' => $row['description'],
 				'feedback'    => $row['feedback'],
+				'reference'   => '' !== $this->plugin->reference_images()->url( $row['reference'] ) ? $this->plugin->reference_images()->path( $row['reference'] ) : '',
 			];
 			\WP_CLI::line( (string) wp_json_encode( $event, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) );
 		}

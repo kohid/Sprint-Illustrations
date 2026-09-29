@@ -104,3 +104,12 @@
 .si-retry{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
 .si-retry input[type=text]{flex:1 1 220px;min-width:0}
 .si-requests__list--closed .si-request__category{background:#fcf0f1;color:#8a2424}
+/* Reference image on a request. */
+.si-reference input[type=file]{max-width:100%}
+.si-requests__help{display:block;margin-top:4px;color:#646970;font-size:12px}
+.si-reference__preview{display:flex;align-items:center;gap:10px;margin-top:8px}
+.si-reference__preview[hidden]{display:none}
+.si-reference__preview img{width:64px;height:64px;object-fit:cover;border:1px solid #dcdcde;border-radius:4px;background:#f6f7f7}
+.si-request__reference{float:right;margin:0 0 4px 8px}
+.si-request__reference img{display:block;width:40px;height:40px;object-fit:cover;border:1px solid #dcdcde;border-radius:4px}
+.si-request__reference:focus-visible{outline:2px solid #2271b1;outline-offset:2px}

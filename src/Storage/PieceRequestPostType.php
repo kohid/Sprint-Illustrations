@@ -30,6 +30,8 @@ final class PieceRequestPostType {
 
 	public const META_CHANGED = '_si_changed';
 
+	public const META_REFERENCE = '_si_reference';
+
 	/**
 	 * Register hooks.
 	 */

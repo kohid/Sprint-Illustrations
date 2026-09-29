@@ -2,6 +2,28 @@
 ( function () {
 	'use strict';
 
+	// Reference image: show what was chosen, with a way to clear it.
+	var input = document.getElementById( 'si-request-reference' );
+	var preview = document.querySelector( '.si-reference__preview' );
+	if ( input && preview && window.URL ) {
+		var image = preview.querySelector( 'img' );
+		input.addEventListener( 'change', function () {
+			var file = input.files && input.files[ 0 ];
+			if ( image.src ) {
+				window.URL.revokeObjectURL( image.src );
+			}
+			preview.hidden = ! file;
+			image.src = file ? window.URL.createObjectURL( file ) : '';
+		} );
+		preview
+			.querySelector( '.si-reference__remove' )
+			.addEventListener( 'click', function () {
+				input.value = '';
+				input.dispatchEvent( new window.Event( 'change' ) );
+				input.focus();
+			} );
+	}
+
 	var panel = document.querySelector( '[data-si-requests]' );
 	var config = window.sprintIllustrationsLibrary;
 	if ( ! panel || ! config ) {

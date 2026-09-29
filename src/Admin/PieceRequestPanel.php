@@ -143,7 +143,7 @@ final class PieceRequestPanel {
 	private function render_form( string $selected ): void {
 		echo '<div class="si-requests__form">';
 		echo '<h2 class="si-panel__title" id="si-requests-title">' . esc_html__( 'Request a piece', 'sprint-illustrations' ) . '</h2>';
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="' . esc_attr( self::CREATE_ACTION ) . '">';
 		wp_nonce_field( self::CREATE_ACTION );
 
@@ -160,6 +160,11 @@ final class PieceRequestPanel {
 			(int) PieceRequest::MAX_LENGTH,
 			esc_attr__( 'e.g. A black Aberdeen taxi, side view', 'sprint-illustrations' )
 		);
+
+		echo '<div class="si-requests__row si-reference"><label for="si-request-reference">' . esc_html__( 'Reference image (optional)', 'sprint-illustrations' ) . '</label>';
+		echo '<input type="file" id="si-request-reference" name="reference" accept="image/png,image/jpeg,image/webp" aria-describedby="si-request-reference-help">';
+		echo '<span class="si-reference__preview" hidden><img alt=""><button type="button" class="button-link si-reference__remove">' . esc_html__( 'Remove', 'sprint-illustrations' ) . '</button></span>';
+		echo '<span class="si-requests__help" id="si-request-reference-help">' . esc_html__( 'PNG, JPEG or WebP, up to 5 MB. Claude Code draws from it in the library’s flat style.', 'sprint-illustrations' ) . '</span></div>';
 
 		echo '<p class="si-requests__actions"><button type="submit" class="button button-primary">' . esc_html__( 'Add request', 'sprint-illustrations' ) . '</button></p>';
 		echo '<p class="si-requests__hint">' . esc_html__( 'Claude Code draws it while a session is open. You’ll see it here before it joins the library.', 'sprint-illustrations' ) . '</p>';
@@ -317,6 +322,10 @@ final class PieceRequestPanel {
 	 * @param array<string, mixed> $row Request.
 	 */
 	private function render_head( array $row ): void {
+		$reference = $this->plugin->reference_images()->url( (string) ( $row['reference'] ?? '' ) );
+		if ( '' !== $reference ) {
+			printf( '<a class="si-request__reference" href="%1$s" target="_blank" rel="noopener"><img src="%1$s" alt="%2$s" loading="lazy"></a>', esc_url( $reference ), esc_attr__( 'Reference image', 'sprint-illustrations' ) );
+		}
 		echo '<span class="si-request__category">' . esc_html( $this->categories()[ $row['category'] ] ?? (string) $row['category'] ) . '</span>';
 		echo '<span class="si-request__text">' . esc_html( (string) $row['description'] ) . '</span>';
 	}
@@ -438,12 +447,26 @@ final class PieceRequestPanel {
 
 		$category = isset( $_POST['category'] ) ? sanitize_key( wp_unslash( $_POST['category'] ) ) : '';
 		$text     = isset( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : '';
-		$result   = $this->plugin->piece_requests()->create( $category, $text, get_current_user_id() );
+
+		// Optional reference image: stored (re-encoded) before the request, removed again if that fails.
+		$reference = '';
+		$file      = isset( $_FILES['reference'] ) && is_array( $_FILES['reference'] ) ? $_FILES['reference'] : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated and re-encoded in ReferenceImages::store().
+		if ( $file && UPLOAD_ERR_NO_FILE !== (int) ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) ) {
+			$stored = $this->plugin->reference_images()->store( $file );
+			if ( is_wp_error( $stored ) ) {
+				Notices::add_for_user( get_current_user_id(), $stored->get_error_message(), 'error' );
+				$this->back( $category );
+			}
+			$reference = (string) $stored;
+		}
+
+		$result = $this->plugin->piece_requests()->create( $category, $text, get_current_user_id(), $reference );
 
 		if ( is_wp_error( $result ) ) {
+			$this->plugin->reference_images()->delete( $reference );
 			Notices::add_for_user( get_current_user_id(), $result->get_error_message(), 'error' );
 		} else {
-			Notices::add_for_user( get_current_user_id(), __( 'Request added. Ask Claude Code to “make the requested pieces”.', 'sprint-illustrations' ), 'success' );
+			Notices::add_for_user( get_current_user_id(), __( 'Request added. Claude Code draws it while a session is open.', 'sprint-illustrations' ), 'success' );
 		}
 
 		$this->back( $category );
@@ -455,6 +478,9 @@ final class PieceRequestPanel {
 	public function handle_cancel(): void {
 		$request = $this->authorized( self::CANCEL_ACTION, 'GET' );
 		$done    = $this->plugin->piece_requests()->cancel( (int) $request['id'] );
+		if ( $done ) {
+			$this->plugin->reference_images()->delete( (string) $request['reference'] );
+		}
 
 		Notices::add_for_user( get_current_user_id(), $done ? __( 'Request cancelled.', 'sprint-illustrations' ) : __( 'That request is already being handled.', 'sprint-illustrations' ), 'info' );
 		$this->back( (string) $request['category'] );
@@ -478,6 +504,7 @@ final class PieceRequestPanel {
 		}
 
 		$this->plugin->piece_requests()->keep( (int) $request['id'], $result['piece'] );
+		$this->plugin->reference_images()->delete( (string) $request['reference'] );
 		Notices::add_for_user( get_current_user_id(), __( 'Kept. The piece is now in the library and the Builder.', 'sprint-illustrations' ), 'success' );
 		$this->back( (string) $request['category'], $result['piece'] );
 	}

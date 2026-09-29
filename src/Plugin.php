@@ -41,6 +41,7 @@ use SprintIllustrations\Storage\PieceDrafts;
 use SprintIllustrations\Storage\PieceRequestPostType;
 use SprintIllustrations\Storage\DrawerHeartbeat;
 use SprintIllustrations\Storage\PieceRequestRepository;
+use SprintIllustrations\Storage\ReferenceImages;
 
 /**
  * Singleton that owns the service container and registers hooks.
@@ -278,6 +279,15 @@ final class Plugin {
 	 */
 	public function piece_drafts(): PieceDrafts {
 		return new PieceDrafts( $this );
+	}
+
+	/**
+	 * Reference images attached to piece requests.
+	 *
+	 * @return ReferenceImages
+	 */
+	public function reference_images(): ReferenceImages {
+		return new ReferenceImages( $this );
 	}
 
 	/**
