@@ -86,8 +86,8 @@ final class MediaController {
 		if ( $animated ) {
 			$markup = SvgFile::with_style( $markup, Animation::css( $result->spec->animations ) );
 		}
-		$size   = SvgFile::size( $markup ) ?? [ 0, 0 ];
-		$title  = $this->title( $request, (string) $result->spec->template );
+		$size  = SvgFile::size( $markup ) ?? [ 0, 0 ];
+		$title = $this->title( $request, (string) $result->spec->template );
 
 		$allow  = static fn( array $mimes ): array => $mimes + [ 'svg' => 'image/svg+xml' ];
 		add_filter( 'upload_mimes', $allow );
