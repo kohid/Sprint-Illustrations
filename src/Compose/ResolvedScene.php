@@ -25,6 +25,7 @@ final class ResolvedScene {
 	 * @param array<string>                       $warnings   Non-fatal issues.
 	 * @param array{0: int|float, 1: int|float}   $canvas     Rendered canvas size.
 	 * @param array<int, string>                  $layers     Layer groups back to front (top-level slots and "item:<key>").
+	 * @param array<string, string>               $roots      Slot name => layer key (attached slots map to their root).
 	 */
 	public function __construct(
 		public readonly Template $template,
@@ -33,5 +34,6 @@ final class ResolvedScene {
 		public readonly array $warnings,
 		public readonly array $canvas = [ 0, 0 ],
 		public readonly array $layers = [],
+		public readonly array $roots = [],
 	) {}
 }

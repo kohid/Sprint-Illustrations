@@ -131,3 +131,9 @@
 .si-b-template--blank .si-b-template__art{flex:1 1 auto;aspect-ratio:auto;min-height:60px;margin:8px 8px 0;border:2px dashed #c3c4c7;border-radius:3px;background:#fff}
 .si-b-template--blank[aria-pressed="true"] .si-b-template__art{border-color:#2271b1}
 .si-b-stage__hint{position:absolute;inset:0;z-index:1;display:grid;place-items:center;margin:0;color:#8c8f94;font-size:14px;pointer-events:none}
+
+/* Layer animation controls. */
+.si-b-animate{width:260px;padding:12px;display:grid;gap:12px}
+.si-b-badge--motion{position:static;display:inline-block;margin-left:6px;background:#f0f6fc;color:#2271b1;vertical-align:1px;text-transform:none;letter-spacing:0}
+.si-b-layer__move .components-button.is-pressed{background:#2271b1;color:#fff}
+.si-b-replay{margin:0 0 10px}

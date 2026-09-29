@@ -34,6 +34,7 @@ final class SceneSpec {
 	 * @param array{0: int, 1: int}|null          $canvas     Canvas size; null = the template's.
 	 * @param array<int, array<string, mixed>>    $items      Pieces placed freely: key, piece, x, y, w, flip (canvas units).
 	 * @param array<int, string>                  $layers     Layer order back to front: slot names and "item:<key>".
+	 * @param array<string, array<string, mixed>> $animations Layer key => entrance/loop/delay/speed (see Animation).
 	 */
 	private function __construct(
 		public readonly ?string $template,
@@ -46,6 +47,7 @@ final class SceneSpec {
 		public readonly ?array $canvas = null,
 		public readonly array $items = [],
 		public readonly array $layers = [],
+		public readonly array $animations = [],
 	) {}
 
 	/**
@@ -76,7 +78,8 @@ final class SceneSpec {
 			filter_var( $data['decorative'] ?? false, FILTER_VALIDATE_BOOLEAN ),
 			self::normalize_canvas( $data['canvas'] ?? null ),
 			self::normalize_items( $data['items'] ?? [] ),
-			self::normalize_layers( $data['layers'] ?? [] )
+			self::normalize_layers( $data['layers'] ?? [] ),
+			Animation::normalize( $data['animations'] ?? [] )
 		);
 	}
 
@@ -121,6 +124,7 @@ final class SceneSpec {
 
 		// The phase 8 edits appear only when used, so older specs (and their cache keys) are unchanged.
 		$array = [
+			'animations' => $this->animations,
 			'canvas'     => $this->canvas,
 			'decorative' => $this->decorative,
 			'items'      => $this->items,
@@ -132,7 +136,7 @@ final class SceneSpec {
 			'template'   => $this->template,
 			'title'      => $this->title,
 		];
-		foreach ( [ 'canvas', 'items', 'layers' ] as $key ) {
+		foreach ( [ 'animations', 'canvas', 'items', 'layers' ] as $key ) {
 			if ( null === $array[ $key ] || [] === $array[ $key ] ) {
 				unset( $array[ $key ] );
 			}

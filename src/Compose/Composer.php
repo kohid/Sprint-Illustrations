@@ -132,7 +132,29 @@ final class Composer implements ComposesSvg {
 		$svg->setAttribute( 'viewBox', sprintf( '0 0 %s %s', SvgDom::num( (float) $scene->canvas[0] ), SvgDom::num( (float) $scene->canvas[1] ) ) );
 
 		$labels = [];
+		$target = $svg;
+		$open   = null;
 		foreach ( $scene->placements as $index => $placement ) {
+			// Animated layers (contiguous, see SceneLayout::order) get an entrance group and a loop group.
+			$key = $scene->roots[ $placement->slot ] ?? $placement->slot;
+			if ( isset( $spec->animations[ $key ] ) ) {
+				if ( $key !== $open ) {
+					$classes = Animation::classes( $spec->animations[ $key ] );
+					$outer   = $doc->createElementNS( SvgDom::NS, 'g' );
+					$outer->setAttribute( 'class', 'si-a si-a-layer ' . $classes['outer'] );
+					$target = $doc->createElementNS( SvgDom::NS, 'g' );
+					if ( '' !== $classes['inner'] ) {
+						$target->setAttribute( 'class', $classes['inner'] );
+					}
+					$outer->appendChild( $target );
+					$svg->appendChild( $outer );
+					$open = $key;
+				}
+			} else {
+				$target = $svg;
+				$open   = null;
+			}
+
 			$group = $doc->createElementNS( SvgDom::NS, 'g' );
 			$group->setAttribute( 'transform', $placement->transform() );
 
@@ -144,12 +166,12 @@ final class Composer implements ComposesSvg {
 
 			$this->recolorer->apply( $group, $palette, $placement->skin_index, $placement->hair_index );
 			$this->scoper->scope( $group, $token . '-p' . $index . '-' );
-			$svg->appendChild( $group );
+			$target->appendChild( $group );
 
 			if ( 'decor' !== $placement->piece->category && 'backgrounds' !== $placement->piece->category ) {
 				$labels[ $placement->piece->label ] = true;
 			}
-		}
+		}//end foreach
 
 		if ( $spec->decorative ) {
 			$svg->setAttribute( 'aria-hidden', 'true' );

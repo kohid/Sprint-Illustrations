@@ -20,6 +20,7 @@ export const initialState = {
 		canvas: null,
 		items: [],
 		layers: [],
+		animations: {},
 	},
 	picks: {},
 	selected: null,
@@ -58,7 +59,7 @@ function defaultTemplate( library, preferred = '' ) {
  * @return {Object} SceneSpec-shaped body.
  */
 export function specBody( state ) {
-	const { canvas, items, layers, ...spec } = state.spec;
+	const { canvas, items, layers, animations, ...spec } = state.spec;
 	return {
 		...spec,
 		template: spec.template || undefined,
@@ -66,7 +67,22 @@ export function specBody( state ) {
 		...( canvas ? { canvas } : {} ),
 		...( items.length ? { items } : {} ),
 		...( layers.length ? { layers } : {} ),
+		...( Object.keys( animations ).length ? { animations } : {} ),
 	};
+}
+
+/**
+ * Animations of added pieces only (slot animations belong to the template being left).
+ *
+ * @param {Object} animations Animations by layer key.
+ * @return {Object} Item animations.
+ */
+function itemAnimations( animations ) {
+	return Object.fromEntries(
+		Object.entries( animations ).filter( ( [ key ] ) =>
+			key.startsWith( 'item:' )
+		)
+	);
 }
 
 /**
@@ -118,7 +134,12 @@ export function reducer( state, action ) {
 			// Dropped pieces and the canvas size stay; the layer order belonged to the old template.
 			return {
 				...state,
-				spec: { ...state.spec, template: action.template, layers: [] },
+				spec: {
+					...state.spec,
+					template: action.template,
+					layers: [],
+					animations: itemAnimations( state.spec.animations ),
+				},
 				picks: {},
 				dirty: true,
 			};
@@ -175,19 +196,35 @@ export function reducer( state, action ) {
 						: item
 				)
 			);
-		case 'REMOVE_ITEM':
+		case 'REMOVE_ITEM': {
+			const animations = { ...state.spec.animations };
+			delete animations[ `item:${ action.key }` ];
+			const next = withItems(
+				state,
+				state.spec.items.filter( ( item ) => item.key !== action.key ),
+				state.spec.layers.filter(
+					( layer ) => layer !== `item:${ action.key }`
+				)
+			);
 			return {
-				...withItems(
-					state,
-					state.spec.items.filter(
-						( item ) => item.key !== action.key
-					),
-					state.spec.layers.filter(
-						( layer ) => layer !== `item:${ action.key }`
-					)
-				),
+				...next,
+				spec: { ...next.spec, animations },
 				selected: state.selected === action.key ? null : state.selected,
 			};
+		}
+		case 'SET_ANIMATION': {
+			const animations = { ...state.spec.animations };
+			if ( action.value ) {
+				animations[ action.key ] = action.value;
+			} else {
+				delete animations[ action.key ];
+			}
+			return {
+				...state,
+				spec: { ...state.spec, animations },
+				dirty: true,
+			};
+		}
 		case 'SELECT':
 			return { ...state, selected: action.key };
 		case 'SET_LAYERS':
@@ -222,6 +259,10 @@ export function reducer( state, action ) {
 					canvas: Array.isArray( s.canvas ) ? s.canvas : null,
 					items: Array.isArray( s.items ) ? s.items : [],
 					layers: Array.isArray( s.layers ) ? s.layers : [],
+					animations:
+						s.animations && ! Array.isArray( s.animations )
+							? s.animations
+							: {},
 				},
 				selected: null,
 				picks: Array.isArray( s.picks ) ? {} : s.picks || {},
@@ -260,6 +301,7 @@ export function reducer( state, action ) {
 					keywords: ( action.suggestion.keywords || [] ).join( ', ' ),
 					title: action.suggestion.title || state.spec.title,
 					layers: [],
+					animations: itemAnimations( state.spec.animations ),
 				},
 				picks: {},
 				dirty: true,

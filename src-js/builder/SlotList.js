@@ -6,6 +6,7 @@
 import { __, sprintf } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 import { Button, Dropdown } from '@wordpress/components';
+import AnimateControl, { summary } from './AnimateControl';
 
 const LAYER_TYPE = 'application/x-si-layer';
 
@@ -319,8 +320,21 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 												'sprint-illustrations'
 										  )
 										: pickedLabel( slot, byId ) }
+									{ summary( spec.animations[ key ] ) && (
+										<span className="si-b-badge si-b-badge--motion">
+											{ summary(
+												spec.animations[ key ]
+											) }
+										</span>
+									) }
 								</span>
 								<span className="si-b-layer__move">
+									<AnimateControl
+										layerKey={ key }
+										name={ name }
+										value={ spec.animations[ key ] }
+										dispatch={ dispatch }
+									/>
 									<Button
 										size="small"
 										icon="arrow-up-alt2"

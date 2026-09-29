@@ -2,7 +2,8 @@
  * The live composition: canvas size bar, the rendered scene, and the editing layer over it.
  */
 import { __ } from '@wordpress/i18n';
-import { Spinner } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+import { Button, Spinner } from '@wordpress/components';
 import CanvasEditor from './CanvasEditor';
 import CanvasSize from './CanvasSize';
 import { canvasOf, itemHeight } from './geometry';
@@ -11,6 +12,8 @@ import { BLANK } from './state';
 export default function Stage( { state, byId, dragging, dispatch } ) {
 	const { result, status, error, hover, spec } = state;
 	const canvas = canvasOf( spec, result );
+	const [ replay, setReplay ] = useState( 0 );
+	const animated = Object.keys( spec.animations ).length > 0;
 
 	let hoverBoxes = [];
 	if ( hover?.startsWith( 'item:' ) ) {
@@ -45,6 +48,17 @@ export default function Stage( { state, byId, dragging, dispatch } ) {
 				custom={ !! spec.canvas }
 				dispatch={ dispatch }
 			/>
+			{ animated && (
+				<Button
+					className="si-b-replay"
+					size="small"
+					variant="secondary"
+					icon="controls-repeat"
+					onClick={ () => setReplay( replay + 1 ) }
+				>
+					{ __( 'Replay animation', 'sprint-illustrations' ) }
+				</Button>
+			) }
 			<div
 				className={ `si-b-stage__canvas${
 					dragging ? ' is-dropping' : ''
@@ -61,6 +75,7 @@ export default function Stage( { state, byId, dragging, dispatch } ) {
 				) }
 				{ result ? (
 					<div
+						key={ replay }
 						className="si-b-stage__art"
 						// Sanitized server-side by the composer.
 						dangerouslySetInnerHTML={ { __html: result.svg } }

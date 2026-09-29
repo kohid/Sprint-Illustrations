@@ -43,9 +43,10 @@ final class SceneLayout {
 	 * @param array<Placement>      $placements Placements in natural order (back to front).
 	 * @param array<string, string> $roots      Slot name => layer key (attached slots map to their root).
 	 * @param array<int, string>    $layers     Requested order, back to front.
+	 * @param bool                  $group      Paint group by group even without a requested order (animated layers must be contiguous).
 	 * @return array{placements: array<Placement>, layers: array<int, string>}
 	 */
-	public static function order( array $placements, array $roots, array $layers ): array {
+	public static function order( array $placements, array $roots, array $layers, bool $group = false ): array {
 		$groups = [];
 		foreach ( $placements as $placement ) {
 			$groups[ $roots[ $placement->slot ] ?? $placement->slot ][] = $placement;
@@ -53,7 +54,7 @@ final class SceneLayout {
 
 		$keys   = array_map( 'strval', array_keys( $groups ) );
 		$listed = array_values( array_filter( $layers, static fn( string $key ): bool => isset( $groups[ $key ] ) ) );
-		if ( ! $listed ) {
+		if ( ! $listed && ! $group ) {
 			// No requested order: paint exactly as resolved.
 			return [
 				'placements' => $placements,

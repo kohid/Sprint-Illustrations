@@ -46,7 +46,7 @@ final class BuilderPage {
 
 		wp_enqueue_script( 'sprint-illustrations-builder', plugins_url( 'build/builder.js', SPRINT_ILLUSTRATIONS_FILE ), (array) ( $asset['dependencies'] ?? [] ), (string) ( $asset['version'] ?? SPRINT_ILLUSTRATIONS_VERSION ), true );
 		wp_enqueue_style( 'wp-components' );
-		wp_enqueue_style( 'sprint-illustrations-builder', plugins_url( 'assets/admin/builder.css', SPRINT_ILLUSTRATIONS_FILE ), [ 'wp-components' ], SPRINT_ILLUSTRATIONS_VERSION );
+		wp_enqueue_style( 'sprint-illustrations-builder', plugins_url( 'assets/admin/builder.css', SPRINT_ILLUSTRATIONS_FILE ), [ 'wp-components', Plugin::STYLE_HANDLE ], SPRINT_ILLUSTRATIONS_VERSION );
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: which illustration to open.
 		$initial = isset( $_GET['illustration'] ) ? absint( $_GET['illustration'] ) : 0;

@@ -64,9 +64,10 @@ final class SceneResolver {
 		$canvas     = $spec->canvas ?? $template->canvas;
 		$placements = SceneLayout::fit( $placements, $template->canvas, $canvas );
 		$placements = array_merge( $placements, $this->resolve_items( $spec, $warnings, $order ) );
-		$layout     = SceneLayout::order( $placements, $this->roots( $template ), $spec->layers );
+		$roots      = $this->roots( $template );
+		$layout     = SceneLayout::order( $placements, $roots, $spec->layers, [] !== $spec->animations );
 
-		return new ResolvedScene( $template, $layout['placements'], $this->picks_from( $template, $placed ), $warnings, $canvas, $layout['layers'] );
+		return new ResolvedScene( $template, $layout['placements'], $this->picks_from( $template, $placed ), $warnings, $canvas, $layout['layers'], $roots );
 	}
 
 	/**
