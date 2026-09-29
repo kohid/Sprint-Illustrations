@@ -11,11 +11,51 @@ import {
 	ToggleControl,
 } from '@wordpress/components';
 
+/**
+ * Site palette or a preset (shown in the left column).
+ *
+ * @param {Object}   props             Props.
+ * @param {string}   props.palette     Current palette reference.
+ * @param {Array}    props.presets     Presets from /library.
+ * @param {string}   props.settingsUrl Settings page link, or '' without access.
+ * @param {Function} props.dispatch    Dispatch.
+ * @return {Element} Palette choices.
+ */
+export function PalettePanel( { palette, presets, settingsUrl, dispatch } ) {
+	return (
+		<>
+			<RadioControl
+				label={ __( 'Palette', 'sprint-illustrations' ) }
+				hideLabelFromVision
+				selected={ palette }
+				options={ [
+					{
+						label: __( 'Site palette', 'sprint-illustrations' ),
+						value: 'site',
+					},
+				].concat( presets ) }
+				onChange={ ( next ) =>
+					dispatch( { type: 'SET_SPEC', spec: { palette: next } } )
+				}
+			/>
+			{ settingsUrl && (
+				<p className="si-b-muted">
+					<a href={ settingsUrl }>
+						{ __(
+							'Edit the site palette',
+							'sprint-illustrations'
+						) }
+					</a>
+				</p>
+			) }
+		</>
+	);
+}
+
 export default function SidePanel( {
 	state,
 	dispatch,
-	presets,
-	settingsUrl,
+	layers,
 	aiReady,
 	suggesting,
 	onSuggest,
@@ -62,33 +102,7 @@ export default function SidePanel( {
 					</span>
 				</div>
 			</section>
-			<section className="si-b-panel" aria-labelledby="si-b-palette">
-				<h2 className="si-b-panel__title" id="si-b-palette">
-					{ __( 'Palette', 'sprint-illustrations' ) }
-				</h2>
-				<RadioControl
-					label={ __( 'Palette', 'sprint-illustrations' ) }
-					hideLabelFromVision
-					selected={ state.spec.palette }
-					options={ [
-						{
-							label: __( 'Site palette', 'sprint-illustrations' ),
-							value: 'site',
-						},
-					].concat( presets ) }
-					onChange={ ( palette ) => set( { palette } ) }
-				/>
-				{ settingsUrl && (
-					<p className="si-b-muted">
-						<a href={ settingsUrl }>
-							{ __(
-								'Edit the site palette',
-								'sprint-illustrations'
-							) }
-						</a>
-					</p>
-				) }
-			</section>
+			{ layers }
 
 			<section className="si-b-panel" aria-labelledby="si-b-variation">
 				<h2 className="si-b-panel__title" id="si-b-variation">

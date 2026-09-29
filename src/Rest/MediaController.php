@@ -9,6 +9,7 @@ declare( strict_types=1 );
 
 namespace SprintIllustrations\Rest;
 
+use SprintIllustrations\Compose\Animation;
 use SprintIllustrations\Compose\CompositionException;
 use SprintIllustrations\Compose\SceneSpec;
 use SprintIllustrations\Media\PngCheck;
@@ -80,12 +81,17 @@ final class MediaController {
 		}
 
 		$markup = SvgFile::standalone( $result->with_instance_id( 'si-m' . strtolower( wp_generate_password( 8, false ) ) ) );
+		// Animated export: the file carries its own motion CSS, so it moves as a plain image too.
+		$animated = rest_sanitize_boolean( $request['animated'] ?? false ) && [] !== $result->spec->animations;
+		if ( $animated ) {
+			$markup = SvgFile::with_style( $markup, Animation::css( $result->spec->animations ) );
+		}
 		$size   = SvgFile::size( $markup ) ?? [ 0, 0 ];
 		$title  = $this->title( $request, (string) $result->spec->template );
 
 		$allow  = static fn( array $mimes ): array => $mimes + [ 'svg' => 'image/svg+xml' ];
 		add_filter( 'upload_mimes', $allow );
-		$upload = wp_upload_bits( sanitize_file_name( $title . '-' . gmdate( 'Ymd-His' ) . '.svg' ), null, $markup );
+		$upload = wp_upload_bits( sanitize_file_name( $title . ( $animated ? '-animated' : '' ) . '-' . gmdate( 'Ymd-His' ) . '.svg' ), null, $markup );
 		remove_filter( 'upload_mimes', $allow );
 
 		if ( ! empty( $upload['error'] ) ) {

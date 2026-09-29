@@ -103,7 +103,7 @@ const EXPORTS = [
 	},
 ];
 
-function ExportMenu( { canExport, exporting, onExport } ) {
+function ExportMenu( { canExport, animated, exporting, onExport } ) {
 	return (
 		<Dropdown
 			className="si-b-export"
@@ -142,6 +142,29 @@ function ExportMenu( { canExport, exporting, onExport } ) {
 							{ item.label }
 						</MenuItem>
 					) ) }
+					<MenuItem
+						info={
+							animated
+								? __(
+										'Moves anywhere, even as a plain image',
+										'sprint-illustrations'
+								  )
+								: __(
+										'Animate a layer first (Layers → ▶)',
+										'sprint-illustrations'
+								  )
+						}
+						disabled={ ! animated }
+						onClick={ () => {
+							onClose();
+							onExport( 'animated-svg' );
+						} }
+					>
+						{ __(
+							'Animated SVG to Media Library',
+							'sprint-illustrations'
+						) }
+					</MenuItem>
 				</MenuGroup>
 			) }
 		/>
@@ -282,6 +305,7 @@ export default function TopBar( {
 			</Button>
 			<ExportMenu
 				canExport={ !! state.result?.svg }
+				animated={ Object.keys( state.spec.animations ).length > 0 }
 				exporting={ exporting }
 				onExport={ onExport }
 			/>

@@ -22,6 +22,78 @@ final class Animation {
 	public const DELAY = 3.0;
 
 	/**
+	 * CSS shared by every animated layer. Each string here also appears verbatim in
+	 * assets/front/illustration.css (AnimationTest checks this), so pages and files move the same way.
+	 */
+	public const CSS_BASE = '.si-a-layer,.si-a-layer>g{transform-box:fill-box;transform-origin:50% 100%}' . "\n"
+		. '.si-a-loop-spin,.si-a-loop-pulse,.si-a-loop-twinkle,.si-a-enter-pop{transform-origin:50% 50%}' . "\n"
+		. '.si-a-s-slow{--si-speed:1.6}.si-a-s-normal{--si-speed:1}.si-a-s-fast{--si-speed:.6}';
+
+	public const CSS_ENTER = '.si-a-enter-fade,.si-a-enter-rise,.si-a-enter-pop{animation:.8s cubic-bezier(.2,.7,.3,1) calc(var(--si-delay,0s)) both;animation-duration:calc(.8s * var(--si-speed,1))}';
+
+	public const CSS_LOOP = '.si-a-layer>[class^="si-a-loop-"]{animation-iteration-count:infinite;animation-delay:var(--si-delay,0s);animation-fill-mode:both}' . "\n"
+		. '.si-a-layer[class*="si-a-enter-"]>[class^="si-a-loop-"]{animation-delay:calc(var(--si-delay,0s) + .8s * var(--si-speed,1))}';
+
+	public const CSS_RULES = [
+		'fade'    => '.si-a-enter-fade{animation-name:si-a-fade}',
+		'rise'    => '.si-a-enter-rise{animation-name:si-a-rise}',
+		'pop'     => '.si-a-enter-pop{animation-name:si-a-pop}',
+		'float'   => '.si-a-loop-float{animation-name:si-a-float;animation-duration:calc(4s * var(--si-speed,1));animation-timing-function:ease-in-out}',
+		'sway'    => '.si-a-loop-sway{animation-name:si-a-sway;animation-duration:calc(3.5s * var(--si-speed,1));animation-timing-function:ease-in-out}',
+		'pulse'   => '.si-a-loop-pulse{animation-name:si-a-pulse;animation-duration:calc(2.4s * var(--si-speed,1));animation-timing-function:ease-in-out}',
+		'spin'    => '.si-a-loop-spin{animation-name:si-a-spin;animation-duration:calc(14s * var(--si-speed,1));animation-timing-function:linear}',
+		'twinkle' => '.si-a-loop-twinkle{animation-name:si-a-twinkle;animation-duration:calc(1.8s * var(--si-speed,1));animation-timing-function:ease-in-out}',
+	];
+
+	public const CSS_KEYFRAMES = [
+		'fade'    => '@keyframes si-a-fade{from{opacity:0}}',
+		'rise'    => '@keyframes si-a-rise{from{opacity:0;transform:translateY(24px)}}',
+		'pop'     => '@keyframes si-a-pop{from{opacity:0;transform:scale(.6)}}',
+		'float'   => '@keyframes si-a-float{50%{transform:translateY(-10px)}}',
+		'sway'    => '@keyframes si-a-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}',
+		'pulse'   => '@keyframes si-a-pulse{50%{transform:scale(1.06)}}',
+		'spin'    => '@keyframes si-a-spin{to{transform:rotate(360deg)}}',
+		'twinkle' => '@keyframes si-a-twinkle{50%{opacity:.35;transform:scale(.9)}}',
+	];
+
+	/**
+	 * Stylesheet for a standalone animated SVG file: only the motions, delays and speeds in use.
+	 *
+	 * @param array<string, array{enter: string, loop: string, delay: float, speed: string}> $animations Normalized animations.
+	 * @return string Empty when nothing is animated.
+	 */
+	public static function css( array $animations ): string {
+		if ( ! $animations ) {
+			return '';
+		}
+
+		$motions = [];
+		$delays  = [];
+		foreach ( $animations as $entry ) {
+			foreach ( [ $entry['enter'], $entry['loop'] ] as $motion ) {
+				if ( 'none' !== $motion ) {
+					$motions[ $motion ] = true;
+				}
+			}
+			$tenths            = (int) round( $entry['delay'] * 10 );
+			$delays[ $tenths ] = '.si-a-d-' . $tenths . '{--si-delay:' . ( $tenths / 10 ) . 's}';
+		}
+		ksort( $delays );
+
+		$has_enter = (bool) array_intersect_key( $motions, array_flip( [ 'fade', 'rise', 'pop' ] ) );
+		$has_loop  = (bool) array_diff_key( $motions, array_flip( [ 'fade', 'rise', 'pop' ] ) );
+		$rules     = array_merge(
+			$has_enter ? [ self::CSS_ENTER ] : [],
+			$has_loop ? [ self::CSS_LOOP ] : [],
+			array_values( array_intersect_key( self::CSS_RULES, $motions ) )
+		);
+
+		return self::CSS_BASE . "\n" . implode( '', $delays ) . "\n"
+			. '@media (prefers-reduced-motion:no-preference){' . "\n" . implode( "\n", $rules ) . "\n}\n"
+			. implode( "\n", array_values( array_intersect_key( self::CSS_KEYFRAMES, $motions ) ) );
+	}
+
+	/**
 	 * Normalize a layer key => settings map; entries that animate nothing are dropped.
 	 *
 	 * @param mixed $animations Candidate.

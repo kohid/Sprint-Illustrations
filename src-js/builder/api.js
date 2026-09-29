@@ -26,11 +26,16 @@ export const saveIllustration = ( { id, title, spec } ) =>
 		data: { title, spec },
 	} );
 
-export const exportSvg = ( { spec, illustrationId, title } ) =>
+export const exportSvg = ( { spec, illustrationId, title, animated } ) =>
 	apiFetch( {
 		path: `${ NS }/media/svg`,
 		method: 'POST',
-		data: { spec, illustration_id: illustrationId || 0, title },
+		data: {
+			spec,
+			illustration_id: illustrationId || 0,
+			title,
+			animated: !! animated,
+		},
 	} );
 
 export const exportPng = ( blob, { illustrationId, title, alt } ) => {

@@ -23,7 +23,7 @@ import LibraryPanel from './LibraryPanel';
 import TemplatePicker from './TemplatePicker';
 import SlotList from './SlotList';
 import Stage from './Stage';
-import SidePanel from './SidePanel';
+import SidePanel, { PalettePanel } from './SidePanel';
 
 const config = window.sprintIllustrationsBuilder || {};
 
@@ -158,13 +158,22 @@ export default function App() {
 				dispatch( {
 					type: 'SAVED',
 					item,
-					text:
+					text: [
 						asNew || ! state.id
 							? __(
 									'Saved as a new illustration.',
 									'sprint-illustrations'
 							  )
 							: __( 'Changes saved.', 'sprint-illustrations' ),
+						Object.keys( state.spec.animations ).length
+							? __(
+									'The animation plays wherever you place it: shortcode, block or Elementor.',
+									'sprint-illustrations'
+							  )
+							: '',
+					]
+						.filter( Boolean )
+						.join( ' ' ),
 				} );
 				window.history.replaceState(
 					null,
@@ -227,8 +236,12 @@ export default function App() {
 		setExporting( true );
 		try {
 			let media;
-			if ( 'svg' === format ) {
-				media = await exportSvg( { ...meta, spec } );
+			if ( 'svg' === format || 'animated-svg' === format ) {
+				media = await exportSvg( {
+					...meta,
+					spec,
+					animated: 'animated-svg' === format,
+				} );
 			} else {
 				const canvas = result.canvas ||
 					result.template?.canvas || [ 800, 600 ];
@@ -377,13 +390,13 @@ export default function App() {
 					/>
 				</Section>
 				<Section
-					name="slots"
-					title={ __( 'Slots', 'sprint-illustrations' ) }
+					name="palette"
+					title={ __( 'Palette', 'sprint-illustrations' ) }
 				>
-					<SlotList
-						state={ state }
-						library={ state.library }
-						byId={ byId }
+					<PalettePanel
+						palette={ state.spec.palette }
+						presets={ state.library.presets }
+						settingsUrl={ config.settingsUrl }
 						dispatch={ dispatch }
 					/>
 				</Section>
@@ -397,8 +410,19 @@ export default function App() {
 			<SidePanel
 				state={ state }
 				dispatch={ dispatch }
-				presets={ state.library.presets }
-				settingsUrl={ config.settingsUrl }
+				layers={
+					<Section
+						name="slots"
+						title={ __( 'Layers', 'sprint-illustrations' ) }
+					>
+						<SlotList
+							state={ state }
+							library={ state.library }
+							byId={ byId }
+							dispatch={ dispatch }
+						/>
+					</Section>
+				}
 				aiReady={ !! config.aiReady }
 				suggesting={ suggesting }
 				onSuggest={ suggestFrom }

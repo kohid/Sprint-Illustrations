@@ -137,3 +137,14 @@
 .si-b-badge--motion{position:static;display:inline-block;margin-left:6px;background:#f0f6fc;color:#2271b1;vertical-align:1px;text-transform:none;letter-spacing:0}
 .si-b-layer__move .components-button.is-pressed{background:#2271b1;color:#fff}
 .si-b-replay{margin:0 0 10px}
+
+/* Layers (right column): name line with badges, the chosen piece for slots, then a compact tool row. */
+.si-b-layers .si-b-slot{grid-template-columns:10px minmax(0,1fr);grid-template-areas:"grip name" "grip piece" "grip tools";row-gap:2px;padding:8px}
+.si-b-layers .si-b-slot__name{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;min-width:0}
+.si-b-slot__label{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.si-b-layers .si-b-badge--quiet,.si-b-layers .si-b-badge--motion{margin-left:0}
+.si-b-layer__tools{grid-area:tools;display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-left:-6px}
+.si-b-layer__tools .components-button.has-icon{min-width:28px;width:28px;height:28px;padding:0;justify-content:center}
+.si-b-layer__tools .components-button.is-pressed{background:#2271b1;color:#fff}
+.si-b-layer__tools .components-dropdown:last-child{margin-left:auto}
+.si-b-layers .si-b-slot--child{padding-left:24px}

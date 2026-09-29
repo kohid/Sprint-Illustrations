@@ -303,7 +303,12 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 									aria-hidden="true"
 								/>
 								<span className="si-b-slot__name">
-									{ name }
+									<span
+										className="si-b-slot__label"
+										title={ name }
+									>
+										{ name }
+									</span>
 									{ isItem && (
 										<span className="si-b-badge si-b-badge--quiet">
 											{ __(
@@ -312,14 +317,6 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 											) }
 										</span>
 									) }
-								</span>
-								<span className="si-b-slot__piece">
-									{ isItem
-										? __(
-												'From the library',
-												'sprint-illustrations'
-										  )
-										: pickedLabel( slot, byId ) }
 									{ summary( spec.animations[ key ] ) && (
 										<span className="si-b-badge si-b-badge--motion">
 											{ summary(
@@ -328,7 +325,12 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 										</span>
 									) }
 								</span>
-								<span className="si-b-layer__move">
+								{ ! isItem && (
+									<span className="si-b-slot__piece">
+										{ pickedLabel( slot, byId ) }
+									</span>
+								) }
+								<div className="si-b-layer__tools">
 									<AnimateControl
 										layerKey={ key }
 										name={ name }
@@ -359,50 +361,49 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 											reorder( index, index + 1 )
 										}
 									/>
-								</span>
-								{ isItem ? (
-									<>
-										<Button
-											size="small"
-											icon="edit"
-											label={ __(
-												'Select on the canvas',
-												'sprint-illustrations'
-											) }
-											onClick={ () =>
-												dispatch( {
-													type: 'SELECT',
-													key: item.key,
-												} )
-											}
+									{ isItem ? (
+										<>
+											<Button
+												size="small"
+												icon="edit"
+												label={ __(
+													'Select on the canvas',
+													'sprint-illustrations'
+												) }
+												onClick={ () =>
+													dispatch( {
+														type: 'SELECT',
+														key: item.key,
+													} )
+												}
+											/>
+											<Button
+												size="small"
+												icon="trash"
+												isDestructive
+												label={ __(
+													'Remove',
+													'sprint-illustrations'
+												) }
+												onClick={ () =>
+													dispatch( {
+														type: 'REMOVE_ITEM',
+														key: item.key,
+													} )
+												}
+											/>
+										</>
+									) : (
+										<SlotControls
+											slot={ slot }
+											result={ result }
+											library={ library }
+											byId={ byId }
+											picks={ picks }
+											dispatch={ dispatch }
 										/>
-										<Button
-											size="small"
-											variant="tertiary"
-											isDestructive
-											onClick={ () =>
-												dispatch( {
-													type: 'REMOVE_ITEM',
-													key: item.key,
-												} )
-											}
-										>
-											{ __(
-												'Remove',
-												'sprint-illustrations'
-											) }
-										</Button>
-									</>
-								) : (
-									<SlotControls
-										slot={ slot }
-										result={ result }
-										library={ library }
-										byId={ byId }
-										picks={ picks }
-										dispatch={ dispatch }
-									/>
-								) }
+									) }
+								</div>
 							</div>
 							{ slot &&
 								attached( slot.name ).map( ( child ) => (
@@ -421,15 +422,16 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 										<span className="si-b-slot__piece">
 											{ pickedLabel( child, byId ) }
 										</span>
-										<span className="si-b-layer__move" />
-										<SlotControls
-											slot={ child }
-											result={ result }
-											library={ library }
-											byId={ byId }
-											picks={ picks }
-											dispatch={ dispatch }
-										/>
+										<div className="si-b-layer__tools">
+											<SlotControls
+												slot={ child }
+												result={ result }
+												library={ library }
+												byId={ byId }
+												picks={ picks }
+												dispatch={ dispatch }
+											/>
+										</div>
 									</div>
 								) ) }
 						</li>

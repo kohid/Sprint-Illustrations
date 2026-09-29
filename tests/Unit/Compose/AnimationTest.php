@@ -82,6 +82,49 @@ final class AnimationTest extends TestCase {
 		);
 	}
 
+	public function test_file_css_holds_only_what_is_used(): void {
+		$css = Animation::css(
+			Animation::normalize(
+				[
+					'left'  => [
+						'enter' => 'rise',
+						'loop'  => 'float',
+						'delay' => 0.5,
+					],
+					'decor' => [ 'loop' => 'twinkle' ],
+				]
+			)
+		);
+
+		$this->assertStringContainsString( '@keyframes si-a-rise', $css );
+		$this->assertStringContainsString( '@keyframes si-a-float', $css );
+		$this->assertStringContainsString( '@keyframes si-a-twinkle', $css );
+		$this->assertStringNotContainsString( 'si-a-spin', $css );
+		$this->assertStringNotContainsString( 'si-a-pop', $css );
+		$this->assertStringContainsString( '.si-a-d-5{--si-delay:0.5s}', $css );
+		$this->assertStringContainsString( '.si-a-d-0{--si-delay:0s}', $css );
+		$this->assertStringContainsString( 'prefers-reduced-motion:no-preference', $css );
+		$this->assertSame( '', Animation::css( [] ) );
+	}
+
+	public function test_front_stylesheet_matches_the_file_css(): void {
+		$front = (string) file_get_contents( __DIR__ . '/../../../assets/front/illustration.css' );
+
+		foreach ( array_merge( explode( "\n", Animation::CSS_BASE ), [ Animation::CSS_ENTER ], explode( "\n", Animation::CSS_LOOP ), Animation::CSS_RULES, Animation::CSS_KEYFRAMES ) as $piece ) {
+			$this->assertStringContainsString( $piece, $front );
+		}
+		for ( $i = 0; $i <= 30; $i++ ) {
+			$this->assertStringContainsString( '.si-a-d-' . $i . '{--si-delay:' . ( $i / 10 ) . 's}', $front );
+		}
+	}
+
+	public function test_style_goes_first_inside_the_svg(): void {
+		$file = \SprintIllustrations\Media\SvgFile::with_style( '<?xml version="1.0"?>' . "\n" . '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><g/></svg>', '.a{b:c}' );
+
+		$this->assertStringContainsString( '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><style>.a{b:c}</style><g/>', $file );
+		$this->assertSame( '<svg/>', \SprintIllustrations\Media\SvgFile::with_style( '<svg/>', '' ) );
+	}
+
 	public function test_spec_keeps_animations_only_when_set(): void {
 		$this->assertArrayNotHasKey( 'animations', SceneSpec::from_array( [ 'animations' => [] ] )->to_array() );
 		$spec = SceneSpec::from_array( [ 'animations' => [ 'left' => [ 'loop' => 'float' ] ] ] );
