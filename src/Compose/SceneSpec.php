@@ -16,6 +16,10 @@ final class SceneSpec {
 
 	public const MAX_SEED     = 2147483647;
 	public const MAX_KEYWORDS = 20;
+	public const MAX_ITEMS    = 30;
+	public const MAX_LAYERS   = 64;
+	public const CANVAS_MIN   = 200;
+	public const CANVAS_MAX   = 4000;
 
 	/**
 	 * Constructor. Use from_array().
@@ -27,6 +31,9 @@ final class SceneSpec {
 	 * @param array<string, string|array<string>> $picks      Slot name => piece ID (or list for multi slots).
 	 * @param string|null                         $title      Accessible title override.
 	 * @param bool                                $decorative Render aria-hidden with no title/desc.
+	 * @param array{0: int, 1: int}|null          $canvas     Canvas size; null = the template's.
+	 * @param array<int, array<string, mixed>>    $items      Pieces placed freely: key, piece, x, y, w, flip (canvas units).
+	 * @param array<int, string>                  $layers     Layer order back to front: slot names and "item:<key>".
 	 */
 	private function __construct(
 		public readonly ?string $template,
@@ -36,6 +43,9 @@ final class SceneSpec {
 		public readonly array $picks,
 		public readonly ?string $title,
 		public readonly bool $decorative,
+		public readonly ?array $canvas = null,
+		public readonly array $items = [],
+		public readonly array $layers = [],
 	) {}
 
 	/**
@@ -63,7 +73,10 @@ final class SceneSpec {
 			self::normalize_keywords( $data['keywords'] ?? [] ),
 			self::normalize_picks( $data['picks'] ?? [] ),
 			'' === $title ? null : $title,
-			filter_var( $data['decorative'] ?? false, FILTER_VALIDATE_BOOLEAN )
+			filter_var( $data['decorative'] ?? false, FILTER_VALIDATE_BOOLEAN ),
+			self::normalize_canvas( $data['canvas'] ?? null ),
+			self::normalize_items( $data['items'] ?? [] ),
+			self::normalize_layers( $data['layers'] ?? [] )
 		);
 	}
 
@@ -106,15 +119,108 @@ final class SceneSpec {
 		$picks = $this->picks;
 		ksort( $picks );
 
-		return [
+		// The phase 8 edits appear only when used, so older specs (and their cache keys) are unchanged.
+		$array = [
+			'canvas'     => $this->canvas,
 			'decorative' => $this->decorative,
+			'items'      => $this->items,
 			'keywords'   => $this->keywords,
+			'layers'     => $this->layers,
 			'palette'    => $this->palette,
 			'picks'      => $picks,
 			'seed'       => $this->seed,
 			'template'   => $this->template,
 			'title'      => $this->title,
 		];
+		foreach ( [ 'canvas', 'items', 'layers' ] as $key ) {
+			if ( null === $array[ $key ] || [] === $array[ $key ] ) {
+				unset( $array[ $key ] );
+			}
+		}
+
+		return $array;
+	}
+
+	/**
+	 * Normalize the canvas size: two numbers, each clamped to CANVAS_MIN..CANVAS_MAX.
+	 *
+	 * @param mixed $canvas Candidate.
+	 * @return array{0: int, 1: int}|null
+	 */
+	private static function normalize_canvas( mixed $canvas ): ?array {
+		if ( ! is_array( $canvas ) || 2 !== count( $canvas ) ) {
+			return null;
+		}
+
+		$size = [];
+		foreach ( array_values( $canvas ) as $value ) {
+			if ( ! is_numeric( $value ) ) {
+				return null;
+			}
+			$size[] = (int) max( self::CANVAS_MIN, min( self::CANVAS_MAX, round( (float) $value ) ) );
+		}
+
+		return [ $size[0], $size[1] ];
+	}
+
+	/**
+	 * Normalize freely placed pieces. Keys (0–99) stay stable so an item's look never depends on the others.
+	 *
+	 * @param mixed $items Candidate.
+	 * @return array<int, array{key: int, piece: string, x: float, y: float, w: float, flip: bool}>
+	 */
+	private static function normalize_items( mixed $items ): array {
+		if ( ! is_array( $items ) ) {
+			return [];
+		}
+
+		$number = static fn( mixed $value, float $min, float $max ): float => round( max( $min, min( $max, is_numeric( $value ) ? (float) $value : 0.0 ) ), 2 );
+		$clean  = [];
+		$taken  = [];
+		foreach ( $items as $item ) {
+			if ( self::MAX_ITEMS <= count( $clean ) ) {
+				break;
+			}
+			if ( ! is_array( $item ) || ! isset( $item['piece'] ) || ! is_string( $item['piece'] ) || ! preg_match( '/^[a-z0-9][a-z0-9-]*$/D', $item['piece'] ) ) {
+				continue;
+			}
+
+			$key = isset( $item['key'] ) && is_numeric( $item['key'] ) ? (int) $item['key'] : -1;
+			if ( $key < 0 || $key > 99 || isset( $taken[ $key ] ) ) {
+				$key = 0;
+				while ( isset( $taken[ $key ] ) ) {
+					++$key;
+				}
+			}
+			$taken[ $key ] = true;
+
+			$clean[] = [
+				'key'   => $key,
+				'piece' => $item['piece'],
+				'x'     => $number( $item['x'] ?? 0, -8000, 8000 ),
+				'y'     => $number( $item['y'] ?? 0, -8000, 8000 ),
+				'w'     => $number( $item['w'] ?? 0, 1, 8000 ),
+				'flip'  => filter_var( $item['flip'] ?? false, FILTER_VALIDATE_BOOLEAN ),
+			];
+		}//end foreach
+
+		return $clean;
+	}
+
+	/**
+	 * Normalize the layer order: slot names and "item:<key>", no duplicates.
+	 *
+	 * @param mixed $layers Candidate.
+	 * @return array<int, string>
+	 */
+	private static function normalize_layers( mixed $layers ): array {
+		if ( ! is_array( $layers ) ) {
+			return [];
+		}
+
+		$clean = array_filter( $layers, static fn( mixed $key ): bool => is_string( $key ) && (bool) preg_match( '/^(?:[a-z][a-z0-9_-]*|item:[0-9]{1,2})$/D', $key ) );
+
+		return array_slice( array_values( array_unique( $clean ) ), 0, self::MAX_LAYERS );
 	}
 
 	/**

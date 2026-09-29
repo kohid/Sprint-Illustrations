@@ -27,12 +27,14 @@ final class ComposedSvg {
 	 * @param SceneSpec                                                           $spec     Spec with template and picks resolved (re-renders identically).
 	 * @param array<string>                                                       $warnings Non-fatal issues.
 	 * @param array<string, array<array{0: float, 1: float, 2: float, 3: float}>> $boxes Slot => rendered boxes [x, y, w, h] in canvas units.
+	 * @param array<int, string>                                                  $layers   Layer groups back to front (top-level slots and "item:<key>").
 	 */
 	public function __construct(
 		public readonly string $markup,
 		public readonly SceneSpec $spec,
 		public readonly array $warnings,
 		public readonly array $boxes = [],
+		public readonly array $layers = [],
 	) {}
 
 	/**
@@ -53,7 +55,7 @@ final class ComposedSvg {
 	/**
 	 * Export for storage.
 	 *
-	 * @return array{markup: string, spec: array<string, mixed>, warnings: array<string>}
+	 * @return array{markup: string, spec: array<string, mixed>, warnings: array<string>, boxes: array<string, mixed>, layers: array<int, string>}
 	 */
 	public function to_array(): array {
 		return [
@@ -61,6 +63,7 @@ final class ComposedSvg {
 			'spec'     => $this->spec->to_array(),
 			'warnings' => $this->warnings,
 			'boxes'    => $this->boxes,
+			'layers'   => $this->layers,
 		];
 	}
 
@@ -79,7 +82,8 @@ final class ComposedSvg {
 			$data['markup'],
 			SceneSpec::from_array( $data['spec'] ),
 			array_values( array_filter( $data['warnings'], 'is_string' ) ),
-			is_array( $data['boxes'] ?? null ) ? $data['boxes'] : []
+			is_array( $data['boxes'] ?? null ) ? $data['boxes'] : [],
+			is_array( $data['layers'] ?? null ) ? array_values( array_filter( $data['layers'], 'is_string' ) ) : []
 		);
 	}
 }

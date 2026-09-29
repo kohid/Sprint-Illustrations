@@ -61,7 +61,64 @@ final class SceneResolver {
 		$placements = array_merge( ...array_values( $placed ) );
 		usort( $placements, static fn( Placement $a, Placement $b ) => [ $a->z, $a->order ] <=> [ $b->z, $b->order ] );
 
-		return new ResolvedScene( $template, $placements, $this->picks_from( $template, $placed ), $warnings );
+		$canvas     = $spec->canvas ?? $template->canvas;
+		$placements = SceneLayout::fit( $placements, $template->canvas, $canvas );
+		$placements = array_merge( $placements, $this->resolve_items( $spec, $warnings, $order ) );
+		$layout     = SceneLayout::order( $placements, $this->roots( $template ), $spec->layers );
+
+		return new ResolvedScene( $template, $layout['placements'], $this->picks_from( $template, $placed ), $warnings, $canvas, $layout['layers'] );
+	}
+
+	/**
+	 * Freely placed pieces, on top in spec order. Skin and hair come from the item's own key and piece,
+	 * so they stay the same when other items change or the scene is shuffled.
+	 *
+	 * @param SceneSpec     $spec     Spec.
+	 * @param array<string> $warnings Warnings (by reference).
+	 * @param int           $order    Order counter.
+	 * @return array<Placement>
+	 */
+	private function resolve_items( SceneSpec $spec, array &$warnings, int $order ): array {
+		$items = [];
+
+		foreach ( $spec->items as $item ) {
+			$piece = $this->manifest->get( $item['piece'] );
+			if ( null === $piece ) {
+				$warnings[] = sprintf( 'Piece "%s" is not in the library; it was left out.', $item['piece'] );
+				continue;
+			}
+
+			$seed    = Seed::from_string( 'item|' . $item['key'] . '|' . $piece->id );
+			$skin    = $seed->int( 0, 63 );
+			$hair    = $seed->int( 0, 63 );
+			$items[] = new Placement( 'item:' . $item['key'], $piece, $item['x'], $item['y'], $item['w'] / $piece->width(), 0, $order++, $item['flip'], $skin, $hair );
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Layer key of every slot: its own name, or the top-level slot it is attached to.
+	 *
+	 * @param Template $template Template.
+	 * @return array<string, string>
+	 */
+	private function roots( Template $template ): array {
+		$parent = [];
+		foreach ( $template->slots as $slot ) {
+			$parent[ $slot->name ] = $slot->attach_to;
+		}
+
+		$roots = [];
+		foreach ( array_keys( $parent ) as $name ) {
+			$root = $name;
+			for ( $guard = 0; null !== ( $parent[ $root ] ?? null ) && $guard < 16; $guard++ ) {
+				$root = (string) $parent[ $root ];
+			}
+			$roots[ $name ] = $root;
+		}
+
+		return $roots;
 	}
 
 	/**

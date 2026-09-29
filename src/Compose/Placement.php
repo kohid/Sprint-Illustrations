@@ -45,6 +45,18 @@ final class Placement {
 	) {}
 
 	/**
+	 * Copy moved into a scaled, offset frame (a template layout fitted into a different canvas).
+	 *
+	 * @param float $k  Scale.
+	 * @param float $ox Offset X.
+	 * @param float $oy Offset Y.
+	 * @return self
+	 */
+	public function framed( float $k, float $ox, float $oy ): self {
+		return new self( $this->slot, $this->piece, $ox + $this->x * $k, $oy + $this->y * $k, $this->scale * $k, $this->z, $this->order, $this->flip, $this->skin_index, $this->hair_index );
+	}
+
+	/**
 	 * Rendered width in canvas units.
 	 *
 	 * @return float

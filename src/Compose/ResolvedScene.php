@@ -12,7 +12,7 @@ namespace SprintIllustrations\Compose;
 use SprintIllustrations\Library\Template;
 
 /**
- * Placements sorted back-to-front.
+ * Placements in paint order (back to front).
  */
 final class ResolvedScene {
 
@@ -20,14 +20,18 @@ final class ResolvedScene {
 	 * Constructor.
 	 *
 	 * @param Template                            $template   Template.
-	 * @param array<Placement>                    $placements Sorted by z, then order.
+	 * @param array<Placement>                    $placements Paint order.
 	 * @param array<string, string|array<string>> $picks      Slot => piece ID(s) actually used.
 	 * @param array<string>                       $warnings   Non-fatal issues.
+	 * @param array{0: int|float, 1: int|float}   $canvas     Rendered canvas size.
+	 * @param array<int, string>                  $layers     Layer groups back to front (top-level slots and "item:<key>").
 	 */
 	public function __construct(
 		public readonly Template $template,
 		public readonly array $placements,
 		public readonly array $picks,
 		public readonly array $warnings,
+		public readonly array $canvas = [ 0, 0 ],
+		public readonly array $layers = [],
 	) {}
 }

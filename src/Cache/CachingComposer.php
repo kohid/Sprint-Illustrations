@@ -52,7 +52,7 @@ final class CachingComposer implements ComposesSvg {
 		$markup = null === $hit ? null : $this->resanitize( $hit->markup );
 
 		if ( null !== $hit && null !== $markup ) {
-			return new ComposedSvg( $markup, $hit->spec, $hit->warnings, $hit->boxes );
+			return new ComposedSvg( $markup, $hit->spec, $hit->warnings, $hit->boxes, $hit->layers );
 		}
 
 		$result = $this->inner->compose( $spec, $palette );

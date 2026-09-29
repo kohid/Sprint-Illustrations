@@ -82,12 +82,13 @@ final class Composer implements ComposesSvg {
 			$this->render( $scene, $spec, $palette ),
 			$spec->with_template( $template->id )->with_picks( $scene->picks ),
 			$scene->warnings,
-			self::boxes( $scene )
+			self::boxes( $scene ),
+			$scene->layers
 		);
 	}
 
 	/**
-	 * Rendered box of every placement, grouped by slot in template order.
+	 * Rendered box of every placement, grouped by slot in template order, then free items ("item:<key>").
 	 *
 	 * @param ResolvedScene $scene Scene.
 	 * @return array<string, array<array{0: float, 1: float, 2: float, 3: float}>>
@@ -102,6 +103,11 @@ final class Composer implements ComposesSvg {
 		foreach ( $scene->template->slots as $slot ) {
 			if ( isset( $boxes[ $slot->name ] ) ) {
 				$ordered[ $slot->name ] = $boxes[ $slot->name ];
+			}
+		}
+		foreach ( $boxes as $key => $list ) {
+			if ( str_starts_with( (string) $key, 'item:' ) ) {
+				$ordered[ $key ] = $list;
 			}
 		}
 
@@ -123,7 +129,7 @@ final class Composer implements ComposesSvg {
 		$svg   = $doc->createElementNS( SvgDom::NS, 'svg' );
 		$doc->appendChild( $svg );
 
-		$svg->setAttribute( 'viewBox', sprintf( '0 0 %s %s', SvgDom::num( $scene->template->canvas[0] ), SvgDom::num( $scene->template->canvas[1] ) ) );
+		$svg->setAttribute( 'viewBox', sprintf( '0 0 %s %s', SvgDom::num( (float) $scene->canvas[0] ), SvgDom::num( (float) $scene->canvas[1] ) ) );
 
 		$labels = [];
 		foreach ( $scene->placements as $index => $placement ) {
