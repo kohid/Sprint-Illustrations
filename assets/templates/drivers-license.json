@@ -1,0 +1,134 @@
+{
+    "id": "drivers-license",
+    "label": "Drivers License",
+    "canvas": [
+        500,
+        500
+    ],
+    "unit": 1,
+    "tags": [
+        "licence",
+        "license",
+        "card",
+        "id",
+        "driver",
+        "document",
+        "taxi",
+        "handheld"
+    ],
+    "slots": [
+        {
+            "name": "piece-1",
+            "category": "backgrounds",
+            "box": [
+                48.700000000000003,
+                29.780000000000001,
+                437.11000000000001,
+                437.11000000000001
+            ],
+            "fit": "contain",
+            "align": "bottom",
+            "z": 10,
+            "prefer": [
+                "circle",
+                "round",
+                "soft"
+            ]
+        },
+        {
+            "name": "piece-0",
+            "category": "decor",
+            "box": [
+                71.359999999999999,
+                84.709999999999994,
+                74.390000000000001,
+                49.590000000000003
+            ],
+            "fit": "contain",
+            "align": "bottom",
+            "z": 20,
+            "prefer": [
+                "confetti",
+                "celebration"
+            ]
+        },
+        {
+            "name": "piece-2",
+            "category": "objects",
+            "box": [
+                23.670000000000002,
+                158.71000000000001,
+                252.91999999999999,
+                191.61000000000001
+            ],
+            "fit": "contain",
+            "align": "bottom",
+            "z": 30,
+            "prefer": [
+                "licence",
+                "license",
+                "card",
+                "id",
+                "driver",
+                "document",
+                "taxi",
+                "handheld"
+            ]
+        },
+        {
+            "name": "piece-3",
+            "category": "characters",
+            "box": [
+                296.98000000000002,
+                175.53999999999999,
+                148.72,
+                297.44
+            ],
+            "fit": "contain",
+            "align": "bottom",
+            "z": 40,
+            "prefer": [
+                "person",
+                "man",
+                "standing",
+                "holding"
+            ],
+            "flip": true
+        },
+        {
+            "name": "piece-4",
+            "category": "decor",
+            "box": [
+                229.36000000000001,
+                21.699999999999999,
+                89.530000000000001,
+                89.530000000000001
+            ],
+            "fit": "contain",
+            "align": "bottom",
+            "z": 50,
+            "prefer": [
+                "dot",
+                "pattern"
+            ]
+        },
+        {
+            "name": "piece-5",
+            "category": "decor",
+            "box": [
+                165.87,
+                438.33999999999997,
+                50,
+                15
+            ],
+            "fit": "contain",
+            "align": "bottom",
+            "z": 60,
+            "prefer": [
+                "squiggle",
+                "line",
+                "wave"
+            ]
+        }
+    ]
+}

@@ -511,7 +511,7 @@ final class PieceRequestPanel {
 			get_current_user_id(),
 			'plugin' === ( $result['where'] ?? '' )
 				? __( 'Kept. The piece is now in the plugin’s library, so it ships with the plugin to every site. Ask Claude Code to commit it.', 'sprint-illustrations' )
-				: __( 'Kept. The piece is in this site’s library (the plugin folder isn’t writable here).', 'sprint-illustrations' ),
+				: __( 'Kept. The piece is in this site’s library, where plugin updates can’t remove it.', 'sprint-illustrations' ),
 			'success'
 		);
 		$this->back( (string) $request['category'], $result['piece'] );

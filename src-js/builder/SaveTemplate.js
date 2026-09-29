@@ -34,8 +34,10 @@ export default function SaveTemplate( { state, dispatch } ) {
 		setError( '' );
 		try {
 			const saved = await saveTemplate( name.trim(), specBody( state ) );
-			const library = await getLibrary();
-			dispatch( { type: 'LIBRARY', library } );
+			// The template is saved now; a failed library refresh must not look like a failed save.
+			getLibrary()
+				.then( ( library ) => dispatch( { type: 'LIBRARY', library } ) )
+				.catch( () => {} );
 			dispatch( {
 				type: 'NOTICE',
 				notice: {

@@ -66,6 +66,38 @@ final class TemplateFromSceneTest extends TestCase {
 		Template::from_array( $data );
 	}
 
+	public function test_scattered_pieces_keep_their_size(): void {
+		$original = [
+			'template' => 'fixture-hero',
+			'seed'     => 4,
+		];
+		$data     = $this->saved( $original );
+		$dir      = sys_get_temp_dir() . '/si-tpl-' . uniqid();
+		mkdir( $dir );
+		file_put_contents( $dir . '/my-layout.json', json_encode( $data ) );
+
+		$services = Services::create( __DIR__ . '/../../fixtures/library', [], [ $dir ] );
+		$before   = $services->composer->compose( SceneSpec::from_array( $original ), Palette::default() );
+		$after    = $services->composer->compose(
+			SceneSpec::from_array(
+				[
+					'template' => 'my-layout',
+					'seed'     => 4,
+				]
+			),
+			Palette::default()
+		);
+
+		$this->assertSame( [], $after->warnings );
+		$this->assertTrue( $data['slots'][ array_search( 'decor', array_column( $data['slots'], 'name' ), true ) ]['scatter'] );
+		foreach ( $after->boxes['decor'] as $box ) {
+			$this->assertEqualsWithDelta( $before->boxes['decor'][0][2], $box[2], 0.05 );
+		}
+
+		unlink( $dir . '/my-layout.json' );
+		rmdir( $dir );
+	}
+
 	public function test_saved_template_composes_cleanly_and_keeps_the_layout(): void {
 		$original = [
 			'template' => 'fixture-duo',

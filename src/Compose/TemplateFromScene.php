@@ -44,9 +44,7 @@ final class TemplateFromScene {
 		$z     = 0;
 		foreach ( $scene->layers as $key ) {
 			$z    += 10;
-			$group = $groups[ $key ] ?? [];
-			// The layer's own slot first: attached slots need their parent resolved before them.
-			uksort( $group, static fn( $a, $b ): int => ( $b === $key ) <=> ( $a === $key ) );
+			$group = self::parents_first( $groups[ $key ] ?? [], $by_name );
 			foreach ( $group as $slot_name => $placements ) {
 				$slot_name = (string) $slot_name;
 				$source    = $by_name[ $slot_name ] ?? null;
@@ -120,10 +118,12 @@ final class TemplateFromScene {
 		if ( $n > 1 ) {
 			$slot['count']   = [ $n, $n ];
 			$slot['scatter'] = true;
-			// Scattered pieces keep roughly their size: the box is the whole area, so scale down per piece.
-			$area          = max( 1.0, ( $x2 - $x1 ) * ( $y2 - $y1 ) );
-			$each          = array_sum( array_map( static fn( Placement $p ): float => $p->width() * $p->height(), $placements ) ) / $n;
-			$factor        = round( max( 0.05, min( 1.0, sqrt( $each / $area ) ) ), 3 );
+			// Scattered pieces keep their size: "contain" first fits each piece to the whole area, so the
+			// factor is the piece's current scale relative to that fit (averaged over the pieces).
+			$bw            = max( 1.0, $x2 - $x1 );
+			$bh            = max( 1.0, $y2 - $y1 );
+			$ratios        = array_map( static fn( Placement $p ): float => $p->scale / min( $bw / $p->piece->width(), $bh / $p->piece->height() ), $placements );
+			$factor        = round( max( 0.01, min( 1.0, array_sum( $ratios ) / $n ) ), 4 );
 			$slot['scale'] = [ $factor, $factor ];
 		}
 		if ( $placements[0]->flip ) {
@@ -134,6 +134,36 @@ final class TemplateFromScene {
 		}
 
 		return $slot;
+	}
+
+	/**
+	 * Order a layer's slots so every attached slot comes after the slot it is attached to (templates
+	 * resolve slots in order, so a parent must be placed first — at any depth).
+	 *
+	 * @param array<string, array<Placement>> $group   Slot name => placements.
+	 * @param array<string, TemplateSlot>     $by_name Template slots by name.
+	 * @return array<string, array<Placement>>
+	 */
+	private static function parents_first( array $group, array $by_name ): array {
+		$ordered = [];
+		$pending = $group;
+		while ( $pending ) {
+			$progress = false;
+			foreach ( $pending as $name => $placements ) {
+				$parent = $by_name[ (string) $name ]->attach_to ?? null;
+				if ( null === $parent || isset( $ordered[ $parent ] ) || ! isset( $group[ $parent ] ) ) {
+					$ordered[ $name ] = $placements;
+					unset( $pending[ $name ] );
+					$progress = true;
+				}
+			}
+			if ( ! $progress ) {
+				// A cycle cannot come from a valid template; keep the rest as they are.
+				return $ordered + $pending;
+			}
+		}
+
+		return $ordered;
 	}
 
 	/**

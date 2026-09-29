@@ -36,7 +36,7 @@ final class BundledLibrary {
 	public function writable(): bool {
 		$assets = $this->assets();
 
-		return wp_is_writable( $assets . '/pieces-src' ) && wp_is_writable( $assets . '/pieces' ) && wp_is_writable( $assets . '/manifest.json' );
+		return $this->enabled() && wp_is_writable( $assets . '/pieces-src' ) && wp_is_writable( $assets . '/pieces' ) && wp_is_writable( $assets . '/manifest.json' );
 	}
 
 	/**
@@ -45,7 +45,28 @@ final class BundledLibrary {
 	 * @return bool
 	 */
 	public function templates_writable(): bool {
-		return wp_is_writable( $this->templates_dir() );
+		return $this->enabled() && wp_is_writable( $this->templates_dir() );
+	}
+
+	/**
+	 * Only a development copy of the plugin takes new pieces and templates: on a live site a plugin
+	 * update would delete them, so they stay in the site library (uploads) there.
+	 *
+	 * Enabled when SPRINT_ILLUSTRATIONS_BUNDLE_TO_PLUGIN is true, or — without that constant — when the
+	 * plugin folder is a git checkout or the environment is local/development. DISALLOW_FILE_MODS wins.
+	 *
+	 * @return bool
+	 */
+	public function enabled(): bool {
+		if ( defined( 'DISALLOW_FILE_MODS' ) && DISALLOW_FILE_MODS ) {
+			return false;
+		}
+		if ( defined( 'SPRINT_ILLUSTRATIONS_BUNDLE_TO_PLUGIN' ) ) {
+			return (bool) SPRINT_ILLUSTRATIONS_BUNDLE_TO_PLUGIN;
+		}
+
+		return is_dir( rtrim( wp_normalize_path( $this->plugin->dir() ), '/' ) . '/.git' )
+			|| in_array( wp_get_environment_type(), [ 'local', 'development' ], true );
 	}
 
 	/**

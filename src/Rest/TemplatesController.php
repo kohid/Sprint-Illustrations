@@ -94,7 +94,8 @@ final class TemplatesController {
 
 		$id = $slug;
 		$n  = 2;
-		while ( null !== $services->templates->get( $id ) ) {
+		// "auto" means automatic choice in the shortcode and block, so it can't name a template.
+		while ( 'auto' === $id || null !== $services->templates->get( $id ) ) {
 			$id = $slug . '-' . $n;
 			++$n;
 		}

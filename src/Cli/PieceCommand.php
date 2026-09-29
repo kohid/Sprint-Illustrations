@@ -76,7 +76,7 @@ final class PieceCommand {
 	public function bundle( array $args, array $assoc_args ): void {
 		$bundled = $this->plugin->bundled_library();
 		if ( ! $bundled->writable() ) {
-			\WP_CLI::error( 'The plugin folder is not writable here.' );
+			\WP_CLI::error( 'Pieces can only be added to a development copy of the plugin (a git checkout, a local/development environment, or SPRINT_ILLUSTRATIONS_BUNDLE_TO_PLUGIN), and its folder must be writable.' );
 		}
 
 		$library = rtrim( wp_normalize_path( $this->plugin->user_library_dir() ), '/' );
