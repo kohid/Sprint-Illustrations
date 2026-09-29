@@ -21,6 +21,7 @@ export const initialState = {
 		items: [],
 		layers: [],
 		animations: {},
+		paints: {},
 	},
 	picks: {},
 	selected: null,
@@ -59,7 +60,7 @@ function defaultTemplate( library, preferred = '' ) {
  * @return {Object} SceneSpec-shaped body.
  */
 export function specBody( state ) {
-	const { canvas, items, layers, animations, ...spec } = state.spec;
+	const { canvas, items, layers, animations, paints, ...spec } = state.spec;
 	return {
 		...spec,
 		template: spec.template || undefined,
@@ -68,14 +69,15 @@ export function specBody( state ) {
 		...( items.length ? { items } : {} ),
 		...( layers.length ? { layers } : {} ),
 		...( Object.keys( animations ).length ? { animations } : {} ),
+		...( Object.keys( paints ).length ? { paints } : {} ),
 	};
 }
 
 /**
- * Animations of added pieces only (slot animations belong to the template being left).
+ * Animations (or paints) of added pieces only: slot ones belong to the template being left.
  *
- * @param {Object} animations Animations by layer key.
- * @return {Object} Item animations.
+ * @param {Object} animations Entries by layer key.
+ * @return {Object} Item entries.
  */
 function itemAnimations( animations ) {
 	return Object.fromEntries(
@@ -139,6 +141,7 @@ export function reducer( state, action ) {
 					template: action.template,
 					layers: [],
 					animations: itemAnimations( state.spec.animations ),
+					paints: itemAnimations( state.spec.paints ),
 				},
 				picks: {},
 				dirty: true,
@@ -199,6 +202,8 @@ export function reducer( state, action ) {
 		case 'REMOVE_ITEM': {
 			const animations = { ...state.spec.animations };
 			delete animations[ `item:${ action.key }` ];
+			const paints = { ...state.spec.paints };
+			delete paints[ `item:${ action.key }` ];
 			const next = withItems(
 				state,
 				state.spec.items.filter( ( item ) => item.key !== action.key ),
@@ -208,7 +213,7 @@ export function reducer( state, action ) {
 			);
 			return {
 				...next,
-				spec: { ...next.spec, animations },
+				spec: { ...next.spec, animations, paints },
 				selected: state.selected === action.key ? null : state.selected,
 			};
 		}
@@ -224,6 +229,15 @@ export function reducer( state, action ) {
 				spec: { ...state.spec, animations },
 				dirty: true,
 			};
+		}
+		case 'SET_PAINT': {
+			const paints = { ...state.spec.paints };
+			if ( action.value && Object.keys( action.value ).length ) {
+				paints[ action.key ] = action.value;
+			} else {
+				delete paints[ action.key ];
+			}
+			return { ...state, spec: { ...state.spec, paints }, dirty: true };
 		}
 		case 'SELECT':
 			return { ...state, selected: action.key };
@@ -263,6 +277,8 @@ export function reducer( state, action ) {
 						s.animations && ! Array.isArray( s.animations )
 							? s.animations
 							: {},
+					paints:
+						s.paints && ! Array.isArray( s.paints ) ? s.paints : {},
 				},
 				selected: null,
 				picks: Array.isArray( s.picks ) ? {} : s.picks || {},
@@ -302,6 +318,7 @@ export function reducer( state, action ) {
 					title: action.suggestion.title || state.spec.title,
 					layers: [],
 					animations: itemAnimations( state.spec.animations ),
+					paints: itemAnimations( state.spec.paints ),
 				},
 				picks: {},
 				dirty: true,

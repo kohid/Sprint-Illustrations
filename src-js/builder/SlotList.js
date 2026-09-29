@@ -7,6 +7,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 import { Button, Dropdown } from '@wordpress/components';
 import AnimateControl, { summary } from './AnimateControl';
+import PaintControl from './PaintControl';
 
 const LAYER_TYPE = 'application/x-si-layer';
 
@@ -331,6 +332,13 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 									</span>
 								) }
 								<div className="si-b-layer__tools">
+									<PaintControl
+										layerKey={ key }
+										name={ name }
+										value={ spec.paints[ key ] }
+										colors={ result.colors }
+										dispatch={ dispatch }
+									/>
 									<AnimateControl
 										layerKey={ key }
 										name={ name }

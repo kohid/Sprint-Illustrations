@@ -35,6 +35,7 @@ final class SceneSpec {
 	 * @param array<int, array<string, mixed>>    $items      Pieces placed freely: key, piece, x, y, w, flip (canvas units).
 	 * @param array<int, string>                  $layers     Layer order back to front: slot names and "item:<key>".
 	 * @param array<string, array<string, mixed>> $animations Layer key => entrance/loop/delay/speed (see Animation).
+	 * @param array<string, array<string, mixed>> $paints     Layer key => slot => colour or gradient (see Paint).
 	 */
 	private function __construct(
 		public readonly ?string $template,
@@ -48,6 +49,7 @@ final class SceneSpec {
 		public readonly array $items = [],
 		public readonly array $layers = [],
 		public readonly array $animations = [],
+		public readonly array $paints = [],
 	) {}
 
 	/**
@@ -79,7 +81,8 @@ final class SceneSpec {
 			self::normalize_canvas( $data['canvas'] ?? null ),
 			self::normalize_items( $data['items'] ?? [] ),
 			self::normalize_layers( $data['layers'] ?? [] ),
-			Animation::normalize( $data['animations'] ?? [] )
+			Animation::normalize( $data['animations'] ?? [] ),
+			Paint::normalize( $data['paints'] ?? [] )
 		);
 	}
 
@@ -130,13 +133,14 @@ final class SceneSpec {
 			'items'      => $this->items,
 			'keywords'   => $this->keywords,
 			'layers'     => $this->layers,
+			'paints'     => $this->paints,
 			'palette'    => $this->palette,
 			'picks'      => $picks,
 			'seed'       => $this->seed,
 			'template'   => $this->template,
 			'title'      => $this->title,
 		];
-		foreach ( [ 'animations', 'canvas', 'items', 'layers' ] as $key ) {
+		foreach ( [ 'animations', 'canvas', 'items', 'layers', 'paints' ] as $key ) {
 			if ( null === $array[ $key ] || [] === $array[ $key ] ) {
 				unset( $array[ $key ] );
 			}

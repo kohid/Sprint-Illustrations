@@ -153,3 +153,10 @@
 .si-b-template-form{display:grid;gap:14px;min-width:min(420px,80vw)}
 .si-b-template-form .si-b-muted{margin:0}
 .si-b-template-form__actions{display:flex;justify-content:flex-end;gap:8px}
+.si-b-paint{width:280px;padding:12px;display:grid;gap:12px}
+.si-b-paint__slots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.si-b-paint__slot{display:flex;align-items:center;gap:6px;padding:4px 6px;background:#fff;border:1px solid #c3c4c7;border-radius:2px;cursor:pointer;font-size:12px}
+.si-b-paint__slot[aria-pressed="true"]{border-color:#2271b1;box-shadow:0 0 0 1px #2271b1}
+.si-b-swatch{display:inline-block;width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.2);flex:none}
+.si-b-paint__gradient{display:grid;gap:12px}
+.si-b-paint__bar{display:block;height:24px;border-radius:2px;border:1px solid rgba(0,0,0,.2)}
