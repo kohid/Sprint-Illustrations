@@ -32,7 +32,7 @@ final class ReferenceImages {
 	 * @return string|\WP_Error Stored name.
 	 */
 	public function store( array $file ): string|\WP_Error {
-		$tmp = (string) ( $file['tmp_name'] ?? '' );
+		$tmp = is_string( $file['tmp_name'] ?? null ) ? $file['tmp_name'] : '';
 		if ( UPLOAD_ERR_OK !== (int) ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) || '' === $tmp || ! is_uploaded_file( $tmp ) ) {
 			return new \WP_Error( 'sprint_illustrations_reference', __( 'The image didn’t upload. Try again with a PNG, JPEG or WebP up to 5 MB.', 'sprint-illustrations' ) );
 		}
@@ -50,9 +50,14 @@ final class ReferenceImages {
 			return new \WP_Error( 'sprint_illustrations_reference', __( 'This image couldn’t be read. Try a PNG or JPEG.', 'sprint-illustrations' ) );
 		}
 
-		[ $w, $h ] = ReferenceImage::fit( (int) $size[0], (int) $size[1] );
-		if ( $w < (int) $size[0] ) {
-			$editor->resize( $w, $h, false );
+		// Phone photos: apply the EXIF rotation before the metadata is dropped.
+		if ( method_exists( $editor, 'maybe_exif_rotate' ) ) {
+			$editor->maybe_exif_rotate();
+		}
+		$dims      = $editor->get_size();
+		[ $w, $h ] = ReferenceImage::fit( (int) $dims['width'], (int) $dims['height'] );
+		if ( $w < (int) $dims['width'] && is_wp_error( $editor->resize( $w, $h, false ) ) ) {
+			return new \WP_Error( 'sprint_illustrations_reference', __( 'This image couldn’t be resized. Try a smaller PNG or JPEG.', 'sprint-illustrations' ) );
 		}
 
 		$alpha = 'image/jpeg' !== $mime;

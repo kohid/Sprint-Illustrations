@@ -9,6 +9,18 @@
 		var image = preview.querySelector( 'img' );
 		input.addEventListener( 'change', function () {
 			var file = input.files && input.files[ 0 ];
+			// Same limits as the server, checked before a large upload is sent.
+			var ok =
+				! file ||
+				( /^image\/(png|jpeg|webp)$/.test( file.type ) &&
+					file.size <= 5242880 );
+			input.setCustomValidity(
+				ok ? '' : input.getAttribute( 'data-invalid' ) || ''
+			);
+			if ( ! ok ) {
+				input.reportValidity();
+				file = null;
+			}
 			if ( image.src ) {
 				window.URL.revokeObjectURL( image.src );
 			}
