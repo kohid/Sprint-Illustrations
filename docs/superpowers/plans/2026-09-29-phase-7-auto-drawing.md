@@ -282,3 +282,16 @@ echo '<div class="si-drawer" role="status">'
 - [ ] Draw the owner's pending **Instructor** request from the event, taking it through `start`, drawing, checking and `draft`. It should reach **Ready for review**.
 - [ ] Stop the watcher. The panel should show offline within about 40 s.
 - [ ] Run `composer test` and `composer lint`, then add execution notes to this plan and commit.
+
+## Execution notes
+
+- **Tasks 1–4:** built as planned; 5 new unit tests (257 total), and `composer lint` is clean.
+- **Change from the plan: `watch` has `--max-runtime` and `--parent`.**
+  - A Claude Code Monitor lasts at most 30 minutes, so `watch-requests.sh` runs for 29 minutes and the session re-arms it.
+  - On Windows, stopping the Monitor left `php.exe` orphaned, and the orphan kept the heartbeat "online". The watcher now gets the script's Windows PID (`/proc/$$/winpid`) and exits within one tick once the script is gone. Verified by stopping the task: the process was gone within 8 s.
+- **Startup noise:** `wp.sh` passes `-d display_startup_errors=0`. Local's php.ini names `php_imagick.dll`, and the startup warning went to STDOUT, where it would wake the Monitor.
+- **Panel:** the visual check used a static render with the admin CSS (the page needs a login), at 1440 px and at 782 px with reduced motion. The pen line shows under Drawing.
+- **Review:** feature-dev's code-reviewer reported no high-confidence issues. Its note about `--max-runtime` possibly becoming 0 is fixed. Two notes are accepted:
+  - Each new watcher re-announces requests that are still queued. That's harmless, because `start` refuses a request that isn't queued.
+  - There can be a short "offline" gap while the Monitor is re-armed.
+- **Live:** the Monitor was started exactly as the hook instructs. The owner's **Instructor** request (#456) was announced, started, drawn as `char-iona-instructor` (with a lanyard badge, one hand explaining and the other free to hold, zero warnings), and submitted. It's at **Ready for review**, and both previews render.

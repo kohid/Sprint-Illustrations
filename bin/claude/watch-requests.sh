@@ -8,7 +8,9 @@ parent="$(cat "/proc/$$/winpid" 2>/dev/null || echo "$$")"
 limit=1740
 
 until [ "$SECONDS" -ge "$limit" ]; do
-	"$dir/wp.sh" sprint-illustrations requests watch --parent="$parent" --max-runtime=$(( limit - SECONDS )) && break
+	left=$(( limit - SECONDS ))
+	[ "$left" -ge 1 ] || break # 0 would mean "no limit".
+	"$dir/wp.sh" sprint-illustrations requests watch --parent="$parent" --max-runtime="$left" && break
 	echo "Request watcher stopped; restarting in 10 s." >&2
 	sleep 10
 done
