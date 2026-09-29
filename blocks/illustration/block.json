@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "sprint-illustrations/illustration",
-	"version": "0.8.1",
+	"version": "0.8.2",
 	"title": "Sprint Illustration",
 	"category": "media",
 	"icon": "art",

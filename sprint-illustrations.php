@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Sprint Illustrations
  * Description:       Composes flat, brand-coloured illustrations from a library of SVG pieces.
- * Version:           0.8.1
+ * Version:           0.8.2
  * Update URI:        https://github.com/kohid/Sprint-Illustrations
  * Requires at least: 6.4
  * Requires PHP:      8.1
@@ -18,7 +18,7 @@ declare( strict_types=1 );
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SPRINT_ILLUSTRATIONS_VERSION', '0.8.1' );
+define( 'SPRINT_ILLUSTRATIONS_VERSION', '0.8.2' );
 define( 'SPRINT_ILLUSTRATIONS_FILE', __FILE__ );
 
 /**

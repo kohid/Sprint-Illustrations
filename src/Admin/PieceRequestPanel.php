@@ -165,7 +165,7 @@ final class PieceRequestPanel {
 			echo '<div class="si-requests__row si-reference"><label for="si-request-reference">' . esc_html__( 'Reference image (optional)', 'sprint-illustrations' ) . '</label>';
 			echo '<input type="file" id="si-request-reference" name="reference" accept="image/png,image/jpeg,image/webp" aria-describedby="si-request-reference-help" data-invalid="' . esc_attr__( 'Choose a PNG, JPEG or WebP image of 5 MB or less.', 'sprint-illustrations' ) . '">';
 			echo '<span class="si-reference__preview" hidden><img alt=""><button type="button" class="button-link si-reference__remove">' . esc_html__( 'Remove', 'sprint-illustrations' ) . '</button></span>';
-			echo '<span class="si-requests__help" id="si-request-reference-help">' . esc_html__( 'PNG, JPEG or WebP, up to 5 MB. Claude Code draws from it in the library’s flat style.', 'sprint-illustrations' ) . '</span></div>';
+			echo '<span class="si-requests__help" id="si-request-reference-help">' . esc_html__( 'PNG, JPEG or WebP, up to 5 MB. You can also paste a copied image or screenshot here (Ctrl+V). Claude Code draws from it in the library’s flat style.', 'sprint-illustrations' ) . '</span></div>';
 		}
 
 		echo '<p class="si-requests__actions"><button type="submit" class="button button-primary">' . esc_html__( 'Add request', 'sprint-illustrations' ) . '</button></p>';
