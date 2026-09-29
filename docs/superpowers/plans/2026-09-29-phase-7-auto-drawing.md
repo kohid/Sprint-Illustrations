@@ -285,7 +285,7 @@ echo '<div class="si-drawer" role="status">'
 
 ## Execution notes
 
-- **Tasks 1–4:** built as planned; 5 new unit tests (257 total), and `composer lint` is clean.
+- **Tasks 1–4:** built as planned; 5 new unit tests (252 total), and `composer lint` is clean.
 - **Change from the plan: `watch` has `--max-runtime` and `--parent`.**
   - A Claude Code Monitor lasts at most 30 minutes, so `watch-requests.sh` runs for 29 minutes and the session re-arms it.
   - On Windows, stopping the Monitor left `php.exe` orphaned, and the orphan kept the heartbeat "online". The watcher now gets the script's Windows PID (`/proc/$$/winpid`) and exits within one tick once the script is gone. Verified by stopping the task: the process was gone within 8 s.
