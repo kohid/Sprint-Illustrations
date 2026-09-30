@@ -26,10 +26,11 @@ final class CharacterPreview {
 	 * @param CharacterSpec $spec      Choices.
 	 * @param Palette       $palette   Palette.
 	 * @param Sanitizer     $sanitizer Sanitizer.
+	 * @param bool          $edit      Draw a hand-made pose on the fixed editing canvas.
 	 * @return string SVG markup.
 	 */
-	public static function render( CharacterSpec $spec, Palette $palette, Sanitizer $sanitizer ): string {
-		$doc  = SvgDom::parse( CharacterBuilder::svg( $spec ) );
+	public static function render( CharacterSpec $spec, Palette $palette, Sanitizer $sanitizer, bool $edit = false ): string {
+		$doc  = SvgDom::parse( CharacterBuilder::svg( $spec, 'Character', [ 'person' ], '', $edit ) );
 		$root = $doc->documentElement;
 
 		foreach ( iterator_to_array( ( new \DOMXPath( $doc ) )->query( '//*[starts-with(@id, "anchor-")]' ) ) as $marker ) {

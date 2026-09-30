@@ -10,6 +10,17 @@
 .si-c-stage__tools .components-button.is-secondary{margin-left:auto}
 .si-c-stage__art{background:#f6f7f7 radial-gradient(#dcdcde 1px,transparent 1.5px) 0 0/16px 16px;border-radius:2px;display:grid;place-items:center;min-height:360px;padding:12px}
 .si-c-stage__art svg{display:block;width:auto;height:340px;max-width:100%}
+.si-c-canvas{position:relative;display:inline-block;line-height:0}
+.si-c-canvas>div>svg{display:block}
+.si-c-canvas .si-c-handles{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;overflow:visible}
+.si-c-bones polyline{fill:none;stroke:#2271b1;stroke-opacity:.35;stroke-width:1.5}
+.si-c-handle{pointer-events:auto;cursor:grab;stroke:#fff;stroke-width:2;fill-opacity:.9;touch-action:none}
+.si-c-handle:active{cursor:grabbing}
+.si-c-handle--hand,.si-c-handle--foot{fill:#2271b1}
+.si-c-handle--joint{fill:#8c8f94}
+.si-c-handle--body{fill:#d54e21}
+.si-c-handle--head{fill:#7e3bd0}
+.si-c-poseinfo{display:grid;gap:10px}
 .si-c-muted{margin:0;font-size:12px;color:#646970}
 .si-c-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #dcdcde;margin:-4px 0 14px;padding-bottom:0}
 .si-c-tab{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;font-size:13px;cursor:pointer;color:#50575e;margin-bottom:-1px}

@@ -302,11 +302,13 @@ final class CharacterSpec {
 	 * @param array<string, string> $choices Normalized choices by field.
 	 * @param int                   $skin    Skin tone shown in the preview (the saved piece follows the palette).
 	 * @param int                   $hair    Hair colour shown in the preview.
+	 * @param array|null            $custom  A hand-posed body (see parse_custom()), or null for the chosen stance.
 	 */
 	private function __construct(
 		public readonly array $choices,
 		public readonly int $skin,
 		public readonly int $hair,
+		public readonly ?array $custom = null,
 	) {}
 
 	/**
@@ -407,7 +409,7 @@ final class CharacterSpec {
 
 		$tone = static fn( mixed $value ): int => is_numeric( $value ) ? max( 0, min( self::MAX_TONE, (int) $value ) ) : 0;
 
-		return new self( $choices, $tone( $data['skin'] ?? 0 ), $tone( $data['hair_tone'] ?? 0 ) );
+		return new self( $choices, $tone( $data['skin'] ?? 0 ), $tone( $data['hair_tone'] ?? 0 ), self::parse_custom( $data['custom'] ?? null ) );
 	}
 
 	/**
@@ -427,7 +429,53 @@ final class CharacterSpec {
 	 * @return self
 	 */
 	public function with( array $changes ): self {
+		// Choosing another stance or pose starts from that preset again, unless a pose comes with the change.
+		if ( ! array_key_exists( 'custom', $changes ) && ( array_key_exists( 'stance', $changes ) || array_key_exists( 'pose', $changes ) ) ) {
+			$changes['custom'] = null;
+		}
+
 		return self::from_array( $changes + $this->to_array() );
+	}
+
+	/**
+	 * Validate a hand-made pose: the body turn and head tilt in degrees, and per side the two arm angles and
+	 * the two leg angles plus the foot tilt. Anything incomplete or not numeric drops the whole pose.
+	 *
+	 * @param mixed $data Untrusted input.
+	 * @return array{theta: float, head: float, arms: array<string, array<int, float>>, legs: array<string, array<int, float>>}|null
+	 */
+	private static function parse_custom( mixed $data ): ?array {
+		if ( ! is_array( $data ) ) {
+			return null;
+		}
+
+		$num = static fn( mixed $value, float $low, float $high ): ?float => is_numeric( $value ) ? round( max( $low, min( $high, (float) $value ) ), 1 ) : null;
+
+		$theta = $num( $data['theta'] ?? null, -180.0, 180.0 );
+		$head  = $num( $data['head'] ?? 0, -90.0, 90.0 );
+		if ( null === $theta || null === $head ) {
+			return null;
+		}
+
+		$out = [
+			'theta' => $theta,
+			'head'  => $head,
+			'arms'  => [],
+			'legs'  => [],
+		];
+		foreach ( [ 'l', 'r' ] as $side ) {
+			$arm = (array) ( $data['arms'][ $side ] ?? [] );
+			$leg = (array) ( $data['legs'][ $side ] ?? [] );
+			$a   = [ $num( $arm[0] ?? null, -360.0, 360.0 ), $num( $arm[1] ?? null, -360.0, 360.0 ) ];
+			$b   = [ $num( $leg[0] ?? null, -360.0, 360.0 ), $num( $leg[1] ?? null, -360.0, 360.0 ), $num( $leg[2] ?? 0, -90.0, 90.0 ) ];
+			if ( in_array( null, $a, true ) || in_array( null, $b, true ) ) {
+				return null;
+			}
+			$out['arms'][ $side ] = $a;
+			$out['legs'][ $side ] = $b;
+		}
+
+		return $out;
 	}
 
 	/**
@@ -436,9 +484,14 @@ final class CharacterSpec {
 	 * @return array<string, mixed>
 	 */
 	public function to_array(): array {
-		return $this->choices + [
+		$out = $this->choices + [
 			'skin'      => $this->skin,
 			'hair_tone' => $this->hair,
 		];
+		if ( null !== $this->custom ) {
+			$out['custom'] = $this->custom;
+		}
+
+		return $out;
 	}
 }

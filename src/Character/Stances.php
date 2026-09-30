@@ -274,6 +274,47 @@ final class Stances {
 	];
 
 	/**
+	 * Standing and sitting on a chair keep their own drawing code; this is where a hand-made pose starts
+	 * from when someone edits them.
+	 */
+	public const CLASSIC = [
+		'standing' => [
+			'family'  => 'standing',
+			'vb'      => [ 160, 320 ],
+			'dx'      => 0,
+			'theta'   => 0,
+			'accepts' => 'handheld',
+			'legs'    => [
+				'l' => [ -2, -1, 0, -1 ],
+				'r' => [ 2, 1, 0, 1 ],
+			],
+			'contact' => [ [ 'ankle', 10.5 ] ],
+		],
+		'sitting'  => [
+			'family'  => 'sitting',
+			'vb'      => [ 200, 300 ],
+			'dx'      => 0,
+			'theta'   => 0,
+			'accepts' => 'lap',
+			'legs'    => [
+				'l' => [ 88, 2, 0, 1 ],
+				'r' => [ 86, 0, 0, 1, 74, 72, 6 ],
+			],
+			'contact' => [ [ 'hip', 12 ], [ 'ankle', 10.5 ] ],
+		],
+	];
+
+	/**
+	 * Data for any stance, the classic two included.
+	 *
+	 * @param string $stance Stance.
+	 * @return array<string, mixed>
+	 */
+	public static function base( string $stance ): array {
+		return self::DATA[ $stance ] ?? self::CLASSIC[ $stance ] ?? self::CLASSIC['standing'];
+	}
+
+	/**
 	 * The stance's data, or null for the plain standing and sitting stances (drawn by the classic path).
 	 *
 	 * @param string $stance Stance.

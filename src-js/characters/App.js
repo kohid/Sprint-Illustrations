@@ -13,12 +13,14 @@ import {
 import {
 	Button,
 	Notice,
+	RangeControl,
 	SelectControl,
 	Spinner,
 	TextControl,
 } from '@wordpress/components';
 import { getOptions, preview, save, shuffle, suggest, variants } from './api';
 import { ColourGrid, OptionGrid } from './OptionGrid';
+import PoseEditor from './PoseEditor';
 
 const config = window.sprintIllustrationsCharacters || {};
 
@@ -89,8 +91,24 @@ const HISTORY = 50;
 
 function reducer( state, action ) {
 	switch ( action.type ) {
+		case 'CHECKPOINT':
+			// One undo step for a whole drag.
+			return {
+				...state,
+				past: [ ...state.past, state.spec ].slice( -HISTORY ),
+				future: [],
+			};
+		case 'LIVE':
+			return { ...state, spec: { ...state.spec, ...action.changes } };
 		case 'SET': {
 			const spec = { ...state.spec, ...action.changes };
+			// Another stance or pose starts from that preset again.
+			if (
+				( 'stance' in action.changes || 'pose' in action.changes ) &&
+				! ( 'custom' in action.changes )
+			) {
+				delete spec.custom;
+			}
 			if ( JSON.stringify( spec ) === JSON.stringify( state.spec ) ) {
 				return state;
 			}
@@ -158,6 +176,7 @@ export default function App() {
 	const [ form, setForm ] = useState( { name: '', label: '', tags: '' } );
 	const [ saving, setSaving ] = useState( false );
 	const [ saved, setSaved ] = useState( null );
+	const [ editing, setEditing ] = useState( false );
 	const seed = useRef( 1 );
 	const latest = useRef( 0 );
 
@@ -191,7 +210,7 @@ export default function App() {
 		}
 		const id = ++latest.current;
 		const timer = window.setTimeout( () => {
-			preview( spec, palette )
+			preview( spec, palette, !! spec.custom )
 				.then( ( data ) => {
 					if ( id === latest.current ) {
 						setShown( data );
@@ -271,6 +290,34 @@ export default function App() {
 			type: 'REPLACE',
 			spec: { gender: spec?.gender, ...result },
 		} );
+	};
+
+	// Posing by hand starts from the pose the chosen stance gives, then the handles change it.
+	const toggleEditing = () => {
+		if ( editing || spec.custom ) {
+			setEditing( ! editing );
+			return;
+		}
+		preview( spec, palette, true )
+			.then( ( data ) => {
+				dispatch( {
+					type: 'SET',
+					changes: { custom: data.pose.angles },
+				} );
+				setEditing( true );
+			} )
+			.catch( () => {} );
+	};
+
+	const resetPose = () => {
+		setEditing( false );
+		dispatch( { type: 'SET', changes: { custom: null } } );
+	};
+
+	const setToe = ( side, value ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		custom.legs[ side ][ 2 ] = value ?? 0;
+		dispatch( { type: 'SET', changes: { custom } } );
 	};
 
 	const doSuggest = () =>
@@ -374,6 +421,14 @@ export default function App() {
 						/>
 						<Button
 							size="small"
+							icon="move"
+							isPressed={ editing }
+							onClick={ toggleEditing }
+						>
+							{ __( 'Edit pose', 'sprint-illustrations' ) }
+						</Button>
+						<Button
+							size="small"
 							variant="secondary"
 							icon="randomize"
 							onClick={ surprise }
@@ -381,11 +436,75 @@ export default function App() {
 							{ __( 'Surprise me', 'sprint-illustrations' ) }
 						</Button>
 					</div>
-					<div
-						className="si-c-stage__art"
-						// Sanitized server-side (character preview).
-						dangerouslySetInnerHTML={ { __html: shown?.svg || '' } }
-					/>
+					<div className="si-c-stage__art">
+						<div className="si-c-canvas">
+							<div
+								// Sanitized server-side (character preview).
+								dangerouslySetInnerHTML={ {
+									__html: shown?.svg || '',
+								} }
+							/>
+							{ editing && spec.custom && shown?.pose && (
+								<PoseEditor
+									pose={ shown.pose }
+									custom={ spec.custom }
+									onStart={ () =>
+										dispatch( { type: 'CHECKPOINT' } )
+									}
+									onChange={ ( custom ) =>
+										dispatch( {
+											type: 'LIVE',
+											changes: { custom },
+										} )
+									}
+								/>
+							) }
+						</div>
+					</div>
+					{ editing && spec.custom && (
+						<div className="si-c-poseinfo">
+							<p className="si-c-muted">
+								{ __(
+									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to lean the body and the purple dot to tilt the head. Picking another stance or pose starts over from that preset.',
+									'sprint-illustrations'
+								) }
+							</p>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Left foot tilt',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.legs.l[ 2 ] }
+								onChange={ ( value ) => setToe( 'l', value ) }
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Right foot tilt',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.legs.r[ 2 ] }
+								onChange={ ( value ) => setToe( 'r', value ) }
+							/>
+							<Button
+								variant="tertiary"
+								isDestructive
+								onClick={ resetPose }
+							>
+								{ __(
+									'Back to the preset pose',
+									'sprint-illustrations'
+								) }
+							</Button>
+						</div>
+					) }
 					<SelectControl
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize

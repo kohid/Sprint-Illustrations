@@ -197,4 +197,40 @@ final class CharacterBuilderTest extends TestCase {
 		$this->assertStringNotContainsString( 'slot-neutral-light" x="34"', $without );
 		$this->assertStringContainsString( 'viewBox="0 0 200 300"', $without );
 	}
+	public function test_a_hand_made_pose_round_trips_and_fits_its_canvas(): void {
+		foreach ( [ 'standing', 'sitting', 'walking', 'all_fours', 'supine', 'bending' ] as $stance ) {
+			$base           = CharacterSpec::from_array( [ 'stance' => $stance ] );
+			$pose           = CharacterBuilder::pose( $base );
+			$data           = $base->to_array();
+			$data['custom'] = $pose['angles'];
+			$spec           = CharacterSpec::from_array( $data );
+
+			$this->assertNotNull( $spec->custom, $stance );
+			$this->assertSame( $spec->custom, CharacterSpec::from_array( $spec->to_array() )->custom, $stance );
+
+			$extent = CharacterBuilder::extent( $spec );
+			$this->assertNotNull( $extent, $stance );
+			[ $w, $h ] = $extent['vb'];
+			foreach ( $extent['points'] as [ $x, $y ] ) {
+				$this->assertGreaterThanOrEqual( 0, $x, $stance );
+				$this->assertLessThanOrEqual( $w, $x, $stance );
+				$this->assertGreaterThanOrEqual( 0, $y, $stance );
+				$this->assertLessThanOrEqual( $h, $y, $stance );
+			}
+			$this->assertNotFalse( simplexml_load_string( CharacterBuilder::svg( $spec ) ), $stance );
+			$this->assertStringContainsString( 'viewBox="0 0 ' . CharacterBuilder::EDIT_FRAME . ' ' . CharacterBuilder::EDIT_FRAME . '"', CharacterBuilder::svg( $spec, 'Editing', [ 'person' ], '', true ), $stance );
+		}
+	}
+
+	public function test_a_broken_hand_made_pose_is_dropped_and_a_new_stance_clears_it(): void {
+		$this->assertNull( CharacterSpec::from_array( [ 'custom' => [ 'theta' => 'x' ] ] )->custom );
+		$this->assertNull( CharacterSpec::from_array( [ 'custom' => 'nope' ] )->custom );
+
+		$pose          = CharacterBuilder::pose( CharacterSpec::from_array( [] ) )['angles'];
+		$pose['theta'] = 999;
+		$spec          = CharacterSpec::from_array( [ 'custom' => $pose ] );
+		$this->assertSame( 180.0, $spec->custom['theta'] );
+		$this->assertNull( $spec->with( [ 'stance' => 'walking' ] )->custom );
+		$this->assertNotNull( $spec->with( [ 'top' => 'hoodie' ] )->custom );
+	}
 }

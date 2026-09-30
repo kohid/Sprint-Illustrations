@@ -27,6 +27,11 @@ final class CharacterBuilder {
 	private const SEAT_SHIFT = 40;
 
 	/**
+	 * Side of the fixed canvas a hand-made pose is edited in.
+	 */
+	public const EDIT_FRAME = 420;
+
+	/**
 	 * Proportions per build: shoulder, waist and hip half widths.
 	 */
 	private const BUILD = [
@@ -326,6 +331,7 @@ final class CharacterBuilder {
 			'over'   => true,
 		],
 	];
+
 	/**
 	 * The piece as an SVG string, ready for the library (anchors are markers the manifest builder removes).
 	 *
@@ -333,11 +339,12 @@ final class CharacterBuilder {
 	 * @param string        $label  Piece label.
 	 * @param array<string> $tags   Tags.
 	 * @param string        $person Person name.
+	 * @param bool          $edit   Fixed editing canvas for a hand-made pose.
 	 * @return string
 	 */
-	public static function svg( CharacterSpec $spec, string $label = 'Character', array $tags = [ 'person' ], string $person = '' ): string {
-		if ( null !== Stances::get( $spec->get( 'stance' ) ) ) {
-			return self::posed( $spec, $label, $tags, $person );
+	public static function svg( CharacterSpec $spec, string $label = 'Character', array $tags = [ 'person' ], string $person = '', bool $edit = false ): string {
+		if ( null !== Stances::get( $spec->get( 'stance' ) ) || null !== $spec->custom ) {
+			return self::posed( $spec, $label, $tags, $person, $edit );
 		}
 
 		$sitting = 'sitting' === $spec->get( 'stance' );
@@ -442,7 +449,7 @@ final class CharacterBuilder {
 		$build['wa'] += $shape[1];
 		$build['hi'] += $shape[2];
 		$sitting      = 'sitting' === $spec->get( 'stance' );
-		$pose         = self::arm_pose( $spec->get( 'stance' ), $spec->get( 'pose' ) );
+		$pose         = self::arm_pose( $spec );
 		$cx           = self::CX;
 
 		$shoulder = [
@@ -1115,18 +1122,45 @@ final class CharacterBuilder {
 
 		return '<circle id="anchor-hold" cx="' . G::n( $hold[0] ) . '" cy="' . G::n( $hold[1] ) . '" r="3"/>' . "\n\t" . '<circle id="anchor-ground" cx="' . G::n( $ground[0] ) . '" cy="' . G::n( $ground[1] ) . '" r="3"/>';
 	}
-	// ---------------------------------------------------------------- other stances.
+	// ---------------------------------------------------------------- other stances and hand-made poses.
 
 	/**
-	 * Arm angles for a stance and pose, relative to the torso.
+	 * The stance data that drives the drawing: the chosen stance, or a hand-made pose laid over it.
 	 *
-	 * @param string $stance Stance.
-	 * @param string $pose   Pose.
+	 * @param CharacterSpec $spec Spec.
 	 * @return array<string, mixed>
 	 */
-	private static function arm_pose( string $stance, string $pose ): array {
-		$st     = Stances::get( $stance );
-		$family = null === $st ? $stance : (string) $st['family'];
+	private static function stance_data( CharacterSpec $spec ): array {
+		$st     = Stances::base( $spec->get( 'stance' ) );
+		$custom = $spec->custom;
+		if ( null === $custom ) {
+			return $st;
+		}
+
+		$st['theta']  = $custom['theta'];
+		$st['head']   = $custom['head'];
+		$st['custom'] = true;
+		unset( $st['dy'] );
+		foreach ( [ 'l', 'r' ] as $side ) {
+			$st['legs'][ $side ] = $custom['legs'][ $side ] + $st['legs'][ $side ];
+		}
+		// Whatever is lowest touches the floor; a body lying down rests on its side.
+		$st['contact'] = abs( $custom['theta'] ) > 60 ? [ [ 'hipside', 28 ], [ 'ankle', 10 ], [ 'knee', 8 ] ] : [ [ 'ankle', 10.5 ], [ 'knee', 8 ], [ 'hip', 12 ] ];
+
+		return $st;
+	}
+
+	/**
+	 * Arm angles for the spec's pose, relative to the torso.
+	 *
+	 * @param CharacterSpec $spec Spec.
+	 * @return array<string, mixed>
+	 */
+	private static function arm_pose( CharacterSpec $spec ): array {
+		$stance = $spec->get( 'stance' );
+		$pose   = $spec->get( 'pose' );
+		$st     = self::stance_data( $spec );
+		$family = (string) $st['family'];
 		$entry  = self::POSES[ $stance ][ $pose ]
 			?? self::NEW_ARMS[ $pose ]
 			?? self::POSES[ $family ][ $pose ]
@@ -1134,7 +1168,13 @@ final class CharacterBuilder {
 			?? self::POSES['sitting'][ $pose ]
 			?? self::POSES['standing']['relaxed'];
 
-		if ( ! empty( $entry['screen'] ) && null !== $st ) {
+		$screen = ! empty( $entry['screen'] );
+		if ( null !== $spec->custom ) {
+			$entry['l'] = $spec->custom['arms']['l'];
+			$entry['r'] = $spec->custom['arms']['r'];
+			$screen     = true;
+		}
+		if ( $screen ) {
 			$theta = (float) $st['theta'];
 			foreach ( [ 'l', 'r' ] as $side ) {
 				$sign           = 'r' === $side ? 1 : -1;
@@ -1143,6 +1183,7 @@ final class CharacterBuilder {
 					$sign * ( $entry[ $side ][1] + $theta ),
 				];
 			}
+			unset( $entry['screen'] );
 		}
 
 		return $entry;
@@ -1169,19 +1210,27 @@ final class CharacterBuilder {
 	}
 
 	/**
-	 * Where everything of a posed (not standing or seated on a chair) character is: legs, hands, the ground.
+	 * Where everything of a posed character is: legs, hands, the ground and the canvas. A hand-made pose is
+	 * fitted to its own canvas, or (while it is being edited) to a fixed one so the figure doesn't jump.
 	 *
 	 * @param CharacterSpec $spec Spec.
+	 * @param bool          $edit Use the fixed editing canvas for a hand-made pose.
 	 * @return array<string, mixed>
 	 */
-	private static function layout( CharacterSpec $spec ): array {
-		$st      = (array) Stances::get( $spec->get( 'stance' ) );
-		$rig     = self::rig( $spec );
-		$theta   = (float) $st['theta'];
-		$dx      = (float) $st['dx'];
-		[ , $h ] = $st['vb'];
+	private static function layout( CharacterSpec $spec, bool $edit = false ): array {
+		$st        = self::stance_data( $spec );
+		$rig       = self::rig( $spec );
+		$theta     = (float) $st['theta'];
+		$dx        = (float) $st['dx'];
+		$custom    = ! empty( $st['custom'] );
+		[ $w, $h ] = $st['vb'];
+		if ( $custom ) {
+			$w  = self::EDIT_FRAME;
+			$h  = self::EDIT_FRAME;
+			$dx = self::EDIT_FRAME / 2 - 80.0;
+		}
 
-		$place = static function ( float $dy ) use ( $st, $rig, $theta, $dx ): array {
+		$place = static function ( float $shift_x, float $dy ) use ( $st, $rig, $theta ): array {
 			$legs = [];
 			foreach ( [ 'l', 'r' ] as $side ) {
 				$def           = $st['legs'][ $side ] + [
@@ -1189,7 +1238,7 @@ final class CharacterBuilder {
 					5 => 72.0,
 					6 => 0.0,
 				];
-				$hip           = self::turned( [ 'l' === $side ? 71.5 : 88.5, 152.0 ], $theta, $dx, $dy );
+				$hip           = self::turned( [ 'l' === $side ? 71.5 : 88.5, 152.0 ], $theta, $shift_x, $dy );
 				$hip[1]       += (float) $def[6];
 				$knee          = G::reach( $hip, (float) $def[4], (float) $def[0], 'r' );
 				$ankle         = G::reach( $knee, (float) $def[5], (float) $def[1], 'r' );
@@ -1203,14 +1252,13 @@ final class CharacterBuilder {
 			}
 			$wrists = [];
 			foreach ( [ 'l', 'r' ] as $side ) {
-				$wrists[ $side ] = self::turned( $rig['wrist'][ $side ], $theta, $dx, $dy );
+				$wrists[ $side ] = self::turned( $rig['wrist'][ $side ], $theta, $shift_x, $dy );
 			}
 
 			return [ $legs, $wrists ];
 		};
 
-		[ $legs, $wrists ] = $place( 0.0 );
-		$dy                = 0.0;
+		[ $legs, $wrists ] = $place( $dx, 0.0 );
 		if ( isset( $st['dy'] ) ) {
 			$dy = (float) $st['dy'];
 		} else {
@@ -1218,33 +1266,55 @@ final class CharacterBuilder {
 			foreach ( $st['contact'] as [ $part, $margin ] ) {
 				foreach ( [ 'l', 'r' ] as $side ) {
 					$y = match ( $part ) {
-						'ankle'   => $legs[ $side ]['ankle'][1],
-						'knee'    => $legs[ $side ]['knee'][1],
-						'hip'     => $legs[ $side ]['hip'][1],
-						'hipside' => $legs[ $side ]['hip'][1],
-						'wrist'   => $wrists[ $side ][1],
-						default   => 0.0,
+						'ankle'             => $legs[ $side ]['ankle'][1],
+						'knee'              => $legs[ $side ]['knee'][1],
+						'hip', 'hipside'    => $legs[ $side ]['hip'][1],
+						'wrist'             => $wrists[ $side ][1],
+						default             => 0.0,
 					};
 					$lowest = max( $lowest, $y + (float) $margin );
 				}
 			}
 			$dy = (float) $h - 11.0 - $lowest;
 		}
-		[ $legs, $wrists ] = $place( $dy );
+		[ $legs, $wrists ] = $place( $dx, $dy );
 
-		$free   = (string) $rig['pose']['free'];
-		$points = [ self::turned( [ 80.0, 26.0 ], $theta, $dx, $dy ), self::turned( [ 80.0, 4.0 ], $theta, $dx, $dy ) ];
-		foreach ( [ 'l', 'r' ] as $side ) {
-			$points[] = $legs[ $side ]['hip'];
-			$points[] = $legs[ $side ]['knee'];
-			$points[] = [ $legs[ $side ]['ankle'][0] + 12 * $legs[ $side ]['dir'], $legs[ $side ]['ankle'][1] + 10.5 ];
-			$points[] = $legs[ $side ]['ankle'];
-			$points[] = $wrists[ $side ];
-			$points[] = self::turned( $rig['shoulder'][ $side ], $theta, $dx, $dy );
+		$points_of = static function ( array $legs, array $wrists, float $shift_x, float $shift_y ) use ( $rig, $theta ): array {
+			$points = [ self::turned( [ 80.0, 26.0 ], $theta, $shift_x, $shift_y ), self::turned( [ 80.0, 4.0 ], $theta, $shift_x, $shift_y ) ];
+			foreach ( [ 'l', 'r' ] as $side ) {
+				$points[] = $legs[ $side ]['hip'];
+				$points[] = $legs[ $side ]['knee'];
+				$points[] = [ $legs[ $side ]['ankle'][0] + 12 * $legs[ $side ]['dir'], $legs[ $side ]['ankle'][1] + 10.5 ];
+				$points[] = $legs[ $side ]['ankle'];
+				$points[] = $wrists[ $side ];
+				$points[] = self::turned( $rig['shoulder'][ $side ], $theta, $shift_x, $shift_y );
+			}
+
+			return $points;
+		};
+		$points    = $points_of( $legs, $wrists, $dx, $dy );
+
+		// A hand-made pose gets a canvas that fits it.
+		if ( $custom && ! $edit ) {
+			$xs                = array_column( $points, 0 );
+			$ys                = array_column( $points, 1 );
+			$ground            = $h - 11.0;
+			$shift_x           = 30.0 - min( $xs );
+			$shift_y           = 26.0 - min( $ys );
+			$dx               += $shift_x;
+			$dy               += $shift_y;
+			$w                 = (int) ceil( max( $xs ) - min( $xs ) + 60.0 );
+			$h                 = (int) ceil( max( $ground, max( $ys ) ) - min( $ys ) + 26.0 + 11.0 );
+			[ $legs, $wrists ] = $place( $dx, $dy );
+			$points            = $points_of( $legs, $wrists, $dx, $dy );
 		}
-		$xs = array_column( $points, 0 );
+
+		$free = (string) $rig['pose']['free'];
+		$xs   = array_column( $points, 0 );
 
 		return [
+			'vb'     => [ (int) $w, (int) $h ],
+			'dx'     => $dx,
 			'dy'     => $dy,
 			'legs'   => $legs,
 			'wrists' => $wrists,
@@ -1263,34 +1333,93 @@ final class CharacterBuilder {
 	 * @return array{vb: array{0: int, 1: int}, points: array<int, array{0: float, 1: float}>}|null
 	 */
 	public static function extent( CharacterSpec $spec ): ?array {
-		$st = Stances::get( $spec->get( 'stance' ) );
-		if ( null === $st ) {
+		if ( null === Stances::get( $spec->get( 'stance' ) ) && null === $spec->custom ) {
 			return null;
 		}
+		$lay = self::layout( $spec );
 
 		return [
-			'vb'     => $st['vb'],
-			'points' => self::layout( $spec )['points'],
+			'vb'     => $lay['vb'],
+			'points' => $lay['points'],
 		];
 	}
 
 	/**
-	 * A character in one of the other body positions.
+	 * The joints of a character in the fixed editing canvas, and the angles that pose them, for the page's
+	 * drag handles. Angles are screen angles in degrees: 0 points down, 90 right, 180 up.
+	 *
+	 * @param CharacterSpec $spec Spec.
+	 * @return array<string, mixed>
+	 */
+	public static function pose( CharacterSpec $spec ): array {
+		$st    = self::stance_data( $spec );
+		$rig   = self::rig( $spec );
+		$lay   = self::layout( $spec, true );
+		$theta = (float) $st['theta'];
+		$dx    = (float) $lay['dx'];
+		$dy    = (float) $lay['dy'];
+		$round = static fn( array $p ): array => [ round( (float) $p[0], 1 ), round( (float) $p[1], 1 ) ];
+
+		$joints  = [
+			'head'  => $round( self::turned( [ 80.0, 26.0 ], $theta, $dx, $dy ) ),
+			'neck'  => $round( self::turned( [ 80.0, 52.0 ], $theta, $dx, $dy ) ),
+			'pivot' => $round( self::turned( [ 80.0, 152.0 ], $theta, $dx, $dy ) ),
+		];
+		$arms    = [];
+		$legs    = [];
+		$lengths = [];
+		foreach ( [ 'l', 'r' ] as $side ) {
+			$sign            = 'r' === $side ? 1 : -1;
+			$joints[ $side ] = [
+				'shoulder' => $round( self::turned( $rig['shoulder'][ $side ], $theta, $dx, $dy ) ),
+				'elbow'    => $round( self::turned( $rig['elbow'][ $side ], $theta, $dx, $dy ) ),
+				'wrist'    => $round( $lay['wrists'][ $side ] ),
+				'hip'      => $round( $lay['legs'][ $side ]['hip'] ),
+				'knee'     => $round( $lay['legs'][ $side ]['knee'] ),
+				'ankle'    => $round( $lay['legs'][ $side ]['ankle'] ),
+			];
+			// Local angles back to screen angles.
+			$local            = $rig['pose'][ $side ];
+			$arms[ $side ]    = [ round( $sign * (float) $local[0] - $theta, 1 ), round( $sign * (float) $local[1] - $theta, 1 ) ];
+			$leg              = $st['legs'][ $side ];
+			$legs[ $side ]    = [ (float) $leg[0], (float) $leg[1], (float) $leg[2] ];
+			$lengths[ $side ] = [ (float) ( $leg[4] ?? 74.0 ), (float) ( $leg[5] ?? 72.0 ) ];
+		}
+
+		return [
+			'frame'   => self::EDIT_FRAME,
+			'joints'  => $joints,
+			'lengths' => [
+				'arm'  => [ 42.0, 38.0 ],
+				'legs' => $lengths,
+			],
+			'angles'  => [
+				'theta' => $theta,
+				'head'  => (float) ( $st['head'] ?? 0 ),
+				'arms'  => $arms,
+				'legs'  => $legs,
+			],
+		];
+	}
+
+	/**
+	 * A character in one of the other body positions, or with a hand-made pose.
 	 *
 	 * @param CharacterSpec $spec   Spec.
 	 * @param string        $label  Label.
 	 * @param array<string> $tags   Tags.
 	 * @param string        $person Person.
+	 * @param bool          $edit   Fixed editing canvas.
 	 * @return string
 	 */
-	private static function posed( CharacterSpec $spec, string $label, array $tags, string $person ): string {
-		$st        = (array) Stances::get( $spec->get( 'stance' ) );
+	private static function posed( CharacterSpec $spec, string $label, array $tags, string $person, bool $edit = false ): string {
+		$st        = self::stance_data( $spec );
 		$rig       = self::rig( $spec );
-		$lay       = self::layout( $spec );
+		$lay       = self::layout( $spec, $edit );
 		$theta     = (float) $st['theta'];
 		$tilt      = (float) ( $st['head'] ?? 0 );
 		$back      = ! empty( $st['back'] );
-		[ $w, $h ] = $st['vb'];
+		[ $w, $h ] = $lay['vb'];
 		$bottom    = 'dress' === $spec->get( 'top' ) ? 'skirt' : $spec->get( 'bottom' );
 		$colour    = 'dress' === $spec->get( 'top' ) ? $spec->get( 'top_color' ) : $spec->get( 'bottom_color' );
 		$hi        = (float) $rig['hi'];
@@ -1323,13 +1452,12 @@ final class CharacterBuilder {
 			'' !== $person ? ' data-si-person="' . htmlspecialchars( $person, ENT_QUOTES | ENT_XML1, 'UTF-8' ) . '"' : ''
 		);
 
-		$group = '<g transform="translate(' . G::n( (float) $st['dx'] ) . ' ' . G::n( $lay['dy'] ) . ') rotate(' . G::n( $theta ) . ' 80 152)">' . "\n\t\t" . implode( "\n\t\t", array_filter( $upper ) ) . "\n\t</g>";
+		$group = '<g transform="translate(' . G::n( (float) $lay['dx'] ) . ' ' . G::n( $lay['dy'] ) . ') rotate(' . G::n( $theta ) . ' 80 152)">' . "\n\t\t" . implode( "\n\t\t", array_filter( $upper ) ) . "\n\t</g>";
 
 		$anchors = '<circle id="anchor-hold" cx="' . G::n( $lay['hold'][0] ) . '" cy="' . G::n( $lay['hold'][1] ) . '" r="3"/>' . "\n\t" . '<circle id="anchor-ground" cx="' . G::n( $lay['ground'][0] ) . '" cy="' . G::n( $lay['ground'][1] ) . '" r="3"/>';
 
 		return '<svg ' . $attributes . ">\n\t" . $shadow . "\n\t" . self::posed_legs( $spec, $rig, $lay, $bottom, $colour ) . "\n\t" . $group . "\n\t" . $anchors . "\n</svg>\n";
 	}
-
 	/**
 	 * Legs, trousers or skirt and shoes for a posed character.
 	 *

@@ -7,11 +7,11 @@ const NS = '/sprint-illustrations/v1/characters';
 
 export const getOptions = () => apiFetch( { path: `${ NS }/options` } );
 
-export const preview = ( spec, palette ) =>
+export const preview = ( spec, palette, edit = false ) =>
 	apiFetch( {
 		path: `${ NS }/preview`,
 		method: 'POST',
-		data: { spec, palette },
+		data: { spec, palette, edit },
 	} );
 
 export const variants = ( spec, field, palette ) =>

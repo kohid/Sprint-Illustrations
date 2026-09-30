@@ -135,11 +135,14 @@ final class CharactersController {
 
 		$palette = $this->palette( $request );
 		$data    = $palette->to_array();
+		$edit    = ! empty( $request['edit'] );
 
 		return new \WP_REST_Response(
 			[
-				'svg'     => CharacterPreview::render( $spec, $palette, $this->plugin->services()->sanitizer ),
+				'svg'     => CharacterPreview::render( $spec, $palette, $this->plugin->services()->sanitizer, $edit ),
 				'spec'    => $spec->to_array(),
+				// Joint positions and angles for the pose handles, in the fixed editing canvas.
+				'pose'    => $edit ? CharacterBuilder::pose( $spec ) : null,
 				// The palette's own colours and tones, for the swatches.
 				'palette' => [
 					'colors' => array_map( static fn( string $slot ): string => (string) $palette->resolve( $slot ), array_combine( array_keys( CharacterSpec::COLORS ), array_keys( CharacterSpec::COLORS ) ) ),
