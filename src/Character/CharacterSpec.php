@@ -454,7 +454,8 @@ final class CharacterSpec {
 		$theta = $num( $data['theta'] ?? null, -180.0, 180.0 );
 		$head  = $num( $data['head'] ?? 0, -90.0, 90.0 );
 		$yaw   = $num( $data['yaw'] ?? 0, -180.0, 180.0 );
-		if ( null === $theta || null === $head || null === $yaw ) {
+		$spin  = $num( $data['spin'] ?? 0, -180.0, 180.0 );
+		if ( null === $theta || null === $head || null === $yaw || null === $spin ) {
 			return null;
 		}
 
@@ -462,6 +463,7 @@ final class CharacterSpec {
 			'theta' => $theta,
 			'head'  => $head,
 			'yaw'   => $yaw,
+			'spin'  => $spin,
 			'arms'  => [],
 			'legs'  => [],
 			'order' => [],

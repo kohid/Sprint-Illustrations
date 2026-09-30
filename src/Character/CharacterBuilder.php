@@ -450,7 +450,8 @@ final class CharacterBuilder {
 	 * @return array<string, mixed>
 	 */
 	private static function rig( CharacterSpec $spec ): array {
-		$build = self::BUILD[ $spec->get( 'build' ) ];
+		$spin_factor = self::spin_scale( (float) ( self::stance_data( $spec )['spin'] ?? 0 ) );
+		$build       = self::BUILD[ $spec->get( 'build' ) ];
 		// Body shape: women a little narrower at the shoulder and fuller at the hip, men the other way.
 		$shape        = [
 			'woman' => [ -1.5, -1.0, 1.5 ],
@@ -464,8 +465,8 @@ final class CharacterBuilder {
 		$cx           = self::CX;
 
 		$shoulder = [
-			'l' => [ $cx - $build['sh'] + 3, 66.0 ],
-			'r' => [ $cx + $build['sh'] - 3, 66.0 ],
+			'l' => [ $cx - ( $build['sh'] - 3 ) * $spin_factor, 66.0 ],
+			'r' => [ $cx + ( $build['sh'] - 3 ) * $spin_factor, 66.0 ],
 		];
 		$elbow    = [];
 		$wrist    = [];
@@ -684,9 +685,14 @@ final class CharacterBuilder {
 	 *
 	 * @param CharacterSpec        $spec Spec.
 	 * @param array<string, mixed> $rig  Rig.
+	 * @param bool                 $back Seen from behind.
 	 * @return string
 	 */
-	private static function torso( CharacterSpec $spec, array $rig ): string {
+	private static function torso( CharacterSpec $spec, array $rig, bool $back = false ): string {
+		if ( $back ) {
+			return self::torso_from_behind( $spec, $rig );
+		}
+
 		$top   = $spec->get( 'top' );
 		$tc    = $spec->get( 'top_color' );
 		$outer = $spec->get( 'outer' );
@@ -712,6 +718,45 @@ final class CharacterBuilder {
 		unset( $cx );
 
 		return implode( "\n\t\t", array_filter( $out ) );
+	}
+
+	/**
+	 * The torso seen from behind: the plain shape of the top and of any jacket, without fronts, collars,
+	 * ties or pockets.
+	 *
+	 * @param CharacterSpec        $spec Spec.
+	 * @param array<string, mixed> $rig  Rig.
+	 * @return string
+	 */
+	private static function torso_from_behind( CharacterSpec $spec, array $rig ): string {
+		$top   = $spec->get( 'top' );
+		$hem   = 'dress' === $top ? 132.0 : ( in_array( $top, [ 'sweater', 'hoodie', 'longsleeve' ], true ) ? 146.0 : ( 'blouse' === $top ? 148.0 : 140.0 ) );
+		$out   = [ '<path class="' . self::f( $spec->get( 'top_color' ) ) . '" d="' . self::torso_path( $rig, $hem, in_array( $top, [ 'sweater', 'hoodie' ], true ) ? 1.5 : 0.0 ) . '"/>' ];
+		$outer = $spec->get( 'outer' );
+		$table = [
+			'jacket'   => [ 148.0, 1.5 ],
+			'blazer'   => [ 158.0, 1.0 ],
+			'cardigan' => [ 156.0, 2.0 ],
+			'coat'     => [ 232.0, 9.0 ],
+			'vest'     => [ 138.0, 0.0 ],
+			'hivis'    => [ 142.0, 0.0 ],
+		];
+		if ( isset( $table[ $outer ] ) ) {
+			$inset = in_array( $outer, [ 'vest', 'hivis' ], true ) ? 5.0 : 0.0;
+			$out[] = '<path class="' . self::f( $spec->get( 'outer_color' ) ) . '" d="' . self::torso_path( $rig, $table[ $outer ][0], $table[ $outer ][1], $inset ) . '"/>';
+		}
+
+		return implode( "\n\t\t", $out );
+	}
+
+	/**
+	 * How wide the body looks when turned: full face on and from behind, about half from the side.
+	 *
+	 * @param float $spin Turn in degrees.
+	 * @return float
+	 */
+	private static function spin_scale( float $spin ): float {
+		return abs( $spin ) > 100.0 ? 1.0 : 0.55 + 0.45 * max( 0.0, cos( deg2rad( $spin ) ) );
 	}
 
 	/**
@@ -1207,6 +1252,7 @@ final class CharacterBuilder {
 		$st['theta']  = $custom['theta'];
 		$st['head']   = $custom['head'];
 		$st['yaw']    = $custom['yaw'];
+		$st['spin']   = $custom['spin'];
 		$st['custom'] = true;
 		unset( $st['dy'] );
 		foreach ( [ 'l', 'r' ] as $side ) {
@@ -1298,7 +1344,8 @@ final class CharacterBuilder {
 			$dx = self::EDIT_FRAME / 2 - 80.0;
 		}
 
-		$place = static function ( float $shift_x, float $dy ) use ( $st, $rig, $theta ): array {
+		$spin_factor = self::spin_scale( (float) ( $st['spin'] ?? 0 ) );
+		$place       = static function ( float $shift_x, float $dy ) use ( $st, $rig, $theta, $spin_factor ): array {
 			$legs = [];
 			foreach ( [ 'l', 'r' ] as $side ) {
 				$def           = $st['legs'][ $side ] + [
@@ -1306,7 +1353,7 @@ final class CharacterBuilder {
 					5 => 72.0,
 					6 => 0.0,
 				];
-				$hip           = self::turned( [ 'l' === $side ? 71.5 : 88.5, 152.0 ], $theta, $shift_x, $dy );
+				$hip           = self::turned( [ 80.0 + ( 'l' === $side ? -8.5 : 8.5 ) * $spin_factor, 152.0 ], $theta, $shift_x, $dy );
 				$hip[1]       += (float) $def[6];
 				$knee          = G::reach( $hip, (float) $def[4], (float) $def[0], 'r' );
 				$ankle         = G::reach( $knee, (float) $def[5], (float) $def[1], 'r' );
@@ -1435,6 +1482,7 @@ final class CharacterBuilder {
 			'stalk' => $round( self::turned( [ 80.0 + 62.0 * sin( $tilt ), 50.0 - 62.0 * cos( $tilt ) ], $theta, $dx, $dy ) ),
 			'neck'  => $round( self::turned( [ 80.0, 50.0 ], $theta, $dx, $dy ) ),
 			'chest' => $round( self::turned( [ 80.0, 104.0 ], $theta, $dx, $dy ) ),
+			'belly' => $round( self::turned( [ 80.0, 128.0 ], $theta, $dx, $dy ) ),
 			'pivot' => $round( self::turned( [ 80.0, 152.0 ], $theta, $dx, $dy ) ),
 		];
 		$arms    = [];
@@ -1469,6 +1517,7 @@ final class CharacterBuilder {
 				'theta' => $theta,
 				'head'  => (float) ( $st['head'] ?? 0 ),
 				'yaw'   => (float) ( $st['yaw'] ?? 0 ),
+				'spin'  => (float) ( $st['spin'] ?? 0 ),
 				'arms'  => $arms,
 				'legs'  => $legs,
 				'order' => (array) ( $spec->custom['order'] ?? [] ) + self::DEFAULT_ORDER,
@@ -1508,19 +1557,25 @@ final class CharacterBuilder {
 			return array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $where === $order[ $kind . '_' . $side ] ) );
 		};
 
+		// Turning the body: the torso, hips and what hangs on them narrow like a ball turning; seen from
+		// behind they are drawn without a front.
+		$spin      = (float) ( $st['spin'] ?? 0 );
+		$from_back = abs( $spin ) > 100.0;
+		$factor    = self::spin_scale( $spin );
+		$squeeze   = static fn( string $markup ): string => '' === $markup || $factor >= 0.999 ? $markup : '<g transform="translate(' . G::n( 80.0 * ( 1 - $factor ) ) . ' 0) scale(' . G::n( $factor ) . ' 1)">' . $markup . '</g>';
+		$yaw       = (float) ( $st['yaw'] ?? 0 );
+
 		$body   = [];
-		$body[] = '<path class="' . self::f( $colour ) . '" d="' . G::closed( [ [ $cx - $hi, 136 ], [ $cx - $hi + 1, 150 ], [ $cx - 4, 162 ], [ $cx + 4, 162 ], [ $cx + $hi - 1, 150 ], [ $cx + $hi, 136 ], [ $cx, 128 ] ] ) . '"/>';
-		if ( 'backpack' === $spec->get( 'bag' ) ) {
-			$body[] = self::backpack( $spec, $rig );
+		$body[] = $squeeze( '<path class="' . self::f( $colour ) . '" d="' . G::closed( [ [ $cx - $hi, 136 ], [ $cx - $hi + 1, 150 ], [ $cx - 4, 162 ], [ $cx + 4, 162 ], [ $cx + $hi - 1, 150 ], [ $cx + $hi, 136 ], [ $cx, 128 ] ] ) . '"/>' );
+		if ( 'backpack' === $spec->get( 'bag' ) && ! $from_back ) {
+			$body[] = $squeeze( self::backpack( $spec, $rig ) );
 		}
-		$yaw    = (float) ( $st['yaw'] ?? 0 );
 		$body[] = $head_wrap( self::turned_group( self::hair( $spec, false ), $yaw, -4.0, 0.75 ) );
 		$body[] = '<path class="slot-skin-dark" d="M74 38 H86 V62 H74 Z"/>';
-		$body[] = self::torso( $spec, $rig );
-		$body[] = self::bag_over_torso( $spec, $rig );
-
-		$turn = '<g transform="translate(' . G::n( (float) $lay['dx'] ) . ' ' . G::n( $lay['dy'] ) . ') rotate(' . G::n( $theta ) . ' 80 152)">';
-		$wrap = static fn( array $parts ): string => '' === trim( implode( '', $parts ) ) ? '' : $turn . "\n\t\t" . implode( "\n\t\t", array_filter( $parts ) ) . "\n\t</g>";
+		$body[] = $squeeze( self::torso( $spec, $rig, $from_back ) );
+		$body[] = $squeeze( $from_back && 'backpack' === $spec->get( 'bag' ) ? self::backpack( $spec, $rig ) : ( $from_back ? '' : self::bag_over_torso( $spec, $rig ) ) );
+		$turn   = '<g transform="translate(' . G::n( (float) $lay['dx'] ) . ' ' . G::n( $lay['dy'] ) . ') rotate(' . G::n( $theta ) . ' 80 152)">';
+		$wrap   = static fn( array $parts ): string => '' === trim( implode( '', $parts ) ) ? '' : $turn . "\n\t\t" . implode( "\n\t\t", array_filter( $parts ) ) . "\n\t</g>";
 
 		$front_arms = $sides( 'arm', 'front' );
 		$layers     = [

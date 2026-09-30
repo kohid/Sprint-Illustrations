@@ -3,14 +3,22 @@
 .si-c-head h1{margin:12px 0 4px;font-size:23px;font-weight:400;padding:0}
 .si-c-head p{margin:0 0 14px;color:#50575e;max-width:70ch}
 .si-c-layout{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:960px){.si-c-layout{grid-template-columns:minmax(0,1fr)}}
+.si-c-layout.is-posing{grid-template-columns:minmax(280px,380px) minmax(0,1fr) minmax(250px,310px)}
+.si-c-posepanel{position:sticky;top:44px;max-height:calc(100vh - 64px);overflow:auto}
+@media (max-width:1280px){.si-c-layout.is-posing{grid-template-columns:minmax(280px,380px) minmax(0,1fr)}.si-c-layout.is-posing .si-c-posepanel{grid-column:1/-1;position:static;max-height:none}}
+@media (max-width:960px){.si-c-layout,.si-c-layout.is-posing{grid-template-columns:minmax(0,1fr)}}
 .si-c-panel{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px}
 .si-c-stage{position:sticky;top:44px;display:grid;gap:12px}
 .si-c-stage__tools{display:flex;align-items:center;gap:6px}
 .si-c-stage__tools .components-button.is-secondary{margin-left:auto}
-.si-c-stage__art{background:#f6f7f7 radial-gradient(#dcdcde 1px,transparent 1.5px) 0 0/16px 16px;border-radius:2px;display:grid;place-items:center;min-height:360px;padding:12px}
+.si-c-stage__art{background:#f6f7f7 radial-gradient(#dcdcde 1px,transparent 1.5px) 0 0/16px 16px;border-radius:2px;display:flex;min-height:360px;max-height:560px;overflow:auto;padding:12px}
 .si-c-stage__art svg{display:block;width:auto;height:340px;max-width:100%}
-.si-c-canvas{position:relative;display:inline-block;line-height:0}
+.si-c-canvas{position:relative;display:inline-block;line-height:0;height:var(--si-h,340px);margin:auto}
+.si-c-canvas>div{height:100%}
+.si-c-canvas>div>svg{height:100%;width:auto;max-width:none}
+.si-c-zoom{display:flex;align-items:center;gap:6px}
+.si-c-zoom input[type=range]{flex:1;min-width:0}
+.si-c-handle--spin{fill:#008a8a;fill-opacity:.85}
 .si-c-canvas>div>svg{display:block}
 .si-c-canvas .si-c-handles{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;overflow:visible}
 .si-c-bones polyline{fill:none;stroke:#2271b1;stroke-opacity:.35;stroke-width:1.5}

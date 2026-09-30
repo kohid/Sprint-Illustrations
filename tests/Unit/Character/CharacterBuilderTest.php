@@ -280,4 +280,31 @@ final class CharacterBuilderTest extends TestCase {
 		$this->assertSame( -1, $flipped->custom['legs']['r'][3] );
 		$this->assertNotSame( $front, CharacterBuilder::svg( $flipped ) );
 	}
+	public function test_the_body_turns_like_a_ball_and_shows_its_back(): void {
+		$base   = CharacterSpec::from_array(
+			[
+				'top'   => 'shirt',
+				'outer' => 'jacket',
+				'extra' => 'tie',
+			]
+		);
+		$angles = CharacterBuilder::pose( $base )['angles'];
+		$this->assertSame( 0.0, $angles['spin'] );
+
+		$make  = static function ( float $spin ) use ( $base, $angles ): string {
+			$angles['spin'] = $spin;
+
+			return CharacterBuilder::svg( CharacterSpec::from_array( $base->to_array() + [ 'custom' => $angles ] ) );
+		};
+		$front = $make( 0 );
+		$side  = $make( 90 );
+		$back  = $make( 150 );
+
+		$this->assertStringContainsString( 'scale(', $side );
+		$this->assertStringNotContainsString( 'scale(0.', $front );
+		$this->assertNotSame( $front, $back );
+		// From behind there is no tie and no lapel: fewer shapes than from the front.
+		$this->assertLessThan( substr_count( $front, '<path' ), substr_count( $back, '<path' ) );
+		$this->assertSame( 180.0, CharacterSpec::from_array( $base->to_array() + [ 'custom' => [ 'spin' => 999 ] + $angles ] )->custom['spin'] );
+	}
 }

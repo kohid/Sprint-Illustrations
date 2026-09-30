@@ -119,6 +119,15 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 					)
 				)
 			);
+		} else if ( 'spin' === kind ) {
+			// Sliding across the belly turns the whole body like a ball, all the way to its back.
+			next.spin = Math.max(
+				-180,
+				Math.min(
+					180,
+					round( ( target[ 0 ] - start.belly[ 0 ] ) * 4.5 )
+				)
+			);
 		} else if ( 'look' === kind ) {
 			// Sliding the face across the head turns it like a ball: left and right up to a full turn.
 			next.yaw = Math.max(
@@ -168,7 +177,8 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 	dots.push(
 		{ kind: 'body', side: 'l', at: joints.chest, r: 7, tone: 'body' },
 		{ kind: 'head', side: 'l', at: joints.stalk, r: 7, tone: 'head' },
-		{ kind: 'look', side: 'l', at: joints.head, r: 6, tone: 'look' }
+		{ kind: 'look', side: 'l', at: joints.head, r: 6, tone: 'look' },
+		{ kind: 'spin', side: 'l', at: joints.belly, r: 6, tone: 'spin' }
 	);
 
 	const labels = {
@@ -176,7 +186,8 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 		ankle: __( 'Move foot', 'sprint-illustrations' ),
 		elbow: __( 'Bend elbow', 'sprint-illustrations' ),
 		knee: __( 'Bend knee', 'sprint-illustrations' ),
-		body: __( 'Turn body', 'sprint-illustrations' ),
+		body: __( 'Lean or rotate body', 'sprint-illustrations' ),
+		spin: __( 'Turn body left or right', 'sprint-illustrations' ),
 		head: __( 'Tilt head', 'sprint-illustrations' ),
 		look: __( 'Turn head left or right', 'sprint-illustrations' ),
 	};

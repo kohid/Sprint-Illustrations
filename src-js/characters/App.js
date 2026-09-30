@@ -88,6 +88,11 @@ const ROWS = {
 };
 
 const HISTORY = 50;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
+
+const clampZoom = ( value ) =>
+	Math.max( ZOOM_MIN, Math.min( ZOOM_MAX, Math.round( value * 100 ) / 100 ) );
 
 function reducer( state, action ) {
 	switch ( action.type ) {
@@ -178,6 +183,31 @@ export default function App() {
 	const [ saved, setSaved ] = useState( null );
 	const [ editing, setEditing ] = useState( false );
 	const [ dots, setDots ] = useState( true );
+	const [ zoom, setZoom ] = useState( 1 );
+
+	// Ctrl or Cmd with the wheel zooms the preview instead of the page. A callback ref, because the stage
+	// only exists once the options have loaded.
+	const wheelOff = useRef( null );
+	const artRef = useCallback( ( node ) => {
+		if ( wheelOff.current ) {
+			wheelOff.current();
+			wheelOff.current = null;
+		}
+		if ( ! node ) {
+			return;
+		}
+		const wheel = ( event ) => {
+			if ( ! event.ctrlKey && ! event.metaKey ) {
+				return;
+			}
+			event.preventDefault();
+			setZoom( ( value ) =>
+				clampZoom( value - Math.sign( event.deltaY ) * 0.15 )
+			);
+		};
+		node.addEventListener( 'wheel', wheel, { passive: false } );
+		wheelOff.current = () => node.removeEventListener( 'wheel', wheel );
+	}, [] );
 	const seed = useRef( 1 );
 	const latest = useRef( 0 );
 
@@ -292,6 +322,9 @@ export default function App() {
 			spec: { gender: spec?.gender, ...result },
 		} );
 	};
+
+	const stepZoom = ( direction ) =>
+		setZoom( ( value ) => clampZoom( value + direction * 0.25 ) );
 
 	// Posing by hand starts from the pose the chosen stance gives, then the handles change it.
 	const toggleEditing = () => {
@@ -427,7 +460,11 @@ export default function App() {
 				</Notice>
 			) }
 
-			<div className="si-c-layout">
+			<div
+				className={ `si-c-layout${
+					editing && spec.custom ? ' is-posing' : ''
+				}` }
+			>
 				<section
 					className="si-c-panel si-c-stage"
 					aria-label={ __( 'Preview', 'sprint-illustrations' ) }
@@ -464,8 +501,45 @@ export default function App() {
 							{ __( 'Surprise me', 'sprint-illustrations' ) }
 						</Button>
 					</div>
-					<div className="si-c-stage__art">
-						<div className="si-c-canvas">
+					<div className="si-c-zoom">
+						<Button
+							size="small"
+							icon="minus"
+							label={ __( 'Zoom out', 'sprint-illustrations' ) }
+							disabled={ zoom <= ZOOM_MIN }
+							onClick={ () => stepZoom( -1 ) }
+						/>
+						<input
+							type="range"
+							aria-label={ __( 'Zoom', 'sprint-illustrations' ) }
+							min={ ZOOM_MIN }
+							max={ ZOOM_MAX }
+							step="0.05"
+							value={ zoom }
+							onChange={ ( event ) =>
+								setZoom( Number( event.target.value ) )
+							}
+						/>
+						<Button
+							size="small"
+							icon="plus"
+							label={ __( 'Zoom in', 'sprint-illustrations' ) }
+							disabled={ zoom >= ZOOM_MAX }
+							onClick={ () => stepZoom( 1 ) }
+						/>
+						<Button
+							size="small"
+							variant="tertiary"
+							onClick={ () => setZoom( 1 ) }
+						>
+							{ `${ Math.round( zoom * 100 ) }%` }
+						</Button>
+					</div>
+					<div className="si-c-stage__art" ref={ artRef }>
+						<div
+							className="si-c-canvas"
+							style={ { '--si-h': `${ 340 * zoom }px` } }
+						>
 							<div
 								// Sanitized server-side (character preview).
 								dangerouslySetInnerHTML={ {
@@ -503,194 +577,6 @@ export default function App() {
 									__html: shown.final,
 								} }
 							/>
-						</div>
-					) }
-					{ editing && spec.custom && (
-						<div className="si-c-poseinfo">
-							<p className="si-c-muted">
-								{ __(
-									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to turn the body and the purple dot on the stalk to tilt the head and the green dot on the face to turn it left or right, all the way round. Picking another stance or pose starts over from that preset.',
-									'sprint-illustrations'
-								) }
-							</p>
-							<Button
-								size="small"
-								variant="secondary"
-								onClick={ () => setDots( ! dots ) }
-							>
-								{ dots
-									? __(
-											'Hide the dots',
-											'sprint-illustrations'
-									  )
-									: __(
-											'Show the dots',
-											'sprint-illustrations'
-									  ) }
-							</Button>
-							<RangeControl
-								__nextHasNoMarginBottom
-								__next40pxDefaultSize
-								label={ __(
-									'Tilt head',
-									'sprint-illustrations'
-								) }
-								min={ -90 }
-								max={ 90 }
-								value={ spec.custom.head }
-								onChange={ ( value ) =>
-									setTurn( 'head', value )
-								}
-							/>
-							<RangeControl
-								__nextHasNoMarginBottom
-								__next40pxDefaultSize
-								label={ __(
-									'Turn head to look left or right',
-									'sprint-illustrations'
-								) }
-								help={ __(
-									'Past the side view you see the back of the head.',
-									'sprint-illustrations'
-								) }
-								min={ -180 }
-								max={ 180 }
-								value={ spec.custom.yaw ?? 0 }
-								onChange={ ( value ) =>
-									setTurn( 'yaw', value )
-								}
-							/>
-							<RangeControl
-								__nextHasNoMarginBottom
-								__next40pxDefaultSize
-								label={ __(
-									'Turn body',
-									'sprint-illustrations'
-								) }
-								min={ -180 }
-								max={ 180 }
-								value={ spec.custom.theta }
-								onChange={ ( value ) =>
-									setTurn( 'theta', value )
-								}
-							/>
-							<fieldset className="si-c-arrange">
-								<legend>
-									{ __(
-										'Parts arrangement',
-										'sprint-illustrations'
-									) }
-								</legend>
-								{ ARRANGEMENT.map(
-									( [ part, label, fallback ] ) => {
-										const where =
-											spec.custom.order?.[ part ] ??
-											fallback;
-										return (
-											<div
-												key={ part }
-												className="si-c-arrange__row"
-											>
-												<span>{ label }</span>
-												<Button
-													size="small"
-													variant={
-														'front' === where
-															? 'primary'
-															: 'secondary'
-													}
-													onClick={ () =>
-														setOrder(
-															part,
-															'front'
-														)
-													}
-												>
-													{ __(
-														'In front',
-														'sprint-illustrations'
-													) }
-												</Button>
-												<Button
-													size="small"
-													variant={
-														'back' === where
-															? 'primary'
-															: 'secondary'
-													}
-													onClick={ () =>
-														setOrder( part, 'back' )
-													}
-												>
-													{ __(
-														'Behind',
-														'sprint-illustrations'
-													) }
-												</Button>
-											</div>
-										);
-									}
-								) }
-							</fieldset>
-							<div className="si-c-arrange__row">
-								<span>
-									{ __( 'Feet', 'sprint-illustrations' ) }
-								</span>
-								<Button
-									size="small"
-									variant="secondary"
-									onClick={ () => flipFoot( 'l' ) }
-								>
-									{ __(
-										'Flip left',
-										'sprint-illustrations'
-									) }
-								</Button>
-								<Button
-									size="small"
-									variant="secondary"
-									onClick={ () => flipFoot( 'r' ) }
-								>
-									{ __(
-										'Flip right',
-										'sprint-illustrations'
-									) }
-								</Button>
-							</div>
-							<RangeControl
-								__nextHasNoMarginBottom
-								__next40pxDefaultSize
-								label={ __(
-									'Left foot tilt',
-									'sprint-illustrations'
-								) }
-								min={ -90 }
-								max={ 90 }
-								value={ spec.custom.legs.l[ 2 ] }
-								onChange={ ( value ) => setToe( 'l', value ) }
-							/>
-							<RangeControl
-								__nextHasNoMarginBottom
-								__next40pxDefaultSize
-								label={ __(
-									'Right foot tilt',
-									'sprint-illustrations'
-								) }
-								min={ -90 }
-								max={ 90 }
-								value={ spec.custom.legs.r[ 2 ] }
-								onChange={ ( value ) => setToe( 'r', value ) }
-							/>
-							<Button
-								variant="tertiary"
-								isDestructive
-								onClick={ resetPose }
-							>
-								{ __(
-									'Back to the preset pose',
-									'sprint-illustrations'
-								) }
-							</Button>
 						</div>
 					) }
 					<SelectControl
@@ -964,6 +850,218 @@ export default function App() {
 						) }
 					</div>
 				</section>
+
+				{ editing && spec.custom && (
+					<section
+						className="si-c-panel si-c-posepanel"
+						aria-label={ __( 'Pose', 'sprint-illustrations' ) }
+					>
+						<div className="si-c-poseinfo">
+							<p className="si-c-muted">
+								{ __(
+									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to lean or rotate the body, the teal dot on the belly to turn it left or right and the purple dot on the stalk to tilt the head and the green dot on the face to turn it left or right, all the way round. Picking another stance or pose starts over from that preset.',
+									'sprint-illustrations'
+								) }
+							</p>
+							<Button
+								size="small"
+								variant="secondary"
+								onClick={ () => setDots( ! dots ) }
+							>
+								{ dots
+									? __(
+											'Hide the dots',
+											'sprint-illustrations'
+									  )
+									: __(
+											'Show the dots',
+											'sprint-illustrations'
+									  ) }
+							</Button>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Tilt head',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.head }
+								onChange={ ( value ) =>
+									setTurn( 'head', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Turn head to look left or right',
+									'sprint-illustrations'
+								) }
+								help={ __(
+									'Past the side view you see the back of the head.',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.yaw ?? 0 }
+								onChange={ ( value ) =>
+									setTurn( 'yaw', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Lean or rotate body',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.theta }
+								onChange={ ( value ) =>
+									setTurn( 'theta', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Turn body to face left or right',
+									'sprint-illustrations'
+								) }
+								help={ __(
+									'Past the side view you see the back.',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.spin ?? 0 }
+								onChange={ ( value ) =>
+									setTurn( 'spin', value )
+								}
+							/>
+							<fieldset className="si-c-arrange">
+								<legend>
+									{ __(
+										'Parts arrangement',
+										'sprint-illustrations'
+									) }
+								</legend>
+								{ ARRANGEMENT.map(
+									( [ part, label, fallback ] ) => {
+										const where =
+											spec.custom.order?.[ part ] ??
+											fallback;
+										return (
+											<div
+												key={ part }
+												className="si-c-arrange__row"
+											>
+												<span>{ label }</span>
+												<Button
+													size="small"
+													variant={
+														'front' === where
+															? 'primary'
+															: 'secondary'
+													}
+													onClick={ () =>
+														setOrder(
+															part,
+															'front'
+														)
+													}
+												>
+													{ __(
+														'In front',
+														'sprint-illustrations'
+													) }
+												</Button>
+												<Button
+													size="small"
+													variant={
+														'back' === where
+															? 'primary'
+															: 'secondary'
+													}
+													onClick={ () =>
+														setOrder( part, 'back' )
+													}
+												>
+													{ __(
+														'Behind',
+														'sprint-illustrations'
+													) }
+												</Button>
+											</div>
+										);
+									}
+								) }
+							</fieldset>
+							<div className="si-c-arrange__row">
+								<span>
+									{ __( 'Feet', 'sprint-illustrations' ) }
+								</span>
+								<Button
+									size="small"
+									variant="secondary"
+									onClick={ () => flipFoot( 'l' ) }
+								>
+									{ __(
+										'Flip left',
+										'sprint-illustrations'
+									) }
+								</Button>
+								<Button
+									size="small"
+									variant="secondary"
+									onClick={ () => flipFoot( 'r' ) }
+								>
+									{ __(
+										'Flip right',
+										'sprint-illustrations'
+									) }
+								</Button>
+							</div>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Left foot tilt',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.legs.l[ 2 ] }
+								onChange={ ( value ) => setToe( 'l', value ) }
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Right foot tilt',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.legs.r[ 2 ] }
+								onChange={ ( value ) => setToe( 'r', value ) }
+							/>
+							<Button
+								variant="tertiary"
+								isDestructive
+								onClick={ resetPose }
+							>
+								{ __(
+									'Back to the preset pose',
+									'sprint-illustrations'
+								) }
+							</Button>
+						</div>
+					</section>
+				) }
 			</div>
 		</div>
 	);
