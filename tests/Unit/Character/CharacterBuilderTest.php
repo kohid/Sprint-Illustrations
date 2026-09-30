@@ -233,4 +233,23 @@ final class CharacterBuilderTest extends TestCase {
 		$this->assertNull( $spec->with( [ 'stance' => 'walking' ] )->custom );
 		$this->assertNotNull( $spec->with( [ 'top' => 'hoodie' ] )->custom );
 	}
+	public function test_a_limb_can_be_set_in_front_of_or_behind_the_body(): void {
+		$base = CharacterSpec::from_array( [ 'stance' => 'walking' ] );
+		$pose = CharacterBuilder::pose( $base )['angles'];
+		$this->assertSame( 'back', $pose['order']['leg_l'] );
+
+		$pose['order']['leg_l'] = 'front';
+		$pose['order']['arm_r'] = 'back';
+		$spec                   = CharacterSpec::from_array( $base->to_array() + [ 'custom' => $pose ] );
+		$this->assertSame( 'front', $spec->custom['order']['leg_l'] );
+		$this->assertSame( 'back', $spec->custom['order']['arm_r'] );
+
+		$pose['order']['leg_l'] = 'sideways';
+		$this->assertSame( 'back', CharacterSpec::from_array( $base->to_array() + [ 'custom' => $pose ] )->custom['order']['leg_l'] );
+
+		// A leg set in front is drawn after the body group, a leg behind before it.
+		$front = CharacterBuilder::svg( $spec );
+		$this->assertGreaterThan( strpos( $front, '</g>' ), strrpos( $front, 'slot-skin' ), 'A front leg follows the body group.' );
+		$this->assertNotSame( $front, CharacterBuilder::svg( CharacterSpec::from_array( $base->to_array() + [ 'custom' => CharacterBuilder::pose( $base )['angles'] ] ) ) );
+	}
 }

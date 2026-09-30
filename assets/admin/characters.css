@@ -55,3 +55,8 @@
 .si-c-save .si-c-row{align-items:start}
 .si-c-option__art{height:132px}
 .si-c-options__grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+
+.si-c-arrange{border:0;padding:0;margin:0;display:grid;gap:6px}
+.si-c-arrange legend{font-size:11px;font-weight:500;text-transform:uppercase;padding:0;margin-bottom:4px}
+.si-c-arrange__row{display:flex;align-items:center;gap:6px}
+.si-c-arrange__row span{flex:1}

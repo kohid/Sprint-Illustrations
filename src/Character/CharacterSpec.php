@@ -462,7 +462,13 @@ final class CharacterSpec {
 			'head'  => $head,
 			'arms'  => [],
 			'legs'  => [],
+			'order' => [],
 		];
+		// Each limb is drawn in front of the body or behind it.
+		foreach ( CharacterBuilder::DEFAULT_ORDER as $part => $default ) {
+			$where                 = $data['order'][ $part ] ?? $default;
+			$out['order'][ $part ] = in_array( $where, [ 'front', 'back' ], true ) ? $where : $default;
+		}
 		foreach ( [ 'l', 'r' ] as $side ) {
 			$arm = (array) ( $data['arms'][ $side ] ?? [] );
 			$leg = (array) ( $data['legs'][ $side ] ?? [] );

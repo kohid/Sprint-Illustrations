@@ -320,6 +320,19 @@ export default function App() {
 		dispatch( { type: 'SET', changes: { custom } } );
 	};
 
+	const ARRANGEMENT = [
+		[ 'arm_l', __( 'Left arm', 'sprint-illustrations' ), 'front' ],
+		[ 'arm_r', __( 'Right arm', 'sprint-illustrations' ), 'front' ],
+		[ 'leg_l', __( 'Left leg', 'sprint-illustrations' ), 'back' ],
+		[ 'leg_r', __( 'Right leg', 'sprint-illustrations' ), 'back' ],
+	];
+
+	const setOrder = ( part, where ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		custom.order = { ...( custom.order || {} ), [ part ]: where };
+		dispatch( { type: 'SET', changes: { custom } } );
+	};
+
 	const doSuggest = () =>
 		suggest( describe )
 			.then( ( result ) => {
@@ -469,6 +482,64 @@ export default function App() {
 									'sprint-illustrations'
 								) }
 							</p>
+							<fieldset className="si-c-arrange">
+								<legend>
+									{ __(
+										'Parts arrangement',
+										'sprint-illustrations'
+									) }
+								</legend>
+								{ ARRANGEMENT.map(
+									( [ part, label, fallback ] ) => {
+										const where =
+											spec.custom.order?.[ part ] ??
+											fallback;
+										return (
+											<div
+												key={ part }
+												className="si-c-arrange__row"
+											>
+												<span>{ label }</span>
+												<Button
+													size="small"
+													variant={
+														'front' === where
+															? 'primary'
+															: 'secondary'
+													}
+													onClick={ () =>
+														setOrder(
+															part,
+															'front'
+														)
+													}
+												>
+													{ __(
+														'In front',
+														'sprint-illustrations'
+													) }
+												</Button>
+												<Button
+													size="small"
+													variant={
+														'back' === where
+															? 'primary'
+															: 'secondary'
+													}
+													onClick={ () =>
+														setOrder( part, 'back' )
+													}
+												>
+													{ __(
+														'Behind',
+														'sprint-illustrations'
+													) }
+												</Button>
+											</div>
+										);
+									}
+								) }
+							</fieldset>
 							<RangeControl
 								__nextHasNoMarginBottom
 								__next40pxDefaultSize

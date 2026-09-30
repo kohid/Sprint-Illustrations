@@ -32,6 +32,16 @@ final class CharacterBuilder {
 	public const EDIT_FRAME = 420;
 
 	/**
+	 * Which parts are drawn in front of the body or behind it, unless a hand-made pose says otherwise.
+	 */
+	public const DEFAULT_ORDER = [
+		'arm_l' => 'front',
+		'arm_r' => 'front',
+		'leg_l' => 'back',
+		'leg_r' => 'back',
+	];
+
+	/**
 	 * Proportions per build: shoulder, waist and hip half widths.
 	 */
 	private const BUILD = [
@@ -861,13 +871,14 @@ final class CharacterBuilder {
 	// ---------------------------------------------------------------- arms and carried things.
 
 	/**
-	 * Both arms with sleeves and hands.
+	 * Arms with sleeves and hands.
 	 *
-	 * @param CharacterSpec        $spec Spec.
-	 * @param array<string, mixed> $rig  Rig.
+	 * @param CharacterSpec        $spec  Spec.
+	 * @param array<string, mixed> $rig   Rig.
+	 * @param array<string>        $sides Which arms to draw.
 	 * @return string
 	 */
-	private static function arms( CharacterSpec $spec, array $rig ): string {
+	private static function arms( CharacterSpec $spec, array $rig, array $sides = [ 'l', 'r' ] ): string {
 		$top     = $spec->get( 'top' );
 		$outer   = $spec->get( 'outer' );
 		$sleeved = in_array( $outer, [ 'jacket', 'blazer', 'cardigan', 'coat' ], true );
@@ -877,7 +888,7 @@ final class CharacterBuilder {
 		$tone    = $over ? self::shade( $colour, 'dark' ) : $colour;
 		$out     = [];
 
-		foreach ( [ 'l', 'r' ] as $side ) {
+		foreach ( $sides as $side ) {
 			$s = $rig['shoulder'][ $side ];
 			$e = $rig['elbow'][ $side ];
 			$w = $rig['wrist'][ $side ];
@@ -1398,6 +1409,7 @@ final class CharacterBuilder {
 				'head'  => (float) ( $st['head'] ?? 0 ),
 				'arms'  => $arms,
 				'legs'  => $legs,
+				'order' => (array) ( $spec->custom['order'] ?? [] ) + self::DEFAULT_ORDER,
 			],
 		];
 	}
@@ -1432,11 +1444,24 @@ final class CharacterBuilder {
 		if ( 'backpack' === $spec->get( 'bag' ) ) {
 			$upper[] = self::backpack( $spec, $rig );
 		}
+		// Parts set behind the body are drawn first; legs set in front come after the whole upper body.
+		$order = (array) ( $spec->custom['order'] ?? [] ) + self::DEFAULT_ORDER;
+		$in    = static fn( string $part, string $where ): bool => $where === $order[ $part ];
+		$arms  = [
+			'front' => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'arm_' . $side, 'front' ) ) ),
+			'back'  => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'arm_' . $side, 'back' ) ) ),
+		];
+		$legs  = [
+			'front' => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'leg_' . $side, 'front' ) ) ),
+			'back'  => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'leg_' . $side, 'back' ) ) ),
+		];
+
+		$upper[] = self::arms( $spec, $rig, $arms['back'] );
 		$upper[] = $head_wrap( self::hair( $spec, false ) );
 		$upper[] = '<path class="slot-skin-dark" d="M74 38 H86 V62 H74 Z"/>';
 		$upper[] = self::torso( $spec, $rig );
 		$upper[] = self::bag_over_torso( $spec, $rig );
-		$upper[] = self::arms( $spec, $rig );
+		$upper[] = self::arms( $spec, $rig, $arms['front'] );
 		$upper[] = self::carried( $spec, $rig );
 		$upper[] = $head_wrap( self::head( $spec, $back ) );
 
@@ -1456,7 +1481,7 @@ final class CharacterBuilder {
 
 		$anchors = '<circle id="anchor-hold" cx="' . G::n( $lay['hold'][0] ) . '" cy="' . G::n( $lay['hold'][1] ) . '" r="3"/>' . "\n\t" . '<circle id="anchor-ground" cx="' . G::n( $lay['ground'][0] ) . '" cy="' . G::n( $lay['ground'][1] ) . '" r="3"/>';
 
-		return '<svg ' . $attributes . ">\n\t" . $shadow . "\n\t" . self::posed_legs( $spec, $rig, $lay, $bottom, $colour ) . "\n\t" . $group . "\n\t" . $anchors . "\n</svg>\n";
+		return '<svg ' . $attributes . ">\n\t" . $shadow . "\n\t" . self::posed_legs( $spec, $rig, $lay, $bottom, $colour, $legs['back'] ) . "\n\t" . $group . "\n\t" . self::posed_legs( $spec, $rig, $lay, $bottom, $colour, $legs['front'] ) . "\n\t" . $anchors . "\n</svg>\n";
 	}
 	/**
 	 * Legs, trousers or skirt and shoes for a posed character.
@@ -1466,9 +1491,10 @@ final class CharacterBuilder {
 	 * @param array<string, mixed> $lay    Layout.
 	 * @param string               $bottom Bottom style.
 	 * @param string               $colour Bottom colour token.
+	 * @param array<string>        $sides  Which legs to draw.
 	 * @return string
 	 */
-	private static function posed_legs( CharacterSpec $spec, array $rig, array $lay, string $bottom, string $colour ): string {
+	private static function posed_legs( CharacterSpec $spec, array $rig, array $lay, string $bottom, string $colour, array $sides = [ 'l', 'r' ] ): string {
 		$bare    = in_array( $bottom, [ 'shorts', 'skirt', 'midi' ], true );
 		$thigh   = 15.0 + ( (float) $rig['hi'] - 20.5 ) * 0.5;
 		$knee_w  = 'slim' === $bottom ? 11.0 : 13.0;
@@ -1477,7 +1503,7 @@ final class CharacterBuilder {
 		$mix     = static fn( array $a, array $b, float $t ): array => [ $a[0] + ( $b[0] - $a[0] ) * $t, $a[1] + ( $b[1] - $a[1] ) * $t ];
 		$out     = [];
 
-		foreach ( [ 'l', 'r' ] as $side ) {
+		foreach ( $sides as $side ) {
 			$leg   = $lay['legs'][ $side ];
 			$hip   = $leg['hip'];
 			$knee  = $leg['knee'];
