@@ -144,6 +144,45 @@ final class CharacterPresets {
 		],
 	];
 	/**
+	 * Styles each gender can be started with, and what picking one changes so the preview shows it.
+	 */
+	private const GENDER_POOLS = [
+		'man'   => [
+			'top'    => [ 'tee', 'longsleeve', 'shirt', 'polo', 'sweater', 'hoodie' ],
+			'bottom' => [ 'trousers', 'slim', 'cropped', 'shorts' ],
+			'hair'   => [ 'short', 'quiff', 'buzz', 'curly', 'afro', 'wavy', 'bald' ],
+		],
+		'woman' => [
+			'top'         => [ 'tee', 'longsleeve', 'shirt', 'polo', 'blouse', 'sweater', 'hoodie', 'dress' ],
+			'bottom'      => [ 'trousers', 'slim', 'cropped', 'shorts', 'skirt', 'midi' ],
+			'hair'        => [ 'short', 'curly', 'afro', 'long', 'wavy', 'bob', 'ponytail', 'bun' ],
+			'facial_hair' => [ 'none' ],
+		],
+	];
+
+	/**
+	 * What choosing a gender sets (everything stays editable afterwards).
+	 *
+	 * @return array<string, array<string, string>>
+	 */
+	public static function gender_looks(): array {
+		return [
+			'any'   => [],
+			'man'   => [
+				'hair'   => 'short',
+				'top'    => 'shirt',
+				'bottom' => 'trousers',
+			],
+			'woman' => [
+				'hair'        => 'long',
+				'top'         => 'blouse',
+				'bottom'      => 'skirt',
+				'facial_hair' => 'none',
+			],
+		];
+	}
+
+	/**
 	 * Presets for the builder page.
 	 *
 	 * @return array<int, array{id: string, label: string, choices: array<string, string>}>
@@ -202,10 +241,11 @@ final class CharacterPresets {
 	/**
 	 * A varied character from a seed (the same seed always gives the same one).
 	 *
-	 * @param int $seed Seed.
+	 * @param int    $seed   Seed.
+	 * @param string $gender any, woman or man: a woman or man only gets styles from that pool.
 	 * @return CharacterSpec
 	 */
-	public static function shuffled( int $seed ): CharacterSpec {
+	public static function shuffled( int $seed, string $gender = 'any' ): CharacterSpec {
 		$random = new Seed( $seed );
 		$pick   = static function ( array $choices ) use ( $random ): string {
 			$keys = array_keys( $choices );
@@ -214,15 +254,22 @@ final class CharacterPresets {
 		};
 
 		$stance = 0 === $random->int( 0, 3 ) ? 'sitting' : 'standing';
-		$chosen = [ 'stance' => $stance ];
+		$gender = isset( CharacterSpec::GENDERS[ $gender ] ) ? $gender : 'any';
+		$chosen = [
+			'stance' => $stance,
+			'gender' => $gender,
+		];
 		foreach ( CharacterSpec::options( $stance ) as $field => $allowed ) {
-			if ( ! in_array( $field, [ 'stance', 'tag' ], true ) ) {
+			if ( ! in_array( $field, [ 'stance', 'gender' ], true ) ) {
+				if ( isset( self::GENDER_POOLS[ $gender ][ $field ] ) ) {
+					$allowed = array_intersect_key( $allowed, array_flip( self::GENDER_POOLS[ $gender ][ $field ] ) );
+				}
 				$chosen[ $field ] = $pick( $allowed );
 			}
 		}
 		// Keep it sensible: most people wear no headwear, glasses or facial hair, and only some an extra.
 		foreach ( [ 'headwear', 'glasses', 'facial_hair', 'extra' ] as $field ) {
-			if ( $random->int( 0, 2 ) > 0 ) {
+			if ( $random->int( 0, 2 ) > 0 || ( 'facial_hair' === $field && 'any' !== $gender && 'man' !== $gender ) ) {
 				$chosen[ $field ] = 'none';
 			}
 		}

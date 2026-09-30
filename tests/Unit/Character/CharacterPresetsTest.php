@@ -46,4 +46,19 @@ final class CharacterPresetsTest extends TestCase {
 		}
 		$this->assertGreaterThan( 4, count( $tops ) );
 	}
+	public function test_a_shuffle_respects_the_chosen_gender(): void {
+		for ( $seed = 1; $seed <= 60; $seed++ ) {
+			$man = CharacterPresets::shuffled( $seed, 'man' );
+			$this->assertSame( 'man', $man->get( 'gender' ) );
+			$this->assertNotContains( $man->get( 'bottom' ), [ 'skirt', 'midi' ] );
+			$this->assertNotContains( $man->get( 'top' ), [ 'dress', 'blouse' ] );
+
+			$woman = CharacterPresets::shuffled( $seed, 'woman' );
+			$this->assertSame( 'woman', $woman->get( 'gender' ) );
+			$this->assertSame( 'none', $woman->get( 'facial_hair' ) );
+		}
+
+		$this->assertSame( 'any', CharacterPresets::shuffled( 1, 'nonsense' )->get( 'gender' ) );
+		$this->assertSame( 'any', CharacterSpec::from_array( [ 'gender' => 'nonsense' ] )->get( 'gender' ) );
+	}
 }

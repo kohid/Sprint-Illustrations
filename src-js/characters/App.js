@@ -33,6 +33,7 @@ const TABS = [
 
 // Rows shown on each tab: [field, title, kind].
 const ROWS = {
+	start: [ [ 'gender', __( 'Character', 'sprint-illustrations' ) ] ],
 	pose: [
 		[ 'stance', __( 'Standing or sitting', 'sprint-illustrations' ) ],
 		[ 'pose', __( 'Pose', 'sprint-illustrations' ) ],
@@ -258,7 +259,11 @@ export default function App() {
 
 	const startFrom = ( result ) => {
 		setSaved( null );
-		dispatch( { type: 'REPLACE', spec: result } );
+		// A chosen gender stays when starting from a role or a shuffle.
+		dispatch( {
+			type: 'REPLACE',
+			spec: { gender: spec?.gender, ...result },
+		} );
 	};
 
 	const doSuggest = () =>
@@ -290,7 +295,7 @@ export default function App() {
 
 	const surprise = () => {
 		seed.current += 1 + Math.floor( Math.random() * 1000 );
-		shuffle( seed.current )
+		shuffle( seed.current, spec?.gender )
 			.then( ( result ) => startFrom( result.spec ) )
 			.catch( () => {} );
 	};
@@ -533,7 +538,12 @@ export default function App() {
 									options={ field( name ) }
 									images={ thumbs[ name ] }
 									onChange={ ( value ) =>
-										set( { [ name ]: value } )
+										set( {
+											[ name ]: value,
+											...( 'gender' === name
+												? options.genderLooks?.[ value ]
+												: {} ),
+										} )
 									}
 								/>
 							)
@@ -594,14 +604,6 @@ export default function App() {
 							onChange={ ( tags ) =>
 								setForm( { ...form, tags } )
 							}
-						/>
-						<SelectControl
-							__nextHasNoMarginBottom
-							__next40pxDefaultSize
-							label={ __( 'Tag as', 'sprint-illustrations' ) }
-							value={ spec.tag || 'none' }
-							options={ options.fields.tag }
-							onChange={ ( tag ) => set( { tag } ) }
 						/>
 						<Button
 							variant="primary"

@@ -27,7 +27,7 @@ final class CharactersController {
 	/**
 	 * Fields a thumbnail row can be made for.
 	 */
-	private const VARIANT_FIELDS = [ 'stance', 'pose', 'legs', 'build', 'top', 'outer', 'bottom', 'shoes', 'hair', 'headwear', 'face', 'glasses', 'facial_hair', 'bag', 'extra' ];
+	private const VARIANT_FIELDS = [ 'stance', 'pose', 'legs', 'build', 'top', 'outer', 'bottom', 'shoes', 'hair', 'headwear', 'face', 'glasses', 'facial_hair', 'bag', 'extra', 'gender' ];
 
 	/**
 	 * Constructor.
@@ -86,14 +86,15 @@ final class CharactersController {
 
 		return new \WP_REST_Response(
 			[
-				'fields'   => $fields,
-				'defaults' => CharacterSpec::defaults(),
-				'roles'    => CharacterPresets::all(),
-				'tones'    => [
+				'fields'      => $fields,
+				'defaults'    => CharacterSpec::defaults(),
+				'roles'       => CharacterPresets::all(),
+				'genderLooks' => CharacterPresets::gender_looks(),
+				'tones'       => [
 					'skin' => array_values( (array) ( $palette['skin'] ?? [] ) ),
 					'hair' => array_values( (array) ( $palette['hair'] ?? [] ) ),
 				],
-				'palettes' => $this->plugin->editor_choices()['presets'],
+				'palettes'    => $this->plugin->editor_choices()['presets'],
 			]
 		);
 	}
@@ -140,7 +141,8 @@ final class CharactersController {
 		$palette = $this->palette( $request );
 		$images  = [];
 		foreach ( array_keys( CharacterSpec::options( $spec->get( 'stance' ) )[ $field ] ) as $value ) {
-			$images[ $value ] = CharacterPreview::render( $spec->with( [ $field => $value ] ), $palette, $this->plugin->services()->sanitizer );
+			$changes          = [ $field => $value ] + ( 'gender' === $field ? CharacterPresets::gender_looks()[ $value ] : [] );
+			$images[ $value ] = CharacterPreview::render( $spec->with( $changes ), $palette, $this->plugin->services()->sanitizer );
 		}
 
 		return new \WP_REST_Response( [ 'images' => $images ] );
@@ -190,7 +192,7 @@ final class CharactersController {
 	public function shuffle( \WP_REST_Request $request ): \WP_REST_Response {
 		$seed = max( 1, absint( $request['seed'] ?? 1 ) );
 
-		return new \WP_REST_Response( [ 'spec' => CharacterPresets::shuffled( $seed )->to_array() ] );
+		return new \WP_REST_Response( [ 'spec' => CharacterPresets::shuffled( $seed, (string) ( $request['gender'] ?? 'any' ) )->to_array() ] );
 	}
 
 	/**
@@ -261,7 +263,7 @@ final class CharactersController {
 				'typing'  => [ 'work', 'laptop' ],
 				default   => [],
 			},
-			'none' !== $spec->get( 'tag' ) ? [ $spec->get( 'tag' ) ] : []
+			'any' !== $spec->get( 'gender' ) ? [ $spec->get( 'gender' ) ] : []
 		);
 
 		$keywords = $this->plugin->services()->keywords;

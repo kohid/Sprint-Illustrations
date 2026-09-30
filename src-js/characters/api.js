@@ -24,8 +24,12 @@ export const variants = ( spec, field, palette ) =>
 export const suggest = ( text ) =>
 	apiFetch( { path: `${ NS }/suggest`, method: 'POST', data: { text } } );
 
-export const shuffle = ( seed ) =>
-	apiFetch( { path: `${ NS }/shuffle`, method: 'POST', data: { seed } } );
+export const shuffle = ( seed, gender ) =>
+	apiFetch( {
+		path: `${ NS }/shuffle`,
+		method: 'POST',
+		data: { seed, gender },
+	} );
 
 export const save = ( data ) =>
 	apiFetch( { path: `${ NS }/save`, method: 'POST', data } );

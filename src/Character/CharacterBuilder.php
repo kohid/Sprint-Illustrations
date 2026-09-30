@@ -235,10 +235,26 @@ final class CharacterBuilder {
 	 * @return array<string, mixed>
 	 */
 	private static function rig( CharacterSpec $spec ): array {
-		$build   = self::BUILD[ $spec->get( 'build' ) ];
-		$sitting = 'sitting' === $spec->get( 'stance' );
-		$pose    = self::POSES[ $spec->get( 'stance' ) ][ $spec->get( 'pose' ) ];
-		$cx      = self::CX;
+		$build = self::BUILD[ $spec->get( 'build' ) ];
+		// Body shape: women a little narrower at the shoulder and fuller at the hip, men the other way.
+		$shape        = [
+			'woman' => [ -1.5, -1.0, 1.5 ],
+			'man'   => [ 1.5, 0.5, -1.0 ],
+		][ $spec->get( 'gender' ) ] ?? [ 0.0, 0.0, 0.0 ];
+		$build['sh'] += $shape[0];
+		$build['wa'] += $shape[1];
+		$build['hi'] += $shape[2];
+		// Body shape: women a little narrower at the shoulder and fuller at the hip, men the other way.
+		$shape        = [
+			'woman' => [ -1.5, -1.0, 1.5 ],
+			'man'   => [ 1.5, 0.5, -1.0 ],
+		][ $spec->get( 'gender' ) ] ?? [ 0.0, 0.0, 0.0 ];
+		$build['sh'] += $shape[0];
+		$build['wa'] += $shape[1];
+		$build['hi'] += $shape[2];
+		$sitting      = 'sitting' === $spec->get( 'stance' );
+		$pose         = self::POSES[ $spec->get( 'stance' ) ][ $spec->get( 'pose' ) ];
+		$cx           = self::CX;
 
 		$shoulder = [
 			'l' => [ $cx - $build['sh'] + 3, 66.0 ],

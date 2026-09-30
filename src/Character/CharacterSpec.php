@@ -165,8 +165,8 @@ final class CharacterSpec {
 		'background'      => 'Off-white',
 	];
 
-	public const TAGS = [
-		'none'  => 'None',
+	public const GENDERS = [
+		'any'   => 'Any',
 		'woman' => 'Woman',
 		'man'   => 'Man',
 	];
@@ -221,7 +221,7 @@ final class CharacterSpec {
 			'bag_color'      => self::COLORS,
 			'extra'          => self::EXTRAS,
 			'extra_color'    => self::COLORS,
-			'tag'            => self::TAGS,
+			'gender'         => self::GENDERS,
 		];
 	}
 
@@ -254,7 +254,7 @@ final class CharacterSpec {
 			'bag_color'      => 'accent-dark',
 			'extra'          => 'none',
 			'extra_color'    => 'accent',
-			'tag'            => 'none',
+			'gender'         => 'any',
 		];
 	}
 
