@@ -261,6 +261,12 @@ final class CharactersController {
 				'phone'   => [ 'phone', 'call' ],
 				'present' => [ 'presenting' ],
 				'typing'  => [ 'work', 'laptop' ],
+				'think'   => [ 'thinking' ],
+				'cheer'   => [ 'cheering', 'celebrate' ],
+				'tablet'  => [ 'tablet' ],
+				'coffee'  => [ 'coffee' ],
+				'book'    => [ 'reading', 'book' ],
+				'box'     => [ 'box', 'delivery' ],
 				default   => [],
 			},
 			'any' !== $spec->get( 'gender' ) ? [ $spec->get( 'gender' ) ] : []

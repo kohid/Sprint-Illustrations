@@ -103,6 +103,64 @@ final class CharacterBuilder {
 				'free' => 'l',
 				'over' => false,
 			],
+			'think'   => [
+				'l'    => [ 10, -104 ],
+				'r'    => [ 16, 218 ],
+				'free' => 'l',
+				'over' => true,
+			],
+			'clasped' => [
+				'l'    => [ 8, -40 ],
+				'r'    => [ 8, -40 ],
+				'free' => 'r',
+				'over' => false,
+			],
+			'pockets' => [
+				'l'    => [ 22, -20 ],
+				'r'    => [ 22, -20 ],
+				'free' => 'r',
+				'over' => false,
+			],
+			'cheer'   => [
+				'l'    => [ 62, 168 ],
+				'r'    => [ 62, 168 ],
+				'free' => 'l',
+				'over' => false,
+			],
+			'shrug'   => [
+				'l'    => [ 34, 132 ],
+				'r'    => [ 34, 132 ],
+				'free' => 'l',
+				'over' => false,
+			],
+			'tablet'  => [
+				'l'    => [ 6, 3 ],
+				'r'    => [ 24, -76 ],
+				'free' => 'l',
+				'over' => true,
+				'item' => [ 'tablet', 'r' ],
+			],
+			'coffee'  => [
+				'l'    => [ 6, 3 ],
+				'r'    => [ 26, 164 ],
+				'free' => 'l',
+				'over' => false,
+				'item' => [ 'cup', 'r' ],
+			],
+			'book'    => [
+				'l'    => [ 12, -84 ],
+				'r'    => [ 12, -84 ],
+				'free' => 'r',
+				'over' => true,
+				'item' => [ 'book', 'both' ],
+			],
+			'box'     => [
+				'l'    => [ 26, -46 ],
+				'r'    => [ 26, -46 ],
+				'free' => 'r',
+				'over' => true,
+				'item' => [ 'box', 'both' ],
+			],
 		],
 		'sitting'  => [
 			'lap'    => [
@@ -129,6 +187,32 @@ final class CharacterBuilder {
 				'free' => 'l',
 				'over' => false,
 				'item' => [ 'phone', 'r' ],
+			],
+			'think'  => [
+				'l'    => [ 8, -62 ],
+				'r'    => [ 16, 218 ],
+				'free' => 'l',
+				'over' => true,
+			],
+			'book'   => [
+				'l'    => [ 12, -84 ],
+				'r'    => [ 12, -84 ],
+				'free' => 'r',
+				'over' => true,
+				'item' => [ 'book', 'both' ],
+			],
+			'coffee' => [
+				'l'    => [ 8, -62 ],
+				'r'    => [ 26, 164 ],
+				'free' => 'l',
+				'over' => false,
+				'item' => [ 'cup', 'r' ],
+			],
+			'cheer'  => [
+				'l'    => [ 62, 168 ],
+				'r'    => [ 62, 168 ],
+				'free' => 'l',
+				'over' => false,
 			],
 		],
 	];
@@ -709,13 +793,28 @@ final class CharacterBuilder {
 
 		if ( null !== $item ) {
 			[ $kind, $side ] = $item;
-			$w               = $rig['wrist'][ $side ];
+			$w               = 'both' === $side
+				? [ ( $rig['wrist']['l'][0] + $rig['wrist']['r'][0] ) / 2, ( $rig['wrist']['l'][1] + $rig['wrist']['r'][1] ) / 2 ]
+				: $rig['wrist'][ $side ];
+			$hand            = static fn( array $p ): string => '<circle class="slot-skin" cx="' . G::n( $p[0] ) . '" cy="' . G::n( $p[1] ) . '" r="5.6"/>';
+			$c               = $spec->get( 'bag_color' );
+			$d               = self::shade( $c, 'dark' );
+			if ( 'tablet' === $kind ) {
+				$rot   = ' transform="rotate(-8 ' . G::n( $w[0] ) . ' ' . G::n( $w[1] ) . ')"';
+				$out[] = '<rect class="slot-neutral-dark" x="' . G::n( $w[0] - 13 ) . '" y="' . G::n( $w[1] - 24 ) . '" width="26" height="32" rx="3"' . $rot . '/><rect class="slot-background" x="' . G::n( $w[0] - 10.5 ) . '" y="' . G::n( $w[1] - 21.5 ) . '" width="21" height="27" rx="1.5"' . $rot . '/><rect class="' . self::f( $c ) . '" x="' . G::n( $w[0] - 8 ) . '" y="' . G::n( $w[1] - 18 ) . '" width="16" height="4" rx="1"' . $rot . '/>' . $hand( $w );
+			} elseif ( 'cup' === $kind ) {
+				$out[] = '<path class="' . self::f( $c ) . '" d="M' . G::n( $w[0] - 6.5 ) . ' ' . G::n( $w[1] - 11 ) . ' H' . G::n( $w[0] + 6.5 ) . ' L' . G::n( $w[0] + 5 ) . ' ' . G::n( $w[1] + 9 ) . ' H' . G::n( $w[0] - 5 ) . ' Z"/><rect class="' . self::f( $d ) . '" x="' . G::n( $w[0] - 7.5 ) . '" y="' . G::n( $w[1] - 14 ) . '" width="15" height="4" rx="1.5"/>' . $hand( [ $w[0] + 4, $w[1] ] );
+			} elseif ( 'book' === $kind ) {
+				$out[] = '<rect class="' . self::f( $c ) . '" x="' . G::n( $w[0] - 17 ) . '" y="' . G::n( $w[1] - 15 ) . '" width="34" height="24" rx="2"/><rect class="slot-background" x="' . G::n( $w[0] - 15 ) . '" y="' . G::n( $w[1] - 13 ) . '" width="14" height="20" rx="1"/><rect class="slot-background" x="' . G::n( $w[0] + 1 ) . '" y="' . G::n( $w[1] - 13 ) . '" width="14" height="20" rx="1"/>' . $hand( [ $w[0] - 15, $w[1] + 6 ] ) . $hand( [ $w[0] + 15, $w[1] + 6 ] );
+			} elseif ( 'box' === $kind ) {
+				$out[] = '<rect class="' . self::f( $c ) . '" x="' . G::n( $w[0] - 22 ) . '" y="' . G::n( $w[1] - 14 ) . '" width="44" height="32" rx="2"/><rect class="' . self::f( $d ) . '" x="' . G::n( $w[0] - 22 ) . '" y="' . G::n( $w[1] - 14 ) . '" width="44" height="7" rx="2"/><rect class="slot-background" x="' . G::n( $w[0] - 5 ) . '" y="' . G::n( $w[1] - 14 ) . '" width="10" height="7"/>' . $hand( [ $w[0] - 22, $w[1] + 6 ] ) . $hand( [ $w[0] + 22, $w[1] + 6 ] );
+			}
 			if ( 'phone' === $kind ) {
 				$out[] = '<rect class="slot-neutral-dark" x="' . G::n( $w[0] - 4 ) . '" y="' . G::n( $w[1] - 16 ) . '" width="8" height="15" rx="1.6" transform="rotate(' . ( 'r' === $side ? 8 : -8 ) . ' ' . G::n( $w[0] ) . ' ' . G::n( $w[1] ) . ')"/><circle class="slot-skin" cx="' . G::n( $w[0] ) . '" cy="' . G::n( $w[1] ) . '" r="5.4"/>';
 			} elseif ( 'folder' === $kind ) {
 				$out[] = '<rect class="' . self::f( $spec->get( 'bag_color' ) ) . '" x="' . G::n( $w[0] - 12 ) . '" y="' . G::n( $w[1] - 22 ) . '" width="24" height="30" rx="2" transform="rotate(-8 ' . G::n( $w[0] ) . ' ' . G::n( $w[1] ) . ')"/><rect class="slot-background" x="' . G::n( $w[0] - 9 ) . '" y="' . G::n( $w[1] - 19 ) . '" width="18" height="24" rx="1" transform="rotate(-8 ' . G::n( $w[0] ) . ' ' . G::n( $w[1] ) . ')" opacity="0.9"/><circle class="slot-skin" cx="' . G::n( $w[0] ) . '" cy="' . G::n( $w[1] ) . '" r="5.6"/>';
 			}
-		}
+		}//end if
 
 		$bag = $spec->get( 'bag' );
 		if ( in_array( $bag, [ 'tote', 'briefcase' ], true ) && ! $rig['sitting'] ) {
