@@ -143,6 +143,8 @@ final class CharactersController {
 				'spec'    => $spec->to_array(),
 				// Joint positions and angles for the pose handles, in the fixed editing canvas.
 				'pose'    => $edit ? CharacterBuilder::pose( $spec ) : null,
+				// What the saved piece looks like: fitted to its own canvas, without the editing frame.
+				'final'   => $edit && null !== $spec->custom ? CharacterPreview::render( $spec, $palette, $this->plugin->services()->sanitizer ) : '',
 				// The palette's own colours and tones, for the swatches.
 				'palette' => [
 					'colors' => array_map( static fn( string $slot ): string => (string) $palette->resolve( $slot ), array_combine( array_keys( CharacterSpec::COLORS ), array_keys( CharacterSpec::COLORS ) ) ),

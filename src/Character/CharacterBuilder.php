@@ -1371,9 +1371,13 @@ final class CharacterBuilder {
 		$dy    = (float) $lay['dy'];
 		$round = static fn( array $p ): array => [ round( (float) $p[0], 1 ), round( (float) $p[1], 1 ) ];
 
+		// The head turns about the neck; its handle sits on a stalk out beyond the top of the head.
+		$tilt    = deg2rad( (float) ( $st['head'] ?? 0 ) );
 		$joints  = [
-			'head'  => $round( self::turned( [ 80.0, 26.0 ], $theta, $dx, $dy ) ),
-			'neck'  => $round( self::turned( [ 80.0, 52.0 ], $theta, $dx, $dy ) ),
+			'head'  => $round( self::turned( [ 80.0 + 24.0 * sin( $tilt ), 50.0 - 24.0 * cos( $tilt ) ], $theta, $dx, $dy ) ),
+			'stalk' => $round( self::turned( [ 80.0 + 62.0 * sin( $tilt ), 50.0 - 62.0 * cos( $tilt ) ], $theta, $dx, $dy ) ),
+			'neck'  => $round( self::turned( [ 80.0, 50.0 ], $theta, $dx, $dy ) ),
+			'chest' => $round( self::turned( [ 80.0, 104.0 ], $theta, $dx, $dy ) ),
 			'pivot' => $round( self::turned( [ 80.0, 152.0 ], $theta, $dx, $dy ) ),
 		];
 		$arms    = [];

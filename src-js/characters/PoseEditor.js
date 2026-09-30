@@ -150,15 +150,15 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 	[ 'l', 'r' ].forEach( ( side ) => {
 		const j = joints[ side ];
 		dots.push(
-			{ kind: 'wrist', side, at: j.wrist, r: 8, tone: 'hand' },
-			{ kind: 'ankle', side, at: j.ankle, r: 8, tone: 'foot' },
-			{ kind: 'elbow', side, at: j.elbow, r: 5, tone: 'joint' },
-			{ kind: 'knee', side, at: j.knee, r: 5, tone: 'joint' }
+			{ kind: 'wrist', side, at: j.wrist, r: 6.5, tone: 'hand' },
+			{ kind: 'ankle', side, at: j.ankle, r: 6.5, tone: 'foot' },
+			{ kind: 'elbow', side, at: j.elbow, r: 4, tone: 'joint' },
+			{ kind: 'knee', side, at: j.knee, r: 4, tone: 'joint' }
 		);
 	} );
 	dots.push(
-		{ kind: 'body', side: 'l', at: joints.neck, r: 8, tone: 'body' },
-		{ kind: 'head', side: 'l', at: joints.head, r: 8, tone: 'head' }
+		{ kind: 'body', side: 'l', at: joints.chest, r: 7, tone: 'body' },
+		{ kind: 'head', side: 'l', at: joints.stalk, r: 7, tone: 'head' }
 	);
 
 	const labels = {
@@ -166,8 +166,8 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 		ankle: __( 'Move foot', 'sprint-illustrations' ),
 		elbow: __( 'Bend elbow', 'sprint-illustrations' ),
 		knee: __( 'Bend knee', 'sprint-illustrations' ),
-		body: __( 'Lean body', 'sprint-illustrations' ),
-		head: __( 'Tilt head', 'sprint-illustrations' ),
+		body: __( 'Turn body', 'sprint-illustrations' ),
+		head: __( 'Turn head', 'sprint-illustrations' ),
 	};
 
 	return (
@@ -179,6 +179,13 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 			onPointerUp={ up }
 			onPointerCancel={ up }
 		>
+			<line
+				className="si-c-stalk"
+				x1={ joints.neck[ 0 ] }
+				y1={ joints.neck[ 1 ] }
+				x2={ joints.stalk[ 0 ] }
+				y2={ joints.stalk[ 1 ] }
+			/>
 			{ [ 'l', 'r' ].map( ( side ) => {
 				const j = joints[ side ];
 				return (

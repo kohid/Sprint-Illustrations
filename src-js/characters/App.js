@@ -177,6 +177,7 @@ export default function App() {
 	const [ saving, setSaving ] = useState( false );
 	const [ saved, setSaved ] = useState( null );
 	const [ editing, setEditing ] = useState( false );
+	const [ dots, setDots ] = useState( true );
 	const seed = useRef( 1 );
 	const latest = useRef( 0 );
 
@@ -312,6 +313,12 @@ export default function App() {
 	const resetPose = () => {
 		setEditing( false );
 		dispatch( { type: 'SET', changes: { custom: null } } );
+	};
+
+	const setTurn = ( key, value ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		custom[ key ] = value ?? 0;
+		dispatch( { type: 'SET', changes: { custom } } );
 	};
 
 	const setToe = ( side, value ) => {
@@ -457,7 +464,7 @@ export default function App() {
 									__html: shown?.svg || '',
 								} }
 							/>
-							{ editing && spec.custom && shown?.pose && (
+							{ editing && dots && spec.custom && shown?.pose && (
 								<PoseEditor
 									pose={ shown.pose }
 									custom={ spec.custom }
@@ -474,14 +481,73 @@ export default function App() {
 							) }
 						</div>
 					</div>
+					{ editing && shown?.final && (
+						<div className="si-c-actual">
+							<span>
+								{ __(
+									'Actual preview',
+									'sprint-illustrations'
+								) }
+							</span>
+							<div
+								// Sanitized server-side (character preview).
+								dangerouslySetInnerHTML={ {
+									__html: shown.final,
+								} }
+							/>
+						</div>
+					) }
 					{ editing && spec.custom && (
 						<div className="si-c-poseinfo">
 							<p className="si-c-muted">
 								{ __(
-									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to lean the body and the purple dot to tilt the head. Picking another stance or pose starts over from that preset.',
+									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to turn the body and the purple dot on the stalk to turn the head. Picking another stance or pose starts over from that preset.',
 									'sprint-illustrations'
 								) }
 							</p>
+							<Button
+								size="small"
+								variant="secondary"
+								onClick={ () => setDots( ! dots ) }
+							>
+								{ dots
+									? __(
+											'Hide the dots',
+											'sprint-illustrations'
+									  )
+									: __(
+											'Show the dots',
+											'sprint-illustrations'
+									  ) }
+							</Button>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Turn head',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.head }
+								onChange={ ( value ) =>
+									setTurn( 'head', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Turn body',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.theta }
+								onChange={ ( value ) =>
+									setTurn( 'theta', value )
+								}
+							/>
 							<fieldset className="si-c-arrange">
 								<legend>
 									{ __(
