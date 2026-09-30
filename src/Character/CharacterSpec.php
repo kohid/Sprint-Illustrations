@@ -453,13 +453,15 @@ final class CharacterSpec {
 
 		$theta = $num( $data['theta'] ?? null, -180.0, 180.0 );
 		$head  = $num( $data['head'] ?? 0, -90.0, 90.0 );
-		if ( null === $theta || null === $head ) {
+		$yaw   = $num( $data['yaw'] ?? 0, -180.0, 180.0 );
+		if ( null === $theta || null === $head || null === $yaw ) {
 			return null;
 		}
 
 		$out = [
 			'theta' => $theta,
 			'head'  => $head,
+			'yaw'   => $yaw,
 			'arms'  => [],
 			'legs'  => [],
 			'order' => [],
@@ -476,6 +478,10 @@ final class CharacterSpec {
 			$b   = [ $num( $leg[0] ?? null, -360.0, 360.0 ), $num( $leg[1] ?? null, -360.0, 360.0 ), $num( $leg[2] ?? 0, -90.0, 90.0 ) ];
 			if ( in_array( null, $a, true ) || in_array( null, $b, true ) ) {
 				return null;
+			}
+			// Which way the toes point (-1 left, 1 right): flipping a foot mirrors it.
+			if ( isset( $leg[3] ) && in_array( (int) $leg[3], [ -1, 1 ], true ) ) {
+				$b[] = (int) $leg[3];
 			}
 			$out['arms'][ $side ] = $a;
 			$out['legs'][ $side ] = $b;

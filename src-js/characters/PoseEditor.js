@@ -119,6 +119,15 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 					)
 				)
 			);
+		} else if ( 'look' === kind ) {
+			// Sliding the face across the head turns it like a ball: left and right up to a full turn.
+			next.yaw = Math.max(
+				-180,
+				Math.min(
+					180,
+					round( ( target[ 0 ] - start.head[ 0 ] ) * 4.5 )
+				)
+			);
 		} else if ( 'head' === kind ) {
 			const n = start.neck;
 			const absolute =
@@ -158,7 +167,8 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 	} );
 	dots.push(
 		{ kind: 'body', side: 'l', at: joints.chest, r: 7, tone: 'body' },
-		{ kind: 'head', side: 'l', at: joints.stalk, r: 7, tone: 'head' }
+		{ kind: 'head', side: 'l', at: joints.stalk, r: 7, tone: 'head' },
+		{ kind: 'look', side: 'l', at: joints.head, r: 6, tone: 'look' }
 	);
 
 	const labels = {
@@ -167,7 +177,8 @@ export default function PoseEditor( { pose, custom, onStart, onChange } ) {
 		elbow: __( 'Bend elbow', 'sprint-illustrations' ),
 		knee: __( 'Bend knee', 'sprint-illustrations' ),
 		body: __( 'Turn body', 'sprint-illustrations' ),
-		head: __( 'Turn head', 'sprint-illustrations' ),
+		head: __( 'Tilt head', 'sprint-illustrations' ),
+		look: __( 'Turn head left or right', 'sprint-illustrations' ),
 	};
 
 	return (

@@ -321,6 +321,13 @@ export default function App() {
 		dispatch( { type: 'SET', changes: { custom } } );
 	};
 
+	const flipFoot = ( side ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		const leg = custom.legs[ side ];
+		leg[ 3 ] = -1 * ( leg[ 3 ] ?? ( 'l' === side ? -1 : 1 ) );
+		dispatch( { type: 'SET', changes: { custom } } );
+	};
+
 	const setToe = ( side, value ) => {
 		const custom = JSON.parse( JSON.stringify( spec.custom ) );
 		custom.legs[ side ][ 2 ] = value ?? 0;
@@ -332,6 +339,7 @@ export default function App() {
 		[ 'arm_r', __( 'Right arm', 'sprint-illustrations' ), 'front' ],
 		[ 'leg_l', __( 'Left leg', 'sprint-illustrations' ), 'back' ],
 		[ 'leg_r', __( 'Right leg', 'sprint-illustrations' ), 'back' ],
+		[ 'torso', __( 'Torso and head', 'sprint-illustrations' ), 'front' ],
 	];
 
 	const setOrder = ( part, where ) => {
@@ -501,7 +509,7 @@ export default function App() {
 						<div className="si-c-poseinfo">
 							<p className="si-c-muted">
 								{ __(
-									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to turn the body and the purple dot on the stalk to turn the head. Picking another stance or pose starts over from that preset.',
+									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to turn the body and the purple dot on the stalk to tilt the head and the green dot on the face to turn it left or right, all the way round. Picking another stance or pose starts over from that preset.',
 									'sprint-illustrations'
 								) }
 							</p>
@@ -524,7 +532,7 @@ export default function App() {
 								__nextHasNoMarginBottom
 								__next40pxDefaultSize
 								label={ __(
-									'Turn head',
+									'Tilt head',
 									'sprint-illustrations'
 								) }
 								min={ -90 }
@@ -532,6 +540,24 @@ export default function App() {
 								value={ spec.custom.head }
 								onChange={ ( value ) =>
 									setTurn( 'head', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Turn head to look left or right',
+									'sprint-illustrations'
+								) }
+								help={ __(
+									'Past the side view you see the back of the head.',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.yaw ?? 0 }
+								onChange={ ( value ) =>
+									setTurn( 'yaw', value )
 								}
 							/>
 							<RangeControl
@@ -606,6 +632,31 @@ export default function App() {
 									}
 								) }
 							</fieldset>
+							<div className="si-c-arrange__row">
+								<span>
+									{ __( 'Feet', 'sprint-illustrations' ) }
+								</span>
+								<Button
+									size="small"
+									variant="secondary"
+									onClick={ () => flipFoot( 'l' ) }
+								>
+									{ __(
+										'Flip left',
+										'sprint-illustrations'
+									) }
+								</Button>
+								<Button
+									size="small"
+									variant="secondary"
+									onClick={ () => flipFoot( 'r' ) }
+								>
+									{ __(
+										'Flip right',
+										'sprint-illustrations'
+									) }
+								</Button>
+							</div>
 							<RangeControl
 								__nextHasNoMarginBottom
 								__next40pxDefaultSize

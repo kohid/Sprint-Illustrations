@@ -39,6 +39,7 @@ final class CharacterBuilder {
 		'arm_r' => 'front',
 		'leg_l' => 'back',
 		'leg_r' => 'back',
+		'torso' => 'front',
 	];
 
 	/**
@@ -1006,20 +1007,53 @@ final class CharacterBuilder {
 	 *
 	 * @param CharacterSpec $spec Spec.
 	 * @param bool          $back Seen from behind (face down): hair covers the face.
+	 * @param float         $yaw  Turn of the head to look left (negative) or right, in degrees.
 	 * @return string
 	 */
-	private static function head( CharacterSpec $spec, bool $back = false ): string {
-		$out   = [];
-		$out[] = '<ellipse class="slot-skin" cx="65.5" cy="28" rx="2.8" ry="4.2"/><ellipse class="slot-skin" cx="94.5" cy="28" rx="2.8" ry="4.2"/>';
+	private static function head( CharacterSpec $spec, bool $back = false, float $yaw = 0.0 ): string {
+		// Turning the head like a 3D ball: the face features slide across and squash, ears follow, and
+		// past a side view the back of the head shows.
+		$back = $back || abs( $yaw ) > 100.0;
+		$rad  = deg2rad( max( -95.0, min( 95.0, $yaw ) ) );
+		$span = max( 0.3, cos( $rad ) );
+		$dir  = $yaw < 0 ? -1 : 1;
+		$out  = [];
+
+		$ear_x = 14.5 * $span;
+		if ( abs( $yaw ) <= 50.0 ) {
+			$out[] = '<ellipse class="slot-skin" cx="' . G::n( 80 - $ear_x ) . '" cy="28" rx="2.8" ry="4.2"/><ellipse class="slot-skin" cx="' . G::n( 80 + $ear_x ) . '" cy="28" rx="2.8" ry="4.2"/>';
+		}
 		$out[] = '<ellipse class="slot-skin" cx="80" cy="26" rx="14.5" ry="18"/>';
+		if ( abs( $yaw ) > 50.0 ) {
+			// One ear shows on the side turned away from us, over the head.
+			$out[] = '<ellipse class="slot-skin-dark" cx="' . G::n( 80 - $dir * 3.5 ) . '" cy="28" rx="2.6" ry="4.2"/>';
+		}
+
+		$face = [];
+		if ( ! $back && 'simple' === $spec->get( 'face' ) ) {
+			$face[] = '<ellipse class="slot-neutral-dark" cx="74.4" cy="27" rx="1.3" ry="1.7"/><ellipse class="slot-neutral-dark" cx="85.6" cy="27" rx="1.3" ry="1.7"/><path class="slot-stroke-skin-dark" d="M80 28.5 Q82 32 79.4 33.2" fill="none" stroke-width="1.2" stroke-linecap="round"/><path class="slot-stroke-skin-dark" d="M76.6 37 Q80 39.6 83.4 37" fill="none" stroke-width="1.4" stroke-linecap="round"/>';
+		}
+		if ( ! $back ) {
+			$face[] = self::facial_hair( $spec->get( 'facial_hair' ) );
+		}
 		if ( $back ) {
 			$out[] = '<ellipse class="' . ( 'bald' === $spec->get( 'hair' ) ? 'slot-skin' : 'slot-hair' ) . '" cx="80" cy="25" rx="14.8" ry="17.6"/>';
-		} elseif ( 'simple' === $spec->get( 'face' ) ) {
-			$out[] = '<ellipse class="slot-neutral-dark" cx="74.4" cy="27" rx="1.3" ry="1.7"/><ellipse class="slot-neutral-dark" cx="85.6" cy="27" rx="1.3" ry="1.7"/><path class="slot-stroke-skin-dark" d="M80 28.5 Q82 32 79.4 33.2" fill="none" stroke-width="1.2" stroke-linecap="round"/><path class="slot-stroke-skin-dark" d="M76.6 37 Q80 39.6 83.4 37" fill="none" stroke-width="1.4" stroke-linecap="round"/>';
 		}
-		$out[] = $back ? '' : self::facial_hair( $spec->get( 'facial_hair' ) );
+		$glasses = $back ? '' : self::glasses( $spec->get( 'glasses' ) );
+
+		$features = implode( '', array_filter( $face ) ) . $glasses;
+		if ( '' !== $features ) {
+			if ( abs( $yaw ) > 1.0 ) {
+				$shift    = 80.0 + 12.5 * sin( $rad ) - 80.0 * $span;
+				$features = '<g transform="translate(' . G::n( $shift ) . ' 0) scale(' . G::n( $span ) . ' 1)">' . $features . '</g>';
+			}
+			$out[] = $features;
+		}
+		if ( ! $back && abs( $yaw ) >= 35.0 ) {
+			// The nose stands out against the edge of the face in a side view.
+			$out[] = '<ellipse class="slot-skin" cx="' . G::n( 80 + $dir * ( 13.6 * abs( sin( $rad ) ) + 1 ) ) . '" cy="29" rx="2.2" ry="2.8"/>';
+		}
 		$out[] = self::hair( $spec, true );
-		$out[] = $back ? '' : self::glasses( $spec->get( 'glasses' ) );
 		$out[] = self::headwear( $spec->get( 'headwear' ), $spec->get( 'headwear_color' ) );
 
 		return implode( "\n\t\t", array_filter( $out ) );
@@ -1150,6 +1184,7 @@ final class CharacterBuilder {
 
 		$st['theta']  = $custom['theta'];
 		$st['head']   = $custom['head'];
+		$st['yaw']    = $custom['yaw'];
 		$st['custom'] = true;
 		unset( $st['dy'] );
 		foreach ( [ 'l', 'r' ] as $side ) {
@@ -1397,7 +1432,7 @@ final class CharacterBuilder {
 			$local            = $rig['pose'][ $side ];
 			$arms[ $side ]    = [ round( $sign * (float) $local[0] - $theta, 1 ), round( $sign * (float) $local[1] - $theta, 1 ) ];
 			$leg              = $st['legs'][ $side ];
-			$legs[ $side ]    = [ (float) $leg[0], (float) $leg[1], (float) $leg[2] ];
+			$legs[ $side ]    = [ (float) $leg[0], (float) $leg[1], (float) $leg[2], (int) $leg[3] ];
 			$lengths[ $side ] = [ (float) ( $leg[4] ?? 74.0 ), (float) ( $leg[5] ?? 72.0 ) ];
 		}
 
@@ -1411,6 +1446,7 @@ final class CharacterBuilder {
 			'angles'  => [
 				'theta' => $theta,
 				'head'  => (float) ( $st['head'] ?? 0 ),
+				'yaw'   => (float) ( $st['yaw'] ?? 0 ),
 				'arms'  => $arms,
 				'legs'  => $legs,
 				'order' => (array) ( $spec->custom['order'] ?? [] ) + self::DEFAULT_ORDER,
@@ -1443,33 +1479,39 @@ final class CharacterBuilder {
 
 		$head_wrap = static fn( string $markup ): string => 0.0 === $tilt ? $markup : '<g transform="rotate(' . G::n( $tilt ) . ' 80 50)">' . $markup . '</g>';
 
-		$upper   = [];
-		$upper[] = '<path class="' . self::f( $colour ) . '" d="' . G::closed( [ [ $cx - $hi, 136 ], [ $cx - $hi + 1, 150 ], [ $cx - 4, 162 ], [ $cx + 4, 162 ], [ $cx + $hi - 1, 150 ], [ $cx + $hi, 136 ], [ $cx, 128 ] ] ) . '"/>';
-		if ( 'backpack' === $spec->get( 'bag' ) ) {
-			$upper[] = self::backpack( $spec, $rig );
-		}
-		// Parts set behind the body are drawn first; legs set in front come after the whole upper body.
+		// Layers, back to front: what is set behind, the torso and head, then what is set in front. The
+		// torso itself can be set behind the legs and arms, or in front of the ones set behind it.
 		$order = (array) ( $spec->custom['order'] ?? [] ) + self::DEFAULT_ORDER;
-		$in    = static fn( string $part, string $where ): bool => $where === $order[ $part ];
-		$arms  = [
-			'front' => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'arm_' . $side, 'front' ) ) ),
-			'back'  => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'arm_' . $side, 'back' ) ) ),
-		];
-		$legs  = [
-			'front' => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'leg_' . $side, 'front' ) ) ),
-			'back'  => array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $in( 'leg_' . $side, 'back' ) ) ),
-		];
+		$sides = static function ( string $kind, string $where ) use ( $order ): array {
+			return array_values( array_filter( [ 'l', 'r' ], static fn( $side ) => $where === $order[ $kind . '_' . $side ] ) );
+		};
 
-		$upper[] = self::arms( $spec, $rig, $arms['back'] );
-		$upper[] = $head_wrap( self::hair( $spec, false ) );
-		$upper[] = '<path class="slot-skin-dark" d="M74 38 H86 V62 H74 Z"/>';
-		$upper[] = self::torso( $spec, $rig );
-		$upper[] = self::bag_over_torso( $spec, $rig );
-		$upper[] = self::arms( $spec, $rig, $arms['front'] );
-		$upper[] = self::carried( $spec, $rig );
-		$upper[] = $head_wrap( self::head( $spec, $back ) );
+		$body   = [];
+		$body[] = '<path class="' . self::f( $colour ) . '" d="' . G::closed( [ [ $cx - $hi, 136 ], [ $cx - $hi + 1, 150 ], [ $cx - 4, 162 ], [ $cx + 4, 162 ], [ $cx + $hi - 1, 150 ], [ $cx + $hi, 136 ], [ $cx, 128 ] ] ) . '"/>';
+		if ( 'backpack' === $spec->get( 'bag' ) ) {
+			$body[] = self::backpack( $spec, $rig );
+		}
+		$body[] = $head_wrap( self::hair( $spec, false ) );
+		$body[] = '<path class="slot-skin-dark" d="M74 38 H86 V62 H74 Z"/>';
+		$body[] = self::torso( $spec, $rig );
+		$body[] = self::bag_over_torso( $spec, $rig );
 
-		$shadow = '<ellipse class="slot-neutral" cx="' . G::n( $lay['ground'][0] ) . '" cy="' . G::n( $h - 9 ) . '" rx="' . G::n( min( 92.0, max( 34.0, $lay['span'] * 0.45 ) ) ) . '" ry="5" opacity="0.12"/>';
+		$turn = '<g transform="translate(' . G::n( (float) $lay['dx'] ) . ' ' . G::n( $lay['dy'] ) . ') rotate(' . G::n( $theta ) . ' 80 152)">';
+		$wrap = static fn( array $parts ): string => '' === trim( implode( '', $parts ) ) ? '' : $turn . "\n\t\t" . implode( "\n\t\t", array_filter( $parts ) ) . "\n\t</g>";
+
+		$front_arms = $sides( 'arm', 'front' );
+		$layers     = [
+			'legs_back'  => self::posed_legs( $spec, $rig, $lay, $bottom, $colour, $sides( 'leg', 'back' ) ),
+			'arms_back'  => $wrap( [ self::arms( $spec, $rig, $sides( 'arm', 'back' ) ) ] ),
+			'body'       => $wrap( $body ),
+			'arms_front' => $wrap( [ self::arms( $spec, $rig, $front_arms ), self::carried( $spec, $rig ) ] ),
+			'head'       => $wrap( [ $head_wrap( self::head( $spec, $back, (float) ( $st['yaw'] ?? 0 ) ) ) ] ),
+			'legs_front' => self::posed_legs( $spec, $rig, $lay, $bottom, $colour, $sides( 'leg', 'front' ) ),
+		];
+		$sequence   = 'back' === $order['torso']
+			? [ 'body', 'head', 'legs_back', 'arms_back', 'arms_front', 'legs_front' ]
+			: [ 'legs_back', 'arms_back', 'body', 'arms_front', 'head', 'legs_front' ];
+		$shadow     = '<ellipse class="slot-neutral" cx="' . G::n( $lay['ground'][0] ) . '" cy="' . G::n( $h - 9 ) . '" rx="' . G::n( min( 92.0, max( 34.0, $lay['span'] * 0.45 ) ) ) . '" ry="5" opacity="0.12"/>';
 
 		$attributes = sprintf(
 			'xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %1$d %2$d" data-si-label="%3$s" data-si-tags="%4$s" data-si-accepts="%5$s"%6$s',
@@ -1481,11 +1523,9 @@ final class CharacterBuilder {
 			'' !== $person ? ' data-si-person="' . htmlspecialchars( $person, ENT_QUOTES | ENT_XML1, 'UTF-8' ) . '"' : ''
 		);
 
-		$group = '<g transform="translate(' . G::n( (float) $lay['dx'] ) . ' ' . G::n( $lay['dy'] ) . ') rotate(' . G::n( $theta ) . ' 80 152)">' . "\n\t\t" . implode( "\n\t\t", array_filter( $upper ) ) . "\n\t</g>";
-
 		$anchors = '<circle id="anchor-hold" cx="' . G::n( $lay['hold'][0] ) . '" cy="' . G::n( $lay['hold'][1] ) . '" r="3"/>' . "\n\t" . '<circle id="anchor-ground" cx="' . G::n( $lay['ground'][0] ) . '" cy="' . G::n( $lay['ground'][1] ) . '" r="3"/>';
 
-		return '<svg ' . $attributes . ">\n\t" . $shadow . "\n\t" . self::posed_legs( $spec, $rig, $lay, $bottom, $colour, $legs['back'] ) . "\n\t" . $group . "\n\t" . self::posed_legs( $spec, $rig, $lay, $bottom, $colour, $legs['front'] ) . "\n\t" . $anchors . "\n</svg>\n";
+		return '<svg ' . $attributes . ">\n\t" . $shadow . "\n\t" . implode( "\n\t", array_filter( array_map( static fn( $key ) => $layers[ $key ], $sequence ) ) ) . "\n\t" . $anchors . "\n</svg>\n";
 	}
 	/**
 	 * Legs, trousers or skirt and shoes for a posed character.

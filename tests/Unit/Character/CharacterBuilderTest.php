@@ -252,4 +252,32 @@ final class CharacterBuilderTest extends TestCase {
 		$this->assertGreaterThan( strpos( $front, '</g>' ), strrpos( $front, 'slot-skin' ), 'A front leg follows the body group.' );
 		$this->assertNotSame( $front, CharacterBuilder::svg( CharacterSpec::from_array( $base->to_array() + [ 'custom' => CharacterBuilder::pose( $base )['angles'] ] ) ) );
 	}
+	public function test_the_head_turns_the_torso_can_go_behind_and_a_foot_can_flip(): void {
+		$base   = CharacterSpec::from_array( [ 'stance' => 'standing' ] );
+		$angles = CharacterBuilder::pose( $base )['angles'];
+		$this->assertSame( 'front', $angles['order']['torso'] );
+		$this->assertSame( -1, $angles['legs']['l'][3] );
+
+		$front = CharacterBuilder::svg( CharacterSpec::from_array( $base->to_array() + [ 'custom' => $angles ] ) );
+
+		$turned        = $angles;
+		$turned['yaw'] = 90;
+		$profile       = CharacterBuilder::svg( CharacterSpec::from_array( $base->to_array() + [ 'custom' => $turned ] ) );
+		$this->assertNotSame( $front, $profile );
+		$this->assertStringContainsString( 'scale(', $profile );
+
+		$behind        = $angles;
+		$behind['yaw'] = 180;
+		$this->assertSame( 180.0, CharacterSpec::from_array( $base->to_array() + [ 'custom' => $behind ] )->custom['yaw'] );
+
+		$torso                   = $angles;
+		$torso['order']['torso'] = 'back';
+		$this->assertNotSame( $front, CharacterBuilder::svg( CharacterSpec::from_array( $base->to_array() + [ 'custom' => $torso ] ) ) );
+
+		$flip                 = $angles;
+		$flip['legs']['r'][3] = -1;
+		$flipped              = CharacterSpec::from_array( $base->to_array() + [ 'custom' => $flip ] );
+		$this->assertSame( -1, $flipped->custom['legs']['r'][3] );
+		$this->assertNotSame( $front, CharacterBuilder::svg( $flipped ) );
+	}
 }
