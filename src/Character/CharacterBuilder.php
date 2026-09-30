@@ -1053,10 +1053,32 @@ final class CharacterBuilder {
 			// The nose stands out against the edge of the face in a side view.
 			$out[] = '<ellipse class="slot-skin" cx="' . G::n( 80 + $dir * ( 13.6 * abs( sin( $rad ) ) + 1 ) ) . '" cy="29" rx="2.2" ry="2.8"/>';
 		}
-		$out[] = self::hair( $spec, true );
-		$out[] = self::headwear( $spec->get( 'headwear' ), $spec->get( 'headwear_color' ) );
+		// Hair and what is worn on the head turn with it, squashing less than the face.
+		$out[] = self::turned_group( self::hair( $spec, true ), $yaw, 6.0, 0.55 );
+		$out[] = self::turned_group( self::headwear( $spec->get( 'headwear' ), $spec->get( 'headwear_color' ) ), $yaw, 7.0, 0.5 );
 
 		return implode( "\n\t\t", array_filter( $out ) );
+	}
+
+	/**
+	 * Markup that turns with the head: shifted and squeezed sideways about the middle of the head. A back
+	 * view (beyond a side view) is drawn as it is.
+	 *
+	 * @param string $markup Markup.
+	 * @param float  $yaw    Head turn in degrees.
+	 * @param float  $reach  How far it slides sideways at a side view (negative slides the other way).
+	 * @param float  $floor  How narrow it gets at a side view, as a share of its front width.
+	 * @return string
+	 */
+	private static function turned_group( string $markup, float $yaw, float $reach, float $floor ): string {
+		if ( '' === $markup || abs( $yaw ) <= 1.0 || abs( $yaw ) > 100.0 ) {
+			return $markup;
+		}
+		$rad   = deg2rad( $yaw );
+		$scale = $floor + ( 1 - $floor ) * max( 0.0, cos( $rad ) );
+		$shift = 80.0 + $reach * sin( $rad ) - 80.0 * $scale;
+
+		return '<g transform="translate(' . G::n( $shift ) . ' 0) scale(' . G::n( $scale ) . ' 1)">' . $markup . '</g>';
 	}
 
 	/**
@@ -1491,7 +1513,8 @@ final class CharacterBuilder {
 		if ( 'backpack' === $spec->get( 'bag' ) ) {
 			$body[] = self::backpack( $spec, $rig );
 		}
-		$body[] = $head_wrap( self::hair( $spec, false ) );
+		$yaw    = (float) ( $st['yaw'] ?? 0 );
+		$body[] = $head_wrap( self::turned_group( self::hair( $spec, false ), $yaw, -4.0, 0.75 ) );
 		$body[] = '<path class="slot-skin-dark" d="M74 38 H86 V62 H74 Z"/>';
 		$body[] = self::torso( $spec, $rig );
 		$body[] = self::bag_over_torso( $spec, $rig );
