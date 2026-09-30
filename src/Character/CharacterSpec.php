@@ -16,12 +16,31 @@ namespace SprintIllustrations\Character;
 final class CharacterSpec {
 
 	public const STANCES = [
-		'standing' => 'Standing',
-		'sitting'  => 'Sitting',
+		'standing'  => 'Standing (upright)',
+		'walking'   => 'Walking',
+		'running'   => 'Running',
+		'leaning'   => 'Leaning',
+		'balancing' => 'Balancing on one leg',
+		'bending'   => 'Bending over',
+		'stooping'  => 'Stooping',
+		'squatting' => 'Squatting',
+		'crouching' => 'Crouching',
+		'kneeling'  => 'Kneeling',
+		'sitting'   => 'Sitting',
+		'sit_cross' => 'Sitting cross-legged',
+		'sit_legs'  => 'Sitting with legs out',
+		'reclining' => 'Reclining',
+		'all_fours' => 'Hands and knees',
+		'crawling'  => 'Crawling',
+		'climbing'  => 'Climbing',
+		'hanging'   => 'Hanging',
+		'supine'    => 'Lying face up',
+		'prone'     => 'Lying face down',
+		'side'      => 'Lying on one side',
+		'fetal'     => 'Curled up (fetal)',
 	];
-
-	public const POSES = [
-		'standing' => [
+	public const POSES   = [
+		'standing'  => [
 			'relaxed' => 'Relaxed',
 			'wave'    => 'Waving',
 			'phone'   => 'On the phone',
@@ -40,7 +59,7 @@ final class CharacterSpec {
 			'book'    => 'Reading a book',
 			'box'     => 'Carrying a box',
 		],
-		'sitting'  => [
+		'sitting'   => [
 			'lap'    => 'Hands in lap',
 			'typing' => 'Working',
 			'wave'   => 'Waving',
@@ -50,6 +69,92 @@ final class CharacterSpec {
 			'coffee' => 'With a coffee',
 			'cheer'  => 'Cheering',
 		],
+		'walking'   => [
+			'swing'  => 'Arms swinging',
+			'phone'  => 'On the phone',
+			'coffee' => 'With a coffee',
+			'tablet' => 'With a tablet',
+		],
+		'running'   => [ 'run' => 'Running arms' ],
+		'leaning'   => [
+			'relaxed' => 'Relaxed',
+			'pockets' => 'Hands in pockets',
+			'crossed' => 'Arms crossed',
+			'phone'   => 'On the phone',
+			'hip'     => 'Hand on hip',
+		],
+		'balancing' => [
+			'out'   => 'Arms out',
+			'cheer' => 'Cheering',
+		],
+		'bending'   => [
+			'hang'  => 'Arms hanging',
+			'reach' => 'Reaching down',
+		],
+		'stooping'  => [
+			'hang'  => 'Arms hanging',
+			'reach' => 'Reaching down',
+		],
+		'squatting' => [
+			'knees'   => 'Hands on knees',
+			'clasped' => 'Hands together',
+		],
+		'crouching' => [
+			'knees'   => 'Hands on knees',
+			'clasped' => 'Hands together',
+		],
+		'kneeling'  => [
+			'lap'   => 'Hands on lap',
+			'pray'  => 'Hands together',
+			'cheer' => 'Cheering',
+		],
+		'sit_cross' => [
+			'lap'    => 'Hands in lap',
+			'knees'  => 'Hands on knees',
+			'think'  => 'Thinking',
+			'book'   => 'Reading a book',
+			'coffee' => 'With a coffee',
+			'phone'  => 'On the phone',
+			'cheer'  => 'Cheering',
+		],
+		'sit_legs'  => [
+			'lap'   => 'Hands in lap',
+			'phone' => 'On the phone',
+			'book'  => 'Reading a book',
+			'think' => 'Thinking',
+		],
+		'reclining' => [
+			'relaxed' => 'Relaxed',
+			'lap'     => 'Hands in lap',
+			'book'    => 'Reading a book',
+			'phone'   => 'On the phone',
+		],
+		'all_fours' => [ 'hands' => 'Hands on the ground' ],
+		'crawling'  => [ 'crawl' => 'Crawling' ],
+		'climbing'  => [ 'climb' => 'Reaching up' ],
+		'hanging'   => [
+			'grip' => 'Both hands',
+			'one'  => 'One hand',
+		],
+		'supine'    => [
+			'rest'    => 'Arms by the sides',
+			'crossed' => 'Hands on chest',
+			'up'      => 'Arms overhead',
+		],
+		'prone'     => [
+			'rest' => 'Arms by the sides',
+			'up'   => 'Arms overhead',
+		],
+		'side'      => [
+			'rest'    => 'Arms by the sides',
+			'crossed' => 'Hands on chest',
+		],
+		'fetal'     => [ 'hug' => 'Hugging the knees' ],
+	];
+
+	public const SEATS = [
+		'chair' => 'On a chair',
+		'none'  => 'No chair',
 	];
 
 	public const LEGS = [
@@ -214,6 +319,7 @@ final class CharacterSpec {
 		return [
 			'stance'         => self::STANCES,
 			'pose'           => self::POSES[ isset( self::POSES[ $stance ] ) ? $stance : 'standing' ],
+			'seat'           => self::SEATS,
 			'legs'           => self::LEGS,
 			'build'          => self::BUILDS,
 			'top'            => self::TOPS,
@@ -247,6 +353,7 @@ final class CharacterSpec {
 		return [
 			'stance'         => 'standing',
 			'pose'           => 'relaxed',
+			'seat'           => 'chair',
 			'legs'           => 'straight',
 			'build'          => 'regular',
 			'top'            => 'tee',

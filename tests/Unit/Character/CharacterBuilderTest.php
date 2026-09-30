@@ -36,6 +36,17 @@ final class CharacterBuilderTest extends TestCase {
 				}
 			}
 		}
+		foreach ( array_keys( CharacterSpec::STANCES ) as $stance ) {
+			foreach ( array_keys( CharacterSpec::POSES[ $stance ] ) as $pose ) {
+				foreach ( [ 'trousers', 'shorts', 'skirt', 'midi', 'cropped' ] as $bottom ) {
+					$specs[ "$stance $pose $bottom" ] = [
+						'stance' => $stance,
+						'pose'   => $pose,
+						'bottom' => $bottom,
+					];
+				}
+			}
+		}
 		for ( $seed = 1; $seed <= 40; $seed++ ) {
 			$specs[ "shuffled $seed" ] = CharacterPresets::shuffled( $seed )->to_array();
 		}
@@ -142,5 +153,48 @@ final class CharacterBuilderTest extends TestCase {
 		foreach ( [ 'person', 'woman', 'man', 'standing', 'sitting' ] as $tag ) {
 			$this->assertSame( [ $tag ], $keywords->tokenize( $tag ), $tag );
 		}
+	}
+	public function test_every_stance_and_pose_fits_inside_its_canvas(): void {
+		foreach ( array_keys( CharacterSpec::STANCES ) as $stance ) {
+			foreach ( array_keys( CharacterSpec::POSES[ $stance ] ) as $pose ) {
+				foreach ( array_keys( CharacterSpec::BUILDS ) as $build ) {
+					$extent = CharacterBuilder::extent(
+						CharacterSpec::from_array(
+							[
+								'stance' => $stance,
+								'pose'   => $pose,
+								'build'  => $build,
+							]
+						)
+					);
+					if ( null === $extent ) {
+						continue;
+					}
+					[ $w, $h ] = $extent['vb'];
+					foreach ( $extent['points'] as [ $x, $y ] ) {
+						$this->assertGreaterThanOrEqual( 2, $x, "$stance $pose $build x" );
+						$this->assertLessThanOrEqual( $w - 2, $x, "$stance $pose $build x" );
+						$this->assertGreaterThanOrEqual( 2, $y, "$stance $pose $build y" );
+						$this->assertLessThanOrEqual( $h - 2, $y, "$stance $pose $build y" );
+					}
+				}
+			}
+		}
+	}
+
+	public function test_sitting_without_a_chair_leaves_the_chair_out(): void {
+		$with    = CharacterBuilder::svg( CharacterSpec::from_array( [ 'stance' => 'sitting' ] ) );
+		$without = CharacterBuilder::svg(
+			CharacterSpec::from_array(
+				[
+					'stance' => 'sitting',
+					'seat'   => 'none',
+				]
+			)
+		);
+
+		$this->assertStringContainsString( 'slot-neutral-light" x="34"', $with );
+		$this->assertStringNotContainsString( 'slot-neutral-light" x="34"', $without );
+		$this->assertStringContainsString( 'viewBox="0 0 200 300"', $without );
 	}
 }

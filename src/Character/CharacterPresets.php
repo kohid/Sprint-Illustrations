@@ -253,9 +253,24 @@ final class CharacterPresets {
 			return (string) $keys[ $random->int( 0, count( $keys ) - 1 ) ];
 		};
 
-		$stance = 0 === $random->int( 0, 3 ) ? 'sitting' : 'standing';
-		$gender = isset( CharacterSpec::GENDERS[ $gender ] ) ? $gender : 'any';
-		$chosen = [
+		// Everyday stances come up most; every other stance is on offer too.
+		$stances = array_merge(
+			array_fill( 0, 5, 'standing' ),
+			array_fill( 0, 3, 'sitting' ),
+			[ 'walking', 'walking' ],
+			array_keys(
+				array_diff_key(
+					CharacterSpec::STANCES,
+					[
+						'standing' => 1,
+						'sitting'  => 1,
+					]
+				)
+			)
+		);
+		$stance  = $stances[ $random->int( 0, count( $stances ) - 1 ) ];
+		$gender  = isset( CharacterSpec::GENDERS[ $gender ] ) ? $gender : 'any';
+		$chosen  = [
 			'stance' => $stance,
 			'gender' => $gender,
 		];

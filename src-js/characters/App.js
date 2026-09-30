@@ -35,7 +35,8 @@ const TABS = [
 const ROWS = {
 	start: [ [ 'gender', __( 'Character', 'sprint-illustrations' ) ] ],
 	pose: [
-		[ 'stance', __( 'Standing or sitting', 'sprint-illustrations' ) ],
+		[ 'stance', __( 'Body position', 'sprint-illustrations' ) ],
+		[ 'seat', __( 'Seat', 'sprint-illustrations' ) ],
 		[ 'pose', __( 'Pose', 'sprint-illustrations' ) ],
 		[ 'legs', __( 'Legs', 'sprint-illustrations' ) ],
 	],
@@ -202,7 +203,13 @@ export default function App() {
 	}, [ specKey, palette ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Thumbnails for the rows of the open tab.
-	const rows = ROWS[ tab ] || [];
+	// The seat only matters when sitting on a chair, the leg stance only when standing.
+	const rows = ( ROWS[ tab ] || [] ).filter( ( [ name ] ) => {
+		if ( 'seat' === name ) {
+			return 'sitting' === spec?.stance;
+		}
+		return 'legs' !== name || 'standing' === spec?.stance;
+	} );
 	const rowKey = rows.map( ( row ) => row[ 0 ] ).join( ',' );
 	useEffect( () => {
 		if ( ! spec || ! rows.length ) {

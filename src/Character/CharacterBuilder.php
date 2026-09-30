@@ -218,6 +218,115 @@ final class CharacterBuilder {
 	];
 
 	/**
+	 * Arm poses for the other stances. `screen` poses give screen angles (0 down, 90 right, 180 up), which
+	 * are turned into angles relative to the leaning or lying body when the figure is drawn.
+	 */
+	private const NEW_ARMS = [
+		'swing' => [
+			'l'    => [ 12, -22 ],
+			'r'    => [ 28, 34 ],
+			'free' => 'l',
+			'over' => false,
+		],
+		'run'   => [
+			'screen' => true,
+			'l'      => [ -40, -140 ],
+			'r'      => [ 35, 150 ],
+			'free'   => 'l',
+			'over'   => false,
+		],
+		'out'   => [
+			'screen' => true,
+			'l'      => [ -95, -92 ],
+			'r'      => [ 95, 92 ],
+			'free'   => 'l',
+			'over'   => false,
+		],
+		'hang'  => [
+			'screen' => true,
+			'l'      => [ -4, -3 ],
+			'r'      => [ 4, 3 ],
+			'free'   => 'l',
+			'over'   => false,
+		],
+		'reach' => [
+			'screen' => true,
+			'l'      => [ 8, 5 ],
+			'r'      => [ 28, 14 ],
+			'free'   => 'l',
+			'over'   => false,
+		],
+		'knees' => [
+			'screen' => true,
+			'l'      => [ -38, -22 ],
+			'r'      => [ 38, 22 ],
+			'free'   => 'l',
+			'over'   => true,
+		],
+		'pray'  => [
+			'l'    => [ 8, -120 ],
+			'r'    => [ 8, -120 ],
+			'free' => 'r',
+			'over' => true,
+		],
+		'climb' => [
+			'screen' => true,
+			'l'      => [ -160, -176 ],
+			'r'      => [ 125, 165 ],
+			'free'   => 'r',
+			'over'   => false,
+		],
+		'grip'  => [
+			'screen' => true,
+			'l'      => [ -172, -178 ],
+			'r'      => [ 172, 178 ],
+			'free'   => 'r',
+			'over'   => false,
+		],
+		'one'   => [
+			'screen' => true,
+			'l'      => [ -175, -180 ],
+			'r'      => [ 6, 4 ],
+			'free'   => 'r',
+			'over'   => false,
+		],
+		'rest'  => [
+			'screen' => true,
+			'l'      => [ 90, 92 ],
+			'r'      => [ 90, 92 ],
+			'free'   => 'l',
+			'over'   => false,
+		],
+		'up'    => [
+			'screen' => true,
+			'l'      => [ -88, -90 ],
+			'r'      => [ -88, -90 ],
+			'free'   => 'l',
+			'over'   => false,
+		],
+		'hands' => [
+			'screen' => true,
+			'l'      => [ -2, -1 ],
+			'r'      => [ 2, 1 ],
+			'free'   => 'l',
+			'over'   => false,
+		],
+		'crawl' => [
+			'screen' => true,
+			'l'      => [ -4, -2 ],
+			'r'      => [ 32, 18 ],
+			'free'   => 'r',
+			'over'   => false,
+		],
+		'hug'   => [
+			'screen' => true,
+			'l'      => [ 55, 80 ],
+			'r'      => [ 60, 85 ],
+			'free'   => 'l',
+			'over'   => true,
+		],
+	];
+	/**
 	 * The piece as an SVG string, ready for the library (anchors are markers the manifest builder removes).
 	 *
 	 * @param CharacterSpec $spec   Choices.
@@ -227,6 +336,10 @@ final class CharacterBuilder {
 	 * @return string
 	 */
 	public static function svg( CharacterSpec $spec, string $label = 'Character', array $tags = [ 'person' ], string $person = '' ): string {
+		if ( null !== Stances::get( $spec->get( 'stance' ) ) ) {
+			return self::posed( $spec, $label, $tags, $person );
+		}
+
 		$sitting = 'sitting' === $spec->get( 'stance' );
 		$rig     = self::rig( $spec );
 		$dy      = $sitting ? self::SEAT_SHIFT : 0;
@@ -328,16 +441,8 @@ final class CharacterBuilder {
 		$build['sh'] += $shape[0];
 		$build['wa'] += $shape[1];
 		$build['hi'] += $shape[2];
-		// Body shape: women a little narrower at the shoulder and fuller at the hip, men the other way.
-		$shape        = [
-			'woman' => [ -1.5, -1.0, 1.5 ],
-			'man'   => [ 1.5, 0.5, -1.0 ],
-		][ $spec->get( 'gender' ) ] ?? [ 0.0, 0.0, 0.0 ];
-		$build['sh'] += $shape[0];
-		$build['wa'] += $shape[1];
-		$build['hi'] += $shape[2];
 		$sitting      = 'sitting' === $spec->get( 'stance' );
-		$pose         = self::POSES[ $spec->get( 'stance' ) ][ $spec->get( 'pose' ) ];
+		$pose         = self::arm_pose( $spec->get( 'stance' ), $spec->get( 'pose' ) );
 		$cx           = self::CX;
 
 		$shoulder = [
@@ -360,6 +465,7 @@ final class CharacterBuilder {
 			'wrist'    => $wrist,
 			'pose'     => $pose,
 			'sitting'  => $sitting,
+			'carry'    => in_array( $spec->get( 'stance' ), [ 'standing', 'walking', 'leaning' ], true ),
 		];
 	}
 
@@ -503,8 +609,10 @@ final class CharacterBuilder {
 		$cx  = self::CX;
 		$out = [];
 
-		$out[] = '<rect class="slot-neutral-light" x="34" y="' . ( 190 + 4 ) . '" width="92" height="88" rx="10"/>';
-		$out[] = '<path class="slot-outline" d="M42 ' . ( 190 + 20 ) . ' H118" fill="none" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+		if ( 'none' !== $spec->get( 'seat' ) ) {
+			$out[] = '<rect class="slot-neutral-light" x="34" y="' . ( 190 + 4 ) . '" width="92" height="88" rx="10"/>';
+			$out[] = '<path class="slot-outline" d="M42 ' . ( 190 + 20 ) . ' H118" fill="none" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+		}
 
 		$legs = [
 			[ [ $cx + 2, 192.0 ], [ 138.0, 192.0 ], [ 140.0, 268.0 ] ],
@@ -817,7 +925,7 @@ final class CharacterBuilder {
 		}//end if
 
 		$bag = $spec->get( 'bag' );
-		if ( in_array( $bag, [ 'tote', 'briefcase' ], true ) && ! $rig['sitting'] ) {
+		if ( in_array( $bag, [ 'tote', 'briefcase' ], true ) && $rig['carry'] ) {
 			// Hangs from the lowest relaxed hand.
 			$side = $rig['wrist']['l'][1] >= $rig['wrist']['r'][1] ? 'l' : 'r';
 			$w    = $rig['wrist'][ $side ];
@@ -879,18 +987,21 @@ final class CharacterBuilder {
 	 * Head: ears, face shape, features, hair, headwear, glasses.
 	 *
 	 * @param CharacterSpec $spec Spec.
+	 * @param bool          $back Seen from behind (face down): hair covers the face.
 	 * @return string
 	 */
-	private static function head( CharacterSpec $spec ): string {
+	private static function head( CharacterSpec $spec, bool $back = false ): string {
 		$out   = [];
 		$out[] = '<ellipse class="slot-skin" cx="65.5" cy="28" rx="2.8" ry="4.2"/><ellipse class="slot-skin" cx="94.5" cy="28" rx="2.8" ry="4.2"/>';
 		$out[] = '<ellipse class="slot-skin" cx="80" cy="26" rx="14.5" ry="18"/>';
-		if ( 'simple' === $spec->get( 'face' ) ) {
+		if ( $back ) {
+			$out[] = '<ellipse class="' . ( 'bald' === $spec->get( 'hair' ) ? 'slot-skin' : 'slot-hair' ) . '" cx="80" cy="25" rx="14.8" ry="17.6"/>';
+		} elseif ( 'simple' === $spec->get( 'face' ) ) {
 			$out[] = '<ellipse class="slot-neutral-dark" cx="74.4" cy="27" rx="1.3" ry="1.7"/><ellipse class="slot-neutral-dark" cx="85.6" cy="27" rx="1.3" ry="1.7"/><path class="slot-stroke-skin-dark" d="M80 28.5 Q82 32 79.4 33.2" fill="none" stroke-width="1.2" stroke-linecap="round"/><path class="slot-stroke-skin-dark" d="M76.6 37 Q80 39.6 83.4 37" fill="none" stroke-width="1.4" stroke-linecap="round"/>';
 		}
-		$out[] = self::facial_hair( $spec->get( 'facial_hair' ) );
+		$out[] = $back ? '' : self::facial_hair( $spec->get( 'facial_hair' ) );
 		$out[] = self::hair( $spec, true );
-		$out[] = self::glasses( $spec->get( 'glasses' ) );
+		$out[] = $back ? '' : self::glasses( $spec->get( 'glasses' ) );
 		$out[] = self::headwear( $spec->get( 'headwear' ), $spec->get( 'headwear_color' ) );
 
 		return implode( "\n\t\t", array_filter( $out ) );
@@ -1003,5 +1114,265 @@ final class CharacterBuilder {
 		unset( $spec );
 
 		return '<circle id="anchor-hold" cx="' . G::n( $hold[0] ) . '" cy="' . G::n( $hold[1] ) . '" r="3"/>' . "\n\t" . '<circle id="anchor-ground" cx="' . G::n( $ground[0] ) . '" cy="' . G::n( $ground[1] ) . '" r="3"/>';
+	}
+	// ---------------------------------------------------------------- other stances.
+
+	/**
+	 * Arm angles for a stance and pose, relative to the torso.
+	 *
+	 * @param string $stance Stance.
+	 * @param string $pose   Pose.
+	 * @return array<string, mixed>
+	 */
+	private static function arm_pose( string $stance, string $pose ): array {
+		$st     = Stances::get( $stance );
+		$family = null === $st ? $stance : (string) $st['family'];
+		$entry  = self::POSES[ $stance ][ $pose ]
+			?? self::NEW_ARMS[ $pose ]
+			?? self::POSES[ $family ][ $pose ]
+			?? self::POSES['standing'][ $pose ]
+			?? self::POSES['sitting'][ $pose ]
+			?? self::POSES['standing']['relaxed'];
+
+		if ( ! empty( $entry['screen'] ) && null !== $st ) {
+			$theta = (float) $st['theta'];
+			foreach ( [ 'l', 'r' ] as $side ) {
+				$sign           = 'r' === $side ? 1 : -1;
+				$entry[ $side ] = [
+					$sign * ( $entry[ $side ][0] + $theta ),
+					$sign * ( $entry[ $side ][1] + $theta ),
+				];
+			}
+		}
+
+		return $entry;
+	}
+
+	/**
+	 * A point of the upper body (drawn upright about the hips) after the body is turned and moved.
+	 *
+	 * @param array{0: float|int, 1: float|int} $p     Point in the upright drawing.
+	 * @param float                             $theta Turn in degrees (clockwise).
+	 * @param float                             $dx    Shift right.
+	 * @param float                             $dy    Shift down.
+	 * @return array{0: float, 1: float}
+	 */
+	private static function turned( array $p, float $theta, float $dx, float $dy ): array {
+		$rad = deg2rad( $theta );
+		$x   = (float) $p[0] - 80.0;
+		$y   = (float) $p[1] - 152.0;
+
+		return [
+			80.0 + $dx + $x * cos( $rad ) - $y * sin( $rad ),
+			152.0 + $dy + $x * sin( $rad ) + $y * cos( $rad ),
+		];
+	}
+
+	/**
+	 * Where everything of a posed (not standing or seated on a chair) character is: legs, hands, the ground.
+	 *
+	 * @param CharacterSpec $spec Spec.
+	 * @return array<string, mixed>
+	 */
+	private static function layout( CharacterSpec $spec ): array {
+		$st      = (array) Stances::get( $spec->get( 'stance' ) );
+		$rig     = self::rig( $spec );
+		$theta   = (float) $st['theta'];
+		$dx      = (float) $st['dx'];
+		[ , $h ] = $st['vb'];
+
+		$place = static function ( float $dy ) use ( $st, $rig, $theta, $dx ): array {
+			$legs = [];
+			foreach ( [ 'l', 'r' ] as $side ) {
+				$def           = $st['legs'][ $side ] + [
+					4 => 74.0,
+					5 => 72.0,
+					6 => 0.0,
+				];
+				$hip           = self::turned( [ 'l' === $side ? 71.5 : 88.5, 152.0 ], $theta, $dx, $dy );
+				$hip[1]       += (float) $def[6];
+				$knee          = G::reach( $hip, (float) $def[4], (float) $def[0], 'r' );
+				$ankle         = G::reach( $knee, (float) $def[5], (float) $def[1], 'r' );
+				$legs[ $side ] = [
+					'hip'   => $hip,
+					'knee'  => $knee,
+					'ankle' => $ankle,
+					'toe'   => (float) $def[2],
+					'dir'   => (int) $def[3],
+				];
+			}
+			$wrists = [];
+			foreach ( [ 'l', 'r' ] as $side ) {
+				$wrists[ $side ] = self::turned( $rig['wrist'][ $side ], $theta, $dx, $dy );
+			}
+
+			return [ $legs, $wrists ];
+		};
+
+		[ $legs, $wrists ] = $place( 0.0 );
+		$dy                = 0.0;
+		if ( isset( $st['dy'] ) ) {
+			$dy = (float) $st['dy'];
+		} else {
+			$lowest = 0.0;
+			foreach ( $st['contact'] as [ $part, $margin ] ) {
+				foreach ( [ 'l', 'r' ] as $side ) {
+					$y = match ( $part ) {
+						'ankle'   => $legs[ $side ]['ankle'][1],
+						'knee'    => $legs[ $side ]['knee'][1],
+						'hip'     => $legs[ $side ]['hip'][1],
+						'hipside' => $legs[ $side ]['hip'][1],
+						'wrist'   => $wrists[ $side ][1],
+						default   => 0.0,
+					};
+					$lowest = max( $lowest, $y + (float) $margin );
+				}
+			}
+			$dy = (float) $h - 11.0 - $lowest;
+		}
+		[ $legs, $wrists ] = $place( $dy );
+
+		$free   = (string) $rig['pose']['free'];
+		$points = [ self::turned( [ 80.0, 26.0 ], $theta, $dx, $dy ), self::turned( [ 80.0, 4.0 ], $theta, $dx, $dy ) ];
+		foreach ( [ 'l', 'r' ] as $side ) {
+			$points[] = $legs[ $side ]['hip'];
+			$points[] = $legs[ $side ]['knee'];
+			$points[] = [ $legs[ $side ]['ankle'][0] + 12 * $legs[ $side ]['dir'], $legs[ $side ]['ankle'][1] + 10.5 ];
+			$points[] = $legs[ $side ]['ankle'];
+			$points[] = $wrists[ $side ];
+			$points[] = self::turned( $rig['shoulder'][ $side ], $theta, $dx, $dy );
+		}
+		$xs = array_column( $points, 0 );
+
+		return [
+			'dy'     => $dy,
+			'legs'   => $legs,
+			'wrists' => $wrists,
+			'points' => $points,
+			'hold'   => $wrists[ $free ],
+			'ground' => [ ( min( $xs ) + max( $xs ) ) / 2, (float) $h - 11.0 ],
+			'span'   => max( $xs ) - min( $xs ),
+		];
+	}
+
+	/**
+	 * The canvas and the key points (head, shoulders, hips, knees, feet, hands) of a posed character, for
+	 * checking that everything fits. Null for standing and sitting on a chair.
+	 *
+	 * @param CharacterSpec $spec Spec.
+	 * @return array{vb: array{0: int, 1: int}, points: array<int, array{0: float, 1: float}>}|null
+	 */
+	public static function extent( CharacterSpec $spec ): ?array {
+		$st = Stances::get( $spec->get( 'stance' ) );
+		if ( null === $st ) {
+			return null;
+		}
+
+		return [
+			'vb'     => $st['vb'],
+			'points' => self::layout( $spec )['points'],
+		];
+	}
+
+	/**
+	 * A character in one of the other body positions.
+	 *
+	 * @param CharacterSpec $spec   Spec.
+	 * @param string        $label  Label.
+	 * @param array<string> $tags   Tags.
+	 * @param string        $person Person.
+	 * @return string
+	 */
+	private static function posed( CharacterSpec $spec, string $label, array $tags, string $person ): string {
+		$st        = (array) Stances::get( $spec->get( 'stance' ) );
+		$rig       = self::rig( $spec );
+		$lay       = self::layout( $spec );
+		$theta     = (float) $st['theta'];
+		$tilt      = (float) ( $st['head'] ?? 0 );
+		$back      = ! empty( $st['back'] );
+		[ $w, $h ] = $st['vb'];
+		$bottom    = 'dress' === $spec->get( 'top' ) ? 'skirt' : $spec->get( 'bottom' );
+		$colour    = 'dress' === $spec->get( 'top' ) ? $spec->get( 'top_color' ) : $spec->get( 'bottom_color' );
+		$hi        = (float) $rig['hi'];
+		$cx        = self::CX;
+
+		$head_wrap = static fn( string $markup ): string => 0.0 === $tilt ? $markup : '<g transform="rotate(' . G::n( $tilt ) . ' 80 50)">' . $markup . '</g>';
+
+		$upper   = [];
+		$upper[] = '<path class="' . self::f( $colour ) . '" d="' . G::closed( [ [ $cx - $hi, 136 ], [ $cx - $hi + 1, 150 ], [ $cx - 4, 162 ], [ $cx + 4, 162 ], [ $cx + $hi - 1, 150 ], [ $cx + $hi, 136 ], [ $cx, 128 ] ] ) . '"/>';
+		if ( 'backpack' === $spec->get( 'bag' ) ) {
+			$upper[] = self::backpack( $spec, $rig );
+		}
+		$upper[] = $head_wrap( self::hair( $spec, false ) );
+		$upper[] = '<path class="slot-skin-dark" d="M74 38 H86 V62 H74 Z"/>';
+		$upper[] = self::torso( $spec, $rig );
+		$upper[] = self::bag_over_torso( $spec, $rig );
+		$upper[] = self::arms( $spec, $rig );
+		$upper[] = self::carried( $spec, $rig );
+		$upper[] = $head_wrap( self::head( $spec, $back ) );
+
+		$shadow = '<ellipse class="slot-neutral" cx="' . G::n( $lay['ground'][0] ) . '" cy="' . G::n( $h - 9 ) . '" rx="' . G::n( min( 92.0, max( 34.0, $lay['span'] * 0.45 ) ) ) . '" ry="5" opacity="0.12"/>';
+
+		$attributes = sprintf(
+			'xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %1$d %2$d" data-si-label="%3$s" data-si-tags="%4$s" data-si-accepts="%5$s"%6$s',
+			$w,
+			$h,
+			htmlspecialchars( $label, ENT_QUOTES | ENT_XML1, 'UTF-8' ),
+			htmlspecialchars( implode( ',', $tags ), ENT_QUOTES | ENT_XML1, 'UTF-8' ),
+			'lap' === $st['accepts'] ? 'hold:lap' : 'hold:handheld',
+			'' !== $person ? ' data-si-person="' . htmlspecialchars( $person, ENT_QUOTES | ENT_XML1, 'UTF-8' ) . '"' : ''
+		);
+
+		$group = '<g transform="translate(' . G::n( (float) $st['dx'] ) . ' ' . G::n( $lay['dy'] ) . ') rotate(' . G::n( $theta ) . ' 80 152)">' . "\n\t\t" . implode( "\n\t\t", array_filter( $upper ) ) . "\n\t</g>";
+
+		$anchors = '<circle id="anchor-hold" cx="' . G::n( $lay['hold'][0] ) . '" cy="' . G::n( $lay['hold'][1] ) . '" r="3"/>' . "\n\t" . '<circle id="anchor-ground" cx="' . G::n( $lay['ground'][0] ) . '" cy="' . G::n( $lay['ground'][1] ) . '" r="3"/>';
+
+		return '<svg ' . $attributes . ">\n\t" . $shadow . "\n\t" . self::posed_legs( $spec, $rig, $lay, $bottom, $colour ) . "\n\t" . $group . "\n\t" . $anchors . "\n</svg>\n";
+	}
+
+	/**
+	 * Legs, trousers or skirt and shoes for a posed character.
+	 *
+	 * @param CharacterSpec        $spec   Spec.
+	 * @param array<string, mixed> $rig    Rig.
+	 * @param array<string, mixed> $lay    Layout.
+	 * @param string               $bottom Bottom style.
+	 * @param string               $colour Bottom colour token.
+	 * @return string
+	 */
+	private static function posed_legs( CharacterSpec $spec, array $rig, array $lay, string $bottom, string $colour ): string {
+		$bare    = in_array( $bottom, [ 'shorts', 'skirt', 'midi' ], true );
+		$thigh   = 15.0 + ( (float) $rig['hi'] - 20.5 ) * 0.5;
+		$knee_w  = 'slim' === $bottom ? 11.0 : 13.0;
+		$ankle_w = 'slim' === $bottom ? 8.5 : ( 'trousers' === $bottom ? 11.5 : 9.0 );
+		$fill    = self::f( $colour );
+		$mix     = static fn( array $a, array $b, float $t ): array => [ $a[0] + ( $b[0] - $a[0] ) * $t, $a[1] + ( $b[1] - $a[1] ) * $t ];
+		$out     = [];
+
+		foreach ( [ 'l', 'r' ] as $side ) {
+			$leg   = $lay['legs'][ $side ];
+			$hip   = $leg['hip'];
+			$knee  = $leg['knee'];
+			$ankle = $leg['ankle'];
+
+			$out[] = '<path class="slot-skin" d="' . G::limb( $hip, $knee, $thigh, 11 ) . '"/><path class="slot-skin" d="' . G::limb( $knee, $ankle, 10, 7 ) . '"/>';
+			if ( 'shorts' === $bottom ) {
+				$out[] = '<path class="' . $fill . '" d="' . G::limb( $hip, $mix( $hip, $knee, 0.85 ), $thigh - 0.5, $thigh - 0.5 ) . '"/>';
+			} elseif ( ! $bare ) {
+				$end   = 'cropped' === $bottom ? $mix( $knee, $ankle, 0.7 ) : $ankle;
+				$out[] = '<path class="' . $fill . '" d="' . G::limb( $hip, $knee, $thigh + 1.5, $knee_w ) . '"/><path class="' . $fill . '" d="' . G::limb( $knee, $end, $knee_w, $ankle_w ) . '"/>';
+			} else {
+				$out[] = '<path class="' . $fill . '" d="' . G::limb( $hip, $mix( $hip, $knee, 0.92 ), 21, 18 ) . '"/>';
+				if ( 'midi' === $bottom ) {
+					$out[] = '<path class="' . $fill . '" d="' . G::limb( $mix( $hip, $knee, 0.9 ), $mix( $knee, $ankle, 0.3 ), 18, 15 ) . '"/>';
+				}
+			}
+
+			$shoe  = self::shoe( $spec, $ankle, (int) $leg['dir'] );
+			$rot   = $leg['toe'] * $leg['dir'];
+			$out[] = abs( $rot ) > 0.5 ? '<g transform="rotate(' . G::n( $rot ) . ' ' . G::n( $ankle[0] ) . ' ' . G::n( $ankle[1] ) . ')">' . $shoe . '</g>' : $shoe;
+		}//end foreach
+
+		return implode( "\n\t", $out );
 	}
 }

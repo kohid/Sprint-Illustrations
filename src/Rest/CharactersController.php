@@ -27,7 +27,35 @@ final class CharactersController {
 	/**
 	 * Fields a thumbnail row can be made for.
 	 */
-	private const VARIANT_FIELDS = [ 'stance', 'pose', 'legs', 'build', 'top', 'outer', 'bottom', 'shoes', 'hair', 'headwear', 'face', 'glasses', 'facial_hair', 'bag', 'extra', 'gender' ];
+	/**
+	 * Single-word tags each stance adds to a saved character.
+	 */
+	private const STANCE_TAGS = [
+		'standing'  => [ 'standing' ],
+		'walking'   => [ 'walking' ],
+		'running'   => [ 'running' ],
+		'leaning'   => [ 'leaning' ],
+		'balancing' => [ 'balancing' ],
+		'bending'   => [ 'bending' ],
+		'stooping'  => [ 'stooping' ],
+		'squatting' => [ 'squatting' ],
+		'crouching' => [ 'crouching' ],
+		'kneeling'  => [ 'kneeling' ],
+		'sitting'   => [ 'sitting' ],
+		'sit_cross' => [ 'sitting', 'floor' ],
+		'sit_legs'  => [ 'sitting', 'floor' ],
+		'reclining' => [ 'reclining', 'resting' ],
+		'all_fours' => [ 'crawling', 'kneeling' ],
+		'crawling'  => [ 'crawling' ],
+		'climbing'  => [ 'climbing' ],
+		'hanging'   => [ 'hanging' ],
+		'supine'    => [ 'lying', 'resting' ],
+		'prone'     => [ 'lying', 'prone' ],
+		'side'      => [ 'lying', 'resting' ],
+		'fetal'     => [ 'lying', 'curled' ],
+	];
+
+	private const VARIANT_FIELDS = [ 'stance', 'pose', 'legs', 'build', 'top', 'outer', 'bottom', 'shoes', 'hair', 'headwear', 'face', 'glasses', 'facial_hair', 'bag', 'extra', 'gender', 'seat' ];
 
 	/**
 	 * Constructor.
@@ -79,10 +107,7 @@ final class CharactersController {
 		foreach ( CharacterSpec::options() as $field => $allowed ) {
 			$fields[ $field ] = self::list( $allowed );
 		}
-		$fields['pose'] = [
-			'standing' => self::list( CharacterSpec::POSES['standing'] ),
-			'sitting'  => self::list( CharacterSpec::POSES['sitting'] ),
-		];
+		$fields['pose'] = array_map( [ self::class, 'list' ], CharacterSpec::POSES );
 
 		return new \WP_REST_Response(
 			[
@@ -251,9 +276,9 @@ final class CharactersController {
 	 * @return array<string>
 	 */
 	private function tags( CharacterSpec $spec, array $typed ): array {
-		$auto = [ 'person', $spec->get( 'stance' ) ];
 		$auto = array_merge(
-			$auto,
+			[ 'person' ],
+			self::STANCE_TAGS[ $spec->get( 'stance' ) ] ?? [ 'standing' ],
 			match ( $spec->get( 'pose' ) ) {
 				'wave'    => [ 'waving', 'hello' ],
 				'point'   => [ 'pointing' ],
