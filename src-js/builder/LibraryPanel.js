@@ -9,6 +9,16 @@ import { MAX_ITEMS } from './state';
 
 export const DRAG_TYPE = 'application/x-si-piece';
 
+const GROUPS = [
+	{ value: 'characters', label: __( 'Characters', 'sprint-illustrations' ) },
+	{ value: 'objects', label: __( 'Objects', 'sprint-illustrations' ) },
+	{
+		value: 'backgrounds',
+		label: __( 'Backgrounds', 'sprint-illustrations' ),
+	},
+	{ value: 'decor', label: __( 'Decor', 'sprint-illustrations' ) },
+];
+
 const CATEGORIES = [
 	{ value: '', label: __( 'All categories', 'sprint-illustrations' ) },
 	{ value: 'characters', label: __( 'Characters', 'sprint-illustrations' ) },
@@ -34,7 +44,13 @@ function matches( piece, words ) {
 	return words.every( ( word ) => text.includes( word ) );
 }
 
-export default function LibraryPanel( { pieces, count, onAdd, onDrag } ) {
+export default function LibraryPanel( {
+	pieces,
+	count,
+	onAdd,
+	onDrag,
+	charactersUrl,
+} ) {
 	const [ search, setSearch ] = useState( '' );
 	const [ category, setCategory ] = useState( '' );
 	const full = count >= MAX_ITEMS;
@@ -47,6 +63,12 @@ export default function LibraryPanel( { pieces, count, onAdd, onDrag } ) {
 				matches( piece, words )
 		);
 	}, [ pieces, search, category ] );
+
+	// Headings inside the collection: one section per category that has matching pieces.
+	const groups = GROUPS.map( ( group ) => ( {
+		...group,
+		pieces: list.filter( ( piece ) => piece.category === group.value ),
+	} ) ).filter( ( group ) => group.pieces.length );
 
 	return (
 		<div className="si-b-library">
@@ -85,54 +107,91 @@ export default function LibraryPanel( { pieces, count, onAdd, onDrag } ) {
 					  ) }
 			</p>
 			{ list.length ? (
-				<div className="si-b-library__grid">
-					{ list.map( ( piece ) => (
-						// A div, not a <button>: Firefox won't start a drag from a button.
-						<div
-							role="button"
-							tabIndex={ full ? -1 : 0 }
-							key={ piece.id }
-							className="si-b-piece si-b-library__piece"
-							draggable={ ! full }
-							aria-disabled={ full }
-							onClick={ () => ! full && onAdd( piece ) }
-							onKeyDown={ ( event ) => {
-								if (
-									! full &&
-									( 'Enter' === event.key ||
-										' ' === event.key )
-								) {
-									event.preventDefault();
-									onAdd( piece );
-								}
-							} }
-							onDragStart={ ( event ) => {
-								event.dataTransfer.setData(
-									DRAG_TYPE,
-									piece.id
-								);
-								event.dataTransfer.effectAllowed = 'copy';
-								onDrag( piece );
-							} }
-							onDragEnd={ () => onDrag( null ) }
-							title={ piece.label }
+				<div className="si-b-library__scroll">
+					{ groups.map( ( group ) => (
+						<section
+							key={ group.value }
+							className="si-b-library__group"
+							aria-labelledby={ `si-b-lib-${ group.value }` }
 						>
-							{ piece.custom && (
-								<span className="si-b-badge">
-									{ __( 'Custom', 'sprint-illustrations' ) }
+							<h3
+								className="si-b-library__heading"
+								id={ `si-b-lib-${ group.value }` }
+							>
+								{ group.label }{ ' ' }
+								<span className="si-b-library__n">
+									{ group.pieces.length }
 								</span>
-							) }
-							<span
-								className="si-b-piece__art"
-								// Sanitized server-side (piece previews).
-								dangerouslySetInnerHTML={ {
-									__html: piece.preview,
-								} }
-							/>
-							<span className="si-b-piece__label">
-								{ piece.label }
-							</span>
-						</div>
+								{ 'characters' === group.value &&
+									charactersUrl && (
+										<a
+											className="si-b-library__link"
+											href={ charactersUrl }
+										>
+											{ __(
+												'Build a character',
+												'sprint-illustrations'
+											) }
+										</a>
+									) }
+							</h3>
+							<div className="si-b-library__grid">
+								{ group.pieces.map( ( piece ) => (
+									// A div, not a <button>: Firefox won't start a drag from a button.
+									<div
+										role="button"
+										tabIndex={ full ? -1 : 0 }
+										key={ piece.id }
+										className="si-b-piece si-b-library__piece"
+										draggable={ ! full }
+										aria-disabled={ full }
+										onClick={ () =>
+											! full && onAdd( piece )
+										}
+										onKeyDown={ ( event ) => {
+											if (
+												! full &&
+												( 'Enter' === event.key ||
+													' ' === event.key )
+											) {
+												event.preventDefault();
+												onAdd( piece );
+											}
+										} }
+										onDragStart={ ( event ) => {
+											event.dataTransfer.setData(
+												DRAG_TYPE,
+												piece.id
+											);
+											event.dataTransfer.effectAllowed =
+												'copy';
+											onDrag( piece );
+										} }
+										onDragEnd={ () => onDrag( null ) }
+										title={ piece.label }
+									>
+										{ piece.custom && (
+											<span className="si-b-badge">
+												{ __(
+													'Custom',
+													'sprint-illustrations'
+												) }
+											</span>
+										) }
+										<span
+											className="si-b-piece__art"
+											// Sanitized server-side (piece previews).
+											dangerouslySetInnerHTML={ {
+												__html: piece.preview,
+											} }
+										/>
+										<span className="si-b-piece__label">
+											{ piece.label }
+										</span>
+									</div>
+								) ) }
+							</div>
+						</section>
 					) ) }
 				</div>
 			) : (

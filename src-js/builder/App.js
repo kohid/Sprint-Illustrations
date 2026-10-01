@@ -2,7 +2,13 @@
  * Builder root: state, the debounced compose loop, open, save and export.
  */
 import { __ } from '@wordpress/i18n';
-import { useEffect, useReducer, useRef, useState } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useReducer,
+	useRef,
+	useState,
+} from '@wordpress/element';
 import { Notice, Spinner } from '@wordpress/components';
 import { addQueryArgs, removeQueryArgs } from '@wordpress/url';
 import {
@@ -24,6 +30,7 @@ import TemplatePicker from './TemplatePicker';
 import SlotList from './SlotList';
 import Stage from './Stage';
 import SidePanel, { PalettePanel } from './SidePanel';
+import NewPieces from './NewPieces';
 
 const config = window.sprintIllustrationsBuilder || {};
 
@@ -33,6 +40,7 @@ export default function App() {
 	const [ state, dispatch ] = useReducer( reducer, initialState );
 	const [ exporting, setExporting ] = useState( false );
 	const [ suggesting, setSuggesting ] = useState( false );
+	const [ describe, setDescribe ] = useState( '' );
 	const [ dragging, setDragging ] = useState( null );
 	const latest = useRef( 0 );
 	const body = specBody( state );
@@ -200,9 +208,9 @@ export default function App() {
 	};
 
 	// Suggest from a description: Claude when enabled, keyword matching otherwise.
-	const suggestFrom = ( describe ) => {
+	const suggestFrom = ( text ) => {
 		setSuggesting( true );
-		suggest( describe, state.spec.seed )
+		suggest( text, state.spec.seed )
 			.then( ( suggestion ) =>
 				dispatch( { type: 'SUGGESTED', suggestion } )
 			)
@@ -219,6 +227,15 @@ export default function App() {
 			)
 			.finally( () => setSuggesting( false ) );
 	};
+
+	// A piece was added to the library (kept in the Library or the Builder): reload the Library panel.
+	const refreshLibrary = useCallback(
+		() =>
+			getLibrary()
+				.then( ( library ) => dispatch( { type: 'LIBRARY', library } ) )
+				.catch( () => {} ),
+		[]
+	);
 
 	// A scene plan whose pieces were kept: refresh the library and show the scene with them placed.
 	const planBuilt = ( scene ) =>
@@ -389,6 +406,7 @@ export default function App() {
 						count={ state.spec.items.length }
 						onAdd={ addToCentre }
 						onDrag={ setDragging }
+						charactersUrl={ config.charactersUrl }
 					/>
 				</Section>
 				<Section
@@ -417,12 +435,21 @@ export default function App() {
 					/>
 				</Section>
 			</div>
-			<Stage
-				state={ state }
-				byId={ byId }
-				dragging={ dragging }
-				dispatch={ dispatch }
-			/>
+			<div className="si-b-center">
+				<Stage
+					state={ state }
+					byId={ byId }
+					dragging={ dragging }
+					dispatch={ dispatch }
+				/>
+				<NewPieces
+					state={ state }
+					describe={ describe }
+					dispatch={ dispatch }
+					onBuilt={ planBuilt }
+					onLibraryChanged={ refreshLibrary }
+				/>
+			</div>
 			<SidePanel
 				state={ state }
 				dispatch={ dispatch }
@@ -441,8 +468,9 @@ export default function App() {
 				}
 				aiReady={ !! config.aiReady }
 				suggesting={ suggesting }
+				describe={ describe }
+				onDescribe={ setDescribe }
 				onSuggest={ suggestFrom }
-				onPlanBuilt={ planBuilt }
 			/>
 		</div>
 	);

@@ -118,6 +118,45 @@ final class AnimationTest extends TestCase {
 		}
 	}
 
+	public function test_every_motion_has_a_rule_and_keyframes(): void {
+		foreach ( array_merge( Animation::ENTER, Animation::LOOP ) as $motion ) {
+			if ( 'none' === $motion ) {
+				continue;
+			}
+			$this->assertArrayHasKey( $motion, Animation::CSS_RULES, $motion );
+			$this->assertArrayHasKey( $motion, Animation::CSS_KEYFRAMES, $motion );
+			$this->assertStringContainsString( 'si-a-' . $motion, Animation::CSS_KEYFRAMES[ $motion ], $motion );
+		}
+	}
+
+	public function test_new_motions_are_accepted_and_only_the_used_ones_are_written(): void {
+		$animations = Animation::normalize(
+			[
+				'pins' => [
+					'enter' => 'drop',
+					'loop'  => 'ping',
+				],
+				'taxi' => [
+					'enter' => 'slide-right',
+					'loop'  => 'drive',
+				],
+			]
+		);
+
+		$this->assertSame( 'drop', $animations['pins']['enter'] );
+		$this->assertSame( 'drive', $animations['taxi']['loop'] );
+		$this->assertSame( 'si-a-enter-slide-right si-a-d-0 si-a-s-normal', Animation::classes( $animations['taxi'] )['outer'] );
+
+		$css = Animation::css( $animations );
+		foreach ( [ 'drop', 'ping', 'slide-right', 'drive' ] as $used ) {
+			$this->assertStringContainsString( '@keyframes si-a-' . $used, $css );
+		}
+		foreach ( [ 'zoom', 'turn', 'bounce', 'swing', 'orbit', 'slide-left' ] as $unused ) {
+			$this->assertStringNotContainsString( '@keyframes si-a-' . $unused, $css );
+		}
+		$this->assertStringContainsString( '.si-a-enter-drop{animation-name:si-a-drop', $css );
+	}
+
 	public function test_style_goes_first_inside_the_svg(): void {
 		$file = \SprintIllustrations\Media\SvgFile::with_style( '<?xml version="1.0"?>' . "\n" . '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><g/></svg>', '.a{b:c}' );
 

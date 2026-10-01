@@ -23,6 +23,10 @@ final class PaintTest extends TestCase {
 					],
 					'accent'    => 'red',
 					'skin'      => '#123456',
+					'hair'      => [
+						'from' => '#000000',
+						'to'   => '#ffffff',
+					],
 				],
 				'BAD KEY' => [ 'primary' => '#111111' ],
 				'right'   => [ 'primary' => 'nope' ],
@@ -38,6 +42,7 @@ final class PaintTest extends TestCase {
 						'to'    => '#ffffff',
 						'angle' => 270,
 					],
+					'skin'      => '#123456',
 				],
 			],
 			$paints
@@ -85,5 +90,38 @@ final class PaintTest extends TestCase {
 		$this->assertStringContainsString( '<linearGradient', $gradient->markup );
 		$this->assertStringContainsString( 'stop-color="#0000ff"', $gradient->markup );
 		$this->assertMatchesRegularExpression( '/fill="url\(#__SIID__-p\d+-si-paint-[a-z]+\)"/', $gradient->markup );
+	}
+
+	public function test_skin_and_hair_can_be_set_for_a_character(): void {
+		$services = Services::create( __DIR__ . '/../../fixtures/library' );
+		$compose  = static fn( array $extra ) => $services->composer->compose(
+			SceneSpec::from_array(
+				[
+					'template' => 'fixture-duo',
+					'seed'     => 3,
+				] + $extra
+			),
+			Palette::default()
+		);
+
+		$plain = $compose( [] );
+		$set   = $compose(
+			[
+				'paints' => [
+					'left'  => [
+						'skin' => '#112233',
+						'hair' => '#445566',
+					],
+					'right' => [
+						'skin' => '#112233',
+						'hair' => '#445566',
+					],
+				],
+			]
+		);
+
+		$this->assertStringNotContainsString( '#112233', $plain->markup );
+		$this->assertStringContainsString( '#112233', $set->markup );
+		$this->assertStringContainsString( '#445566', $set->markup );
 	}
 }

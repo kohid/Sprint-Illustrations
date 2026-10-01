@@ -1,0 +1,1089 @@
+/**
+ * Character Builder: build a person from parts, see them in your palette, save them to the library.
+ * The drawing itself is done by the plugin (pure PHP), so the preview is exactly the saved piece.
+ */
+import { __, sprintf } from '@wordpress/i18n';
+import {
+	useCallback,
+	useEffect,
+	useReducer,
+	useRef,
+	useState,
+} from '@wordpress/element';
+import {
+	Button,
+	Notice,
+	RangeControl,
+	SelectControl,
+	Spinner,
+	TextControl,
+} from '@wordpress/components';
+import { getOptions, preview, save, shuffle, suggest, variants } from './api';
+import { ColourGrid, OptionGrid } from './OptionGrid';
+import PoseEditor from './PoseEditor';
+
+const config = window.sprintIllustrationsCharacters || {};
+
+const TABS = [
+	{ id: 'start', label: __( 'Start', 'sprint-illustrations' ) },
+	{ id: 'pose', label: __( 'Pose', 'sprint-illustrations' ) },
+	{ id: 'body', label: __( 'Body', 'sprint-illustrations' ) },
+	{ id: 'outfit', label: __( 'Outfit', 'sprint-illustrations' ) },
+	{ id: 'hair', label: __( 'Hair', 'sprint-illustrations' ) },
+	{ id: 'head', label: __( 'Head and face', 'sprint-illustrations' ) },
+];
+
+// Rows shown on each tab: [field, title, kind].
+const ROWS = {
+	start: [ [ 'gender', __( 'Character', 'sprint-illustrations' ) ] ],
+	pose: [
+		[ 'stance', __( 'Body position', 'sprint-illustrations' ) ],
+		[ 'seat', __( 'Seat', 'sprint-illustrations' ) ],
+		[ 'pose', __( 'Pose', 'sprint-illustrations' ) ],
+		[ 'legs', __( 'Legs', 'sprint-illustrations' ) ],
+	],
+	body: [ [ 'build', __( 'Build', 'sprint-illustrations' ) ] ],
+	outfit: [
+		[ 'top', __( 'Top', 'sprint-illustrations' ) ],
+		[ 'top_color', __( 'Top colour', 'sprint-illustrations' ), 'colour' ],
+		[ 'outer', __( 'Jacket or layer', 'sprint-illustrations' ) ],
+		[
+			'outer_color',
+			__( 'Layer colour', 'sprint-illustrations' ),
+			'colour',
+		],
+		[ 'bottom', __( 'Bottom', 'sprint-illustrations' ) ],
+		[
+			'bottom_color',
+			__( 'Bottom colour', 'sprint-illustrations' ),
+			'colour',
+		],
+		[ 'shoes', __( 'Shoes', 'sprint-illustrations' ) ],
+		[
+			'shoes_color',
+			__( 'Shoe colour', 'sprint-illustrations' ),
+			'colour',
+		],
+		[ 'bag', __( 'Bag', 'sprint-illustrations' ) ],
+		[ 'bag_color', __( 'Bag colour', 'sprint-illustrations' ), 'colour' ],
+		[ 'extra', __( 'Extra', 'sprint-illustrations' ) ],
+		[
+			'extra_color',
+			__( 'Extra colour', 'sprint-illustrations' ),
+			'colour',
+		],
+	],
+	hair: [ [ 'hair', __( 'Hair style', 'sprint-illustrations' ) ] ],
+	head: [
+		[ 'face', __( 'Face', 'sprint-illustrations' ) ],
+		[ 'headwear', __( 'Headwear', 'sprint-illustrations' ) ],
+		[
+			'headwear_color',
+			__( 'Headwear colour', 'sprint-illustrations' ),
+			'colour',
+		],
+		[ 'glasses', __( 'Glasses', 'sprint-illustrations' ) ],
+		[ 'facial_hair', __( 'Facial hair', 'sprint-illustrations' ) ],
+	],
+};
+
+const HISTORY = 50;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
+
+const clampZoom = ( value ) =>
+	Math.max( ZOOM_MIN, Math.min( ZOOM_MAX, Math.round( value * 100 ) / 100 ) );
+
+function reducer( state, action ) {
+	switch ( action.type ) {
+		case 'CHECKPOINT':
+			// One undo step for a whole drag.
+			return {
+				...state,
+				past: [ ...state.past, state.spec ].slice( -HISTORY ),
+				future: [],
+			};
+		case 'LIVE':
+			return { ...state, spec: { ...state.spec, ...action.changes } };
+		case 'SET': {
+			const spec = { ...state.spec, ...action.changes };
+			// Another stance or pose starts from that preset again.
+			if (
+				( 'stance' in action.changes || 'pose' in action.changes ) &&
+				! ( 'custom' in action.changes )
+			) {
+				delete spec.custom;
+			}
+			if ( JSON.stringify( spec ) === JSON.stringify( state.spec ) ) {
+				return state;
+			}
+			return {
+				...state,
+				spec,
+				past: [ ...state.past, state.spec ].slice( -HISTORY ),
+				future: [],
+			};
+		}
+		case 'REPLACE': {
+			// A whole new character (preset, shuffle, suggestion): keep the tones being previewed.
+			const spec = {
+				...action.spec,
+				skin: state.spec?.skin ?? 0,
+				hair_tone: state.spec?.hair_tone ?? 0,
+			};
+			return {
+				...state,
+				spec,
+				// The very first character has nothing before it to undo to.
+				past: state.spec
+					? [ ...state.past, state.spec ].slice( -HISTORY )
+					: [],
+				future: [],
+			};
+		}
+		case 'UNDO':
+			return state.past.length
+				? {
+						...state,
+						spec: state.past[ state.past.length - 1 ],
+						past: state.past.slice( 0, -1 ),
+						future: [ state.spec, ...state.future ],
+				  }
+				: state;
+		case 'REDO':
+			return state.future.length
+				? {
+						...state,
+						spec: state.future[ 0 ],
+						past: [ ...state.past, state.spec ],
+						future: state.future.slice( 1 ),
+				  }
+				: state;
+		default:
+			return state;
+	}
+}
+
+export default function App() {
+	const [ options, setOptions ] = useState( null );
+	const [ loadError, setLoadError ] = useState( '' );
+	const [ state, dispatch ] = useReducer( reducer, {
+		spec: null,
+		past: [],
+		future: [],
+	} );
+	const [ palette, setPalette ] = useState( 'site' );
+	const [ shown, setShown ] = useState( null );
+	const [ thumbs, setThumbs ] = useState( {} );
+	const [ tab, setTab ] = useState( 'start' );
+	const [ describe, setDescribe ] = useState( '' );
+	const [ notice, setNotice ] = useState( null );
+	const [ form, setForm ] = useState( { name: '', label: '', tags: '' } );
+	const [ saving, setSaving ] = useState( false );
+	const [ saved, setSaved ] = useState( null );
+	const [ editing, setEditing ] = useState( false );
+	const [ dots, setDots ] = useState( true );
+	const [ zoom, setZoom ] = useState( 1 );
+
+	// Ctrl or Cmd with the wheel zooms the preview instead of the page. A callback ref, because the stage
+	// only exists once the options have loaded.
+	const wheelOff = useRef( null );
+	const artRef = useCallback( ( node ) => {
+		if ( wheelOff.current ) {
+			wheelOff.current();
+			wheelOff.current = null;
+		}
+		if ( ! node ) {
+			return;
+		}
+		const wheel = ( event ) => {
+			if ( ! event.ctrlKey && ! event.metaKey ) {
+				return;
+			}
+			event.preventDefault();
+			setZoom( ( value ) =>
+				clampZoom( value - Math.sign( event.deltaY ) * 0.15 )
+			);
+		};
+		node.addEventListener( 'wheel', wheel, { passive: false } );
+		wheelOff.current = () => node.removeEventListener( 'wheel', wheel );
+	}, [] );
+	const seed = useRef( 1 );
+	const latest = useRef( 0 );
+
+	useEffect( () => {
+		getOptions()
+			.then( ( data ) => {
+				setOptions( data );
+				dispatch( {
+					type: 'REPLACE',
+					spec: { ...data.defaults, skin: 0, hair_tone: 0 },
+				} );
+			} )
+			.catch( ( error ) =>
+				setLoadError(
+					error.message ||
+						__(
+							'The Character Builder could not load.',
+							'sprint-illustrations'
+						)
+				)
+			);
+	}, [] );
+
+	const spec = state.spec;
+	const specKey = JSON.stringify( spec );
+
+	// Live preview: only the newest answer is shown.
+	useEffect( () => {
+		if ( ! spec ) {
+			return undefined;
+		}
+		const id = ++latest.current;
+		const timer = window.setTimeout( () => {
+			preview( spec, palette, !! spec.custom )
+				.then( ( data ) => {
+					if ( id === latest.current ) {
+						setShown( data );
+					}
+				} )
+				.catch( () => {} );
+		}, 120 );
+		return () => window.clearTimeout( timer );
+	}, [ specKey, palette ] ); // eslint-disable-line react-hooks/exhaustive-deps
+
+	// Thumbnails for the rows of the open tab.
+	// The seat only matters when sitting on a chair, the leg stance only when standing.
+	const rows = ( ROWS[ tab ] || [] ).filter( ( [ name ] ) => {
+		if ( 'seat' === name ) {
+			return 'sitting' === spec?.stance;
+		}
+		return 'legs' !== name || 'standing' === spec?.stance;
+	} );
+	const rowKey = rows.map( ( row ) => row[ 0 ] ).join( ',' );
+	useEffect( () => {
+		if ( ! spec || ! rows.length ) {
+			return undefined;
+		}
+		let cancelled = false;
+		const timer = window.setTimeout( () => {
+			rows.filter( ( row ) => 'colour' !== row[ 2 ] ).forEach(
+				( [ field ] ) => {
+					variants( spec, field, palette )
+						.then( ( data ) => {
+							if ( ! cancelled ) {
+								setThumbs( ( all ) => ( {
+									...all,
+									[ field ]: data.images,
+								} ) );
+							}
+						} )
+						.catch( () => {} );
+				}
+			);
+		}, 200 );
+		return () => {
+			cancelled = true;
+			window.clearTimeout( timer );
+		};
+	}, [ tab, rowKey, specKey, palette ] ); // eslint-disable-line react-hooks/exhaustive-deps
+
+	const set = useCallback(
+		( changes ) => {
+			setSaved( null );
+			dispatch( { type: 'SET', changes } );
+		},
+		[ dispatch ]
+	);
+
+	if ( loadError ) {
+		return (
+			<Notice status="error" isDismissible={ false }>
+				{ loadError }
+			</Notice>
+		);
+	}
+	if ( ! options || ! spec ) {
+		return <Spinner />;
+	}
+
+	const field = ( name ) =>
+		'pose' === name
+			? options.fields.pose[ spec.stance ]
+			: options.fields[ name ];
+	const colours = shown?.palette?.colors || {};
+	const tones = shown?.palette || options.tones;
+
+	const startFrom = ( result ) => {
+		setSaved( null );
+		// A chosen gender stays when starting from a role or a shuffle.
+		dispatch( {
+			type: 'REPLACE',
+			spec: { gender: spec?.gender, ...result },
+		} );
+	};
+
+	const stepZoom = ( direction ) =>
+		setZoom( ( value ) => clampZoom( value + direction * 0.25 ) );
+
+	// Posing by hand starts from the pose the chosen stance gives, then the handles change it.
+	const toggleEditing = () => {
+		if ( editing || spec.custom ) {
+			setEditing( ! editing );
+			return;
+		}
+		preview( spec, palette, true )
+			.then( ( data ) => {
+				dispatch( {
+					type: 'SET',
+					changes: { custom: data.pose.angles },
+				} );
+				setEditing( true );
+			} )
+			.catch( () => {} );
+	};
+
+	const resetPose = () => {
+		setEditing( false );
+		dispatch( { type: 'SET', changes: { custom: null } } );
+	};
+
+	const setTurn = ( key, value ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		custom[ key ] = value ?? 0;
+		dispatch( { type: 'SET', changes: { custom } } );
+	};
+
+	const flipFoot = ( side ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		const leg = custom.legs[ side ];
+		leg[ 3 ] = -1 * ( leg[ 3 ] ?? ( 'l' === side ? -1 : 1 ) );
+		dispatch( { type: 'SET', changes: { custom } } );
+	};
+
+	const setToe = ( side, value ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		custom.legs[ side ][ 2 ] = value ?? 0;
+		dispatch( { type: 'SET', changes: { custom } } );
+	};
+
+	const ARRANGEMENT = [
+		[ 'arm_l', __( 'Left arm', 'sprint-illustrations' ), 'front' ],
+		[ 'arm_r', __( 'Right arm', 'sprint-illustrations' ), 'front' ],
+		[ 'leg_l', __( 'Left leg', 'sprint-illustrations' ), 'back' ],
+		[ 'leg_r', __( 'Right leg', 'sprint-illustrations' ), 'back' ],
+		[ 'torso', __( 'Torso and head', 'sprint-illustrations' ), 'front' ],
+	];
+
+	const setOrder = ( part, where ) => {
+		const custom = JSON.parse( JSON.stringify( spec.custom ) );
+		custom.order = { ...( custom.order || {} ), [ part ]: where };
+		dispatch( { type: 'SET', changes: { custom } } );
+	};
+
+	const doSuggest = () =>
+		suggest( describe )
+			.then( ( result ) => {
+				if ( result.role ) {
+					startFrom( result.spec );
+					setNotice( {
+						status: 'success',
+						text: sprintf(
+							/* translators: %s: role, e.g. "Taxi driver". */
+							__(
+								'Started from “%s”. Change anything you like.',
+								'sprint-illustrations'
+							),
+							result.label
+						),
+					} );
+				} else {
+					setNotice( { status: 'info', text: result.message } );
+				}
+			} )
+			.catch( ( error ) =>
+				setNotice( {
+					status: 'error',
+					text: error.message,
+				} )
+			);
+
+	const surprise = () => {
+		seed.current += 1 + Math.floor( Math.random() * 1000 );
+		shuffle( seed.current, spec?.gender )
+			.then( ( result ) => startFrom( result.spec ) )
+			.catch( () => {} );
+	};
+
+	const doSave = () => {
+		setSaving( true );
+		setNotice( null );
+		save( {
+			spec,
+			name: form.name,
+			label: form.label,
+			tags: form.tags.split( ',' ).map( ( tag ) => tag.trim() ),
+		} )
+			.then( ( result ) => setSaved( result ) )
+			.catch( ( error ) =>
+				setNotice( {
+					status: 'error',
+					text:
+						error.message ||
+						__(
+							'The character could not be saved.',
+							'sprint-illustrations'
+						),
+				} )
+			)
+			.finally( () => setSaving( false ) );
+	};
+
+	return (
+		<div className="si-c-app">
+			<header className="si-c-head">
+				<h1>{ __( 'Character Builder', 'sprint-illustrations' ) }</h1>
+				<p>
+					{ __(
+						'Build a person to match your page: pick a starting point, adjust the look, then save them. They join the library, so the Builder and every scene can use them, and their colours follow your palette.',
+						'sprint-illustrations'
+					) }
+				</p>
+			</header>
+
+			{ notice && (
+				<Notice
+					status={ notice.status }
+					onRemove={ () => setNotice( null ) }
+				>
+					{ notice.text }
+				</Notice>
+			) }
+
+			<div
+				className={ `si-c-layout${
+					editing && spec.custom ? ' is-posing' : ''
+				}` }
+			>
+				<section
+					className="si-c-panel si-c-stage"
+					aria-label={ __( 'Preview', 'sprint-illustrations' ) }
+				>
+					<div className="si-c-stage__tools">
+						<Button
+							size="small"
+							icon="undo"
+							label={ __( 'Undo', 'sprint-illustrations' ) }
+							disabled={ ! state.past.length }
+							onClick={ () => dispatch( { type: 'UNDO' } ) }
+						/>
+						<Button
+							size="small"
+							icon="redo"
+							label={ __( 'Redo', 'sprint-illustrations' ) }
+							disabled={ ! state.future.length }
+							onClick={ () => dispatch( { type: 'REDO' } ) }
+						/>
+						<Button
+							size="small"
+							icon="move"
+							isPressed={ editing }
+							onClick={ toggleEditing }
+						>
+							{ __( 'Edit pose', 'sprint-illustrations' ) }
+						</Button>
+						<Button
+							size="small"
+							variant="secondary"
+							icon="randomize"
+							onClick={ surprise }
+						>
+							{ __( 'Surprise me', 'sprint-illustrations' ) }
+						</Button>
+					</div>
+					<div className="si-c-zoom">
+						<Button
+							size="small"
+							icon="minus"
+							label={ __( 'Zoom out', 'sprint-illustrations' ) }
+							disabled={ zoom <= ZOOM_MIN }
+							onClick={ () => stepZoom( -1 ) }
+						/>
+						<input
+							type="range"
+							aria-label={ __( 'Zoom', 'sprint-illustrations' ) }
+							min={ ZOOM_MIN }
+							max={ ZOOM_MAX }
+							step="0.05"
+							value={ zoom }
+							onChange={ ( event ) =>
+								setZoom( Number( event.target.value ) )
+							}
+						/>
+						<Button
+							size="small"
+							icon="plus"
+							label={ __( 'Zoom in', 'sprint-illustrations' ) }
+							disabled={ zoom >= ZOOM_MAX }
+							onClick={ () => stepZoom( 1 ) }
+						/>
+						<Button
+							size="small"
+							variant="tertiary"
+							onClick={ () => setZoom( 1 ) }
+						>
+							{ `${ Math.round( zoom * 100 ) }%` }
+						</Button>
+					</div>
+					<div className="si-c-stage__art" ref={ artRef }>
+						<div
+							className="si-c-canvas"
+							style={ { '--si-h': `${ 340 * zoom }px` } }
+						>
+							<div
+								// Sanitized server-side (character preview).
+								dangerouslySetInnerHTML={ {
+									__html: shown?.svg || '',
+								} }
+							/>
+							{ editing && dots && spec.custom && shown?.pose && (
+								<PoseEditor
+									pose={ shown.pose }
+									custom={ spec.custom }
+									onStart={ () =>
+										dispatch( { type: 'CHECKPOINT' } )
+									}
+									onChange={ ( custom ) =>
+										dispatch( {
+											type: 'LIVE',
+											changes: { custom },
+										} )
+									}
+								/>
+							) }
+						</div>
+					</div>
+					{ editing && shown?.final && (
+						<div className="si-c-actual">
+							<span>
+								{ __(
+									'Actual preview',
+									'sprint-illustrations'
+								) }
+							</span>
+							<div
+								// Sanitized server-side (character preview).
+								dangerouslySetInnerHTML={ {
+									__html: shown.final,
+								} }
+							/>
+						</div>
+					) }
+					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __(
+							'Show in palette',
+							'sprint-illustrations'
+						) }
+						value={ palette }
+						options={ [
+							{
+								value: 'site',
+								label: __(
+									'My site palette',
+									'sprint-illustrations'
+								),
+							},
+							...( options.palettes || [] ),
+						] }
+						onChange={ setPalette }
+					/>
+					<Swatches
+						title={ __(
+							'Preview skin tone',
+							'sprint-illustrations'
+						) }
+						colours={ tones.skin }
+						value={ spec.skin }
+						onChange={ ( skin ) => set( { skin } ) }
+					/>
+					<Swatches
+						title={ __(
+							'Preview hair colour',
+							'sprint-illustrations'
+						) }
+						colours={ tones.hair }
+						value={ spec.hair_tone }
+						onChange={ ( hair ) => set( { hair_tone: hair } ) }
+					/>
+					<p className="si-c-muted">
+						{ __(
+							'Tones are for preview. In a scene each character takes skin and hair from your palette; you can change them for one layer in the Builder.',
+							'sprint-illustrations'
+						) }
+					</p>
+				</section>
+
+				<section
+					className="si-c-panel si-c-controls"
+					aria-label={ __( 'Options', 'sprint-illustrations' ) }
+				>
+					<div
+						className="si-c-tabs"
+						role="tablist"
+						aria-label={ __( 'Options', 'sprint-illustrations' ) }
+					>
+						{ TABS.map( ( item ) => (
+							<button
+								type="button"
+								role="tab"
+								key={ item.id }
+								id={ `si-c-tab-${ item.id }` }
+								aria-selected={ tab === item.id }
+								aria-controls="si-c-tabpanel"
+								className="si-c-tab"
+								onClick={ () => setTab( item.id ) }
+							>
+								{ item.label }
+							</button>
+						) ) }
+					</div>
+
+					<div
+						id="si-c-tabpanel"
+						role="tabpanel"
+						aria-labelledby={ `si-c-tab-${ tab }` }
+						className="si-c-tabpanel"
+					>
+						{ 'start' === tab && (
+							<div className="si-c-start">
+								<div className="si-c-row">
+									<TextControl
+										__nextHasNoMarginBottom
+										__next40pxDefaultSize
+										label={ __(
+											'Who is on your page?',
+											'sprint-illustrations'
+										) }
+										placeholder={ __(
+											'e.g. a taxi driver studying for a test',
+											'sprint-illustrations'
+										) }
+										value={ describe }
+										onChange={ setDescribe }
+										onKeyDown={ ( event ) => {
+											if ( 'Enter' === event.key ) {
+												event.preventDefault();
+												doSuggest();
+											}
+										} }
+									/>
+									<Button
+										variant="secondary"
+										__next40pxDefaultSize
+										disabled={ ! describe.trim() }
+										onClick={ doSuggest }
+									>
+										{ __(
+											'Start from this',
+											'sprint-illustrations'
+										) }
+									</Button>
+								</div>
+								<p className="si-c-legend">
+									{ __(
+										'Or pick a starting point',
+										'sprint-illustrations'
+									) }
+								</p>
+								<div className="si-c-chips">
+									{ options.roles.map( ( role ) => (
+										<button
+											type="button"
+											key={ role.id }
+											className="si-c-chip"
+											onClick={ () =>
+												startFrom( {
+													...options.defaults,
+													...role.choices,
+												} )
+											}
+										>
+											{ role.label }
+										</button>
+									) ) }
+								</div>
+							</div>
+						) }
+
+						{ rows.map( ( [ name, title, kind ] ) =>
+							'colour' === kind ? (
+								<ColourGrid
+									key={ name }
+									title={ title }
+									value={ spec[ name ] }
+									options={ field( name ) }
+									colors={ colours }
+									onChange={ ( value ) =>
+										set( { [ name ]: value } )
+									}
+								/>
+							) : (
+								<OptionGrid
+									key={ name }
+									field={ name }
+									title={ title }
+									value={ spec[ name ] }
+									options={ field( name ) }
+									images={ thumbs[ name ] }
+									onChange={ ( value ) =>
+										set( {
+											[ name ]: value,
+											...( 'gender' === name
+												? options.genderLooks?.[ value ]
+												: {} ),
+										} )
+									}
+								/>
+							)
+						) }
+					</div>
+
+					<div className="si-c-save">
+						<h2>
+							{ __(
+								'Save to the library',
+								'sprint-illustrations'
+							) }
+						</h2>
+						<div className="si-c-row">
+							<TextControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __( 'Name', 'sprint-illustrations' ) }
+								help={ __(
+									'Letters, numbers and dashes. Characters that start with the same word are the same person, e.g. sam-wave and sam-sit.',
+									'sprint-illustrations'
+								) }
+								placeholder="sam-wave"
+								value={ form.name }
+								onChange={ ( name ) =>
+									setForm( { ...form, name } )
+								}
+							/>
+							<TextControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Label (optional)',
+									'sprint-illustrations'
+								) }
+								placeholder={ __(
+									'Sam waving',
+									'sprint-illustrations'
+								) }
+								value={ form.label }
+								onChange={ ( label ) =>
+									setForm( { ...form, label } )
+								}
+							/>
+						</div>
+						<TextControl
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+							label={ __(
+								'Extra tags (optional)',
+								'sprint-illustrations'
+							) }
+							help={ __(
+								'Single words, separated by commas, so scenes can find them: taxi, driver, support.',
+								'sprint-illustrations'
+							) }
+							value={ form.tags }
+							onChange={ ( tags ) =>
+								setForm( { ...form, tags } )
+							}
+						/>
+						<Button
+							variant="primary"
+							__next40pxDefaultSize
+							isBusy={ saving }
+							disabled={ saving || ! form.name.trim() }
+							onClick={ doSave }
+						>
+							{ __( 'Save character', 'sprint-illustrations' ) }
+						</Button>
+						{ saved && (
+							<Notice status="success" isDismissible={ false }>
+								{ sprintf(
+									/* translators: %s: piece ID. */
+									__(
+										'Saved as %s.',
+										'sprint-illustrations'
+									),
+									saved.piece
+								) }{ ' ' }
+								{ 'plugin' === saved.where
+									? __(
+											'It is in the plugin’s library, so it ships with the plugin.',
+											'sprint-illustrations'
+									  )
+									: __(
+											'It is in this site’s library.',
+											'sprint-illustrations'
+									  ) }{ ' ' }
+								<a href={ config.builderUrl }>
+									{ __(
+										'Use it in the Builder',
+										'sprint-illustrations'
+									) }
+								</a>
+								{ ' · ' }
+								<a href={ config.libraryUrl }>
+									{ __(
+										'See it in the Library',
+										'sprint-illustrations'
+									) }
+								</a>
+							</Notice>
+						) }
+					</div>
+				</section>
+
+				{ editing && spec.custom && (
+					<section
+						className="si-c-panel si-c-posepanel"
+						aria-label={ __( 'Pose', 'sprint-illustrations' ) }
+					>
+						<div className="si-c-poseinfo">
+							<p className="si-c-muted">
+								{ __(
+									'Drag the blue dots to move hands and feet, the small grey dots to bend elbows and knees, the orange dot to lean or rotate the body, the teal dot on the belly to turn it left or right and the purple dot on the stalk to tilt the head and the green dot on the face to turn it left or right, all the way round. Picking another stance or pose starts over from that preset.',
+									'sprint-illustrations'
+								) }
+							</p>
+							<Button
+								size="small"
+								variant="secondary"
+								onClick={ () => setDots( ! dots ) }
+							>
+								{ dots
+									? __(
+											'Hide the dots',
+											'sprint-illustrations'
+									  )
+									: __(
+											'Show the dots',
+											'sprint-illustrations'
+									  ) }
+							</Button>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Tilt head',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.head }
+								onChange={ ( value ) =>
+									setTurn( 'head', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Turn head to look left or right',
+									'sprint-illustrations'
+								) }
+								help={ __(
+									'Past the side view you see the back of the head.',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.yaw ?? 0 }
+								onChange={ ( value ) =>
+									setTurn( 'yaw', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Lean or rotate body',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.theta }
+								onChange={ ( value ) =>
+									setTurn( 'theta', value )
+								}
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Turn body to face left or right',
+									'sprint-illustrations'
+								) }
+								help={ __(
+									'Past the side view you see the back.',
+									'sprint-illustrations'
+								) }
+								min={ -180 }
+								max={ 180 }
+								value={ spec.custom.spin ?? 0 }
+								onChange={ ( value ) =>
+									setTurn( 'spin', value )
+								}
+							/>
+							<fieldset className="si-c-arrange">
+								<legend>
+									{ __(
+										'Parts arrangement',
+										'sprint-illustrations'
+									) }
+								</legend>
+								{ ARRANGEMENT.map(
+									( [ part, label, fallback ] ) => {
+										const where =
+											spec.custom.order?.[ part ] ??
+											fallback;
+										return (
+											<div
+												key={ part }
+												className="si-c-arrange__row"
+											>
+												<span>{ label }</span>
+												<Button
+													size="small"
+													variant={
+														'front' === where
+															? 'primary'
+															: 'secondary'
+													}
+													onClick={ () =>
+														setOrder(
+															part,
+															'front'
+														)
+													}
+												>
+													{ __(
+														'In front',
+														'sprint-illustrations'
+													) }
+												</Button>
+												<Button
+													size="small"
+													variant={
+														'back' === where
+															? 'primary'
+															: 'secondary'
+													}
+													onClick={ () =>
+														setOrder( part, 'back' )
+													}
+												>
+													{ __(
+														'Behind',
+														'sprint-illustrations'
+													) }
+												</Button>
+											</div>
+										);
+									}
+								) }
+							</fieldset>
+							<div className="si-c-arrange__row">
+								<span>
+									{ __( 'Feet', 'sprint-illustrations' ) }
+								</span>
+								<Button
+									size="small"
+									variant="secondary"
+									onClick={ () => flipFoot( 'l' ) }
+								>
+									{ __(
+										'Flip left',
+										'sprint-illustrations'
+									) }
+								</Button>
+								<Button
+									size="small"
+									variant="secondary"
+									onClick={ () => flipFoot( 'r' ) }
+								>
+									{ __(
+										'Flip right',
+										'sprint-illustrations'
+									) }
+								</Button>
+							</div>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Left foot tilt',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.legs.l[ 2 ] }
+								onChange={ ( value ) => setToe( 'l', value ) }
+							/>
+							<RangeControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+								label={ __(
+									'Right foot tilt',
+									'sprint-illustrations'
+								) }
+								min={ -90 }
+								max={ 90 }
+								value={ spec.custom.legs.r[ 2 ] }
+								onChange={ ( value ) => setToe( 'r', value ) }
+							/>
+							<Button
+								variant="tertiary"
+								isDestructive
+								onClick={ resetPose }
+							>
+								{ __(
+									'Back to the preset pose',
+									'sprint-illustrations'
+								) }
+							</Button>
+						</div>
+					</section>
+				) }
+			</div>
+		</div>
+	);
+}
+
+function Swatches( { title, colours, value, onChange } ) {
+	return (
+		<fieldset className="si-c-options si-c-options--tones">
+			<legend>{ title }</legend>
+			<div className="si-c-swatches">
+				{ ( colours || [] ).map( ( colour, index ) => (
+					<button
+						type="button"
+						key={ `${ colour }-${ index }` }
+						className="si-c-swatch"
+						aria-pressed={ value === index }
+						aria-label={ `${ title } ${ index + 1 }` }
+						style={ { background: colour } }
+						onClick={ () => onChange( index ) }
+					/>
+				) ) }
+			</div>
+		</fieldset>
+	);
+}

@@ -101,6 +101,10 @@ final class ComposeController {
 				'items'      => $items,
 				'slots'      => $slots,
 				'background' => (string) $palette->resolve( 'background' ),
+				'people'     => [
+					'skin' => array_values( (array) ( $palette->to_array()['skin'] ?? [] ) ),
+					'hair' => array_values( (array) ( $palette->to_array()['hair'] ?? [] ) ),
+				],
 				'colors'     => array_map( static fn( string $slot ): string => (string) $palette->resolve( $slot ), array_combine( Paint::SLOTS, Paint::SLOTS ) ),
 			]
 		);

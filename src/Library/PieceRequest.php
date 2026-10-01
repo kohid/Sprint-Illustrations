@@ -50,6 +50,16 @@ final class PieceRequest {
 	}
 
 	/**
+	 * Whether a request in this state may be removed from the list (nothing is waiting on it).
+	 *
+	 * @param string $state State.
+	 * @return bool
+	 */
+	public static function can_remove( string $state ): bool {
+		return in_array( $state, [ 'discarded', 'declined' ], true );
+	}
+
+	/**
 	 * Sample scene for reviewing a draft piece.
 	 *
 	 * @param string $category Piece category.

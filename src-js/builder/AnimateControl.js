@@ -15,6 +15,20 @@ export const ENTRANCES = [
 	{ value: 'fade', label: __( 'Fade in', 'sprint-illustrations' ) },
 	{ value: 'rise', label: __( 'Rise', 'sprint-illustrations' ) },
 	{ value: 'pop', label: __( 'Pop', 'sprint-illustrations' ) },
+	{
+		value: 'slide-left',
+		label: __( 'Slide in from the left', 'sprint-illustrations' ),
+	},
+	{
+		value: 'slide-right',
+		label: __( 'Slide in from the right', 'sprint-illustrations' ),
+	},
+	{
+		value: 'drop',
+		label: __( 'Drop with a bounce', 'sprint-illustrations' ),
+	},
+	{ value: 'zoom', label: __( 'Zoom in', 'sprint-illustrations' ) },
+	{ value: 'turn', label: __( 'Turn in', 'sprint-illustrations' ) },
 ];
 
 export const LOOPS = [
@@ -24,6 +38,15 @@ export const LOOPS = [
 	{ value: 'pulse', label: __( 'Pulse', 'sprint-illustrations' ) },
 	{ value: 'spin', label: __( 'Spin', 'sprint-illustrations' ) },
 	{ value: 'twinkle', label: __( 'Twinkle', 'sprint-illustrations' ) },
+	{ value: 'bounce', label: __( 'Bounce', 'sprint-illustrations' ) },
+	{ value: 'wobble', label: __( 'Wobble', 'sprint-illustrations' ) },
+	{ value: 'swing', label: __( 'Swing', 'sprint-illustrations' ) },
+	{ value: 'drive', label: __( 'Drive across', 'sprint-illustrations' ) },
+	{
+		value: 'ping',
+		label: __( 'Ping (signal rings)', 'sprint-illustrations' ),
+	},
+	{ value: 'orbit', label: __( 'Orbit', 'sprint-illustrations' ) },
 ];
 
 const SPEEDS = [

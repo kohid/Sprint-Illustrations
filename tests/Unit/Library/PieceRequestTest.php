@@ -60,4 +60,13 @@ final class PieceRequestTest extends TestCase {
 		$this->assertSame( [ 'decor' => [ 'decor-x' ] ], PieceRequest::sample( 'decor', 'decor-x' )['picks'] );
 		$this->assertSame( 'centered-object-with-decor', PieceRequest::sample( 'decor', 'decor-x' )['template'] );
 	}
+
+	public function test_only_discarded_and_declined_requests_can_be_removed(): void {
+		foreach ( [ 'discarded', 'declined' ] as $state ) {
+			$this->assertTrue( PieceRequest::can_remove( $state ), $state );
+		}
+		foreach ( [ 'queued', 'drawing', 'review', 'done', 'nonsense' ] as $state ) {
+			$this->assertFalse( PieceRequest::can_remove( $state ), $state );
+		}
+	}
 }

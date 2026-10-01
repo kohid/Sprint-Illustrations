@@ -21,6 +21,8 @@ final class Menu {
 
 	public const LIBRARY_SLUG = 'sprint-illustrations-library';
 
+	public const CHARACTERS_SLUG = 'sprint-illustrations-characters';
+
 	public const SETTINGS_SLUG = 'sprint-illustrations-settings';
 
 	public const TEST_SLUG = 'sprint-illustrations-test';
@@ -38,6 +40,13 @@ final class Menu {
 	 * @var LibraryPage
 	 */
 	private LibraryPage $library;
+
+	/**
+	 * Character Builder page.
+	 *
+	 * @var CharactersPage
+	 */
+	private CharactersPage $characters;
 
 	/**
 	 * Settings page.
@@ -61,6 +70,13 @@ final class Menu {
 	private string $library_hook = '';
 
 	/**
+	 * Character Builder page hook suffix.
+	 *
+	 * @var string
+	 */
+	private string $characters_hook = '';
+
+	/**
 	 * Settings page hook suffix.
 	 *
 	 * @var string
@@ -80,9 +96,10 @@ final class Menu {
 	 * @param Plugin $plugin Plugin.
 	 */
 	public function __construct( private Plugin $plugin ) {
-		$this->builder  = new BuilderPage( $plugin );
-		$this->library  = new LibraryPage( $plugin );
-		$this->settings = new SettingsPage( $plugin );
+		$this->builder    = new BuilderPage( $plugin );
+		$this->library    = new LibraryPage( $plugin );
+		$this->characters = new CharactersPage( $plugin );
+		$this->settings   = new SettingsPage( $plugin );
 	}
 
 	/**
@@ -120,6 +137,15 @@ final class Menu {
 			[ $this->library, 'render' ]
 		);
 
+		$this->characters_hook = (string) add_submenu_page(
+			self::SLUG,
+			__( 'Sprint Illustrations Character Builder', 'sprint-illustrations' ),
+			__( 'Characters', 'sprint-illustrations' ),
+			CharactersPage::CAPABILITY,
+			self::CHARACTERS_SLUG,
+			[ $this->characters, 'render' ]
+		);
+
 		$this->settings_hook = (string) add_submenu_page(
 			self::SLUG,
 			__( 'Sprint Illustrations Settings', 'sprint-illustrations' ),
@@ -152,6 +178,11 @@ final class Menu {
 
 		if ( $hook_suffix === $this->library_hook ) {
 			$this->library->enqueue();
+			return;
+		}
+
+		if ( $hook_suffix === $this->characters_hook ) {
+			$this->characters->enqueue();
 			return;
 		}
 

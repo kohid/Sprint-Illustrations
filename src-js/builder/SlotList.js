@@ -337,6 +337,13 @@ export default function SlotList( { state, library, byId, dispatch } ) {
 										name={ name }
 										value={ spec.paints[ key ] }
 										colors={ result.colors }
+										people={ result.people }
+										character={
+											isItem
+												? 'characters' ===
+												  byId[ item.piece ]?.category
+												: 'characters' === slot.category
+										}
 										dispatch={ dispatch }
 									/>
 									<AnimateControl

@@ -10,9 +10,13 @@ declare( strict_types=1 );
 namespace SprintIllustrations\Rest;
 
 use SprintIllustrations\Compose\SceneArrangement;
+use SprintIllustrations\Library\Piece;
 use SprintIllustrations\Library\PieceRequest;
+use SprintIllustrations\Library\ReferenceImage;
+use SprintIllustrations\Library\Template;
 use SprintIllustrations\Plugin;
 use SprintIllustrations\Selection\AiRequest;
+use SprintIllustrations\Selection\BriefSplitter;
 
 /**
  * POST /plans queues one piece request per object (Claude Code draws them, the requester keeps or
@@ -22,6 +26,8 @@ use SprintIllustrations\Selection\AiRequest;
 final class PlansController {
 
 	public const MAX_OBJECTS = 6;
+
+	private const PREVIEW_TRANSIENT = 'si_draft_preview_';
 
 	/**
 	 * Constructor.
@@ -61,6 +67,15 @@ final class PlansController {
 		);
 		register_rest_route(
 			Permissions::NAMESPACE,
+			'/plans/split',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'split' ],
+				'permission_callback' => $permission,
+			]
+		);
+		register_rest_route(
+			Permissions::NAMESPACE,
 			'/plans/(?P<id>[a-f0-9]{12})',
 			[
 				'methods'             => 'DELETE',
@@ -68,6 +83,17 @@ final class PlansController {
 				'permission_callback' => $permission,
 			]
 		);
+		foreach ( [ 'keep', 'discard' ] as $action ) {
+			register_rest_route(
+				Permissions::NAMESPACE,
+				'/plans/requests/(?P<id>\d+)/' . $action,
+				[
+					'methods'             => 'POST',
+					'callback'            => [ $this, $action ],
+					'permission_callback' => $permission,
+				]
+			);
+		}
 		register_rest_route(
 			Permissions::NAMESPACE,
 			'/plans/(?P<id>[a-f0-9]{12})/build',
@@ -94,34 +120,79 @@ final class PlansController {
 	}
 
 	/**
+	 * Split a long numbered brief into one short request per layer, each with the shared style notes.
+	 *
+	 * @param \WP_REST_Request $request Request {content}.
+	 * @return \WP_REST_Response
+	 */
+	public function split( \WP_REST_Request $request ): \WP_REST_Response {
+		return new \WP_REST_Response( BriefSplitter::split( AiRequest::clean( (string) ( $request['content'] ?? '' ) ) ) );
+	}
+
+	/**
+	 * The pieces to draw: strings (objects) or {description, category}, cleaned and capped.
+	 *
+	 * @param array<mixed> $raw Request input.
+	 * @return array<int, array{description: string, category: string, reference: string}>
+	 */
+	private static function objects( array $raw ): array {
+		$pieces = [];
+		foreach ( $raw as $item ) {
+			$text     = is_array( $item ) ? $item['description'] ?? '' : $item;
+			$category = is_array( $item ) ? sanitize_key( (string) ( $item['category'] ?? '' ) ) : '';
+			$text     = is_string( $text ) ? PieceRequest::clean( $text ) : '';
+			if ( '' === $text ) {
+				continue;
+			}
+
+			$reference = is_array( $item ) && is_string( $item['reference'] ?? null ) ? $item['reference'] : '';
+			$pieces[]  = [
+				'description' => $text,
+				'category'    => in_array( $category, Piece::CATEGORIES, true ) ? $category : 'objects',
+				'reference'   => ReferenceImage::is_name( $reference ) ? $reference : '',
+			];
+		}
+
+		return array_slice( $pieces, 0, self::MAX_OBJECTS );
+	}
+
+	/**
 	 * Create a plan and queue a request per object.
 	 *
 	 * @param \WP_REST_Request $request Request {content, objects[], template, keywords[], title, seed}.
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function create( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		$content = AiRequest::clean( (string) ( $request['content'] ?? '' ) );
-		$objects = array_slice( array_values( array_filter( array_map( static fn( $item ): string => is_string( $item ) ? PieceRequest::clean( $item ) : '', (array) ( $request['objects'] ?? [] ) ) ) ), 0, self::MAX_OBJECTS );
+		$given   = AiRequest::clean( (string) ( $request['content'] ?? '' ) );
+		$objects = self::objects( (array) ( $request['objects'] ?? [] ) );
 
-		if ( '' === $content || [] === $objects ) {
-			return new \WP_Error( 'sprint_illustrations_invalid_plan', __( 'Describe the scene and choose at least one object to draw.', 'sprint-illustrations' ), [ 'status' => 400 ] );
+		if ( [] === $objects ) {
+			return new \WP_Error( 'sprint_illustrations_invalid_plan', __( 'Choose at least one object to draw.', 'sprint-illustrations' ), [ 'status' => 400 ] );
 		}
 
+		// Without a description or a valid template the plan still works: it describes itself by its objects and builds on a blank canvas.
+		$content  = '' !== $given ? $given : implode( ', ', array_column( $objects, 'description' ) );
 		$template = sanitize_key( (string) ( $request['template'] ?? '' ) );
 		if ( '' === $template || null === $this->plugin->services()->templates->get( $template ) ) {
-			return new \WP_Error( 'sprint_illustrations_invalid_plan', __( 'Pick a template first, for example with Suggest.', 'sprint-illustrations' ), [ 'status' => 400 ] );
+			$template = Template::BLANK_ID;
 		}
 
-		$scene_note = ' (for a scene: ' . mb_substr( $content, 0, 120 ) . ')';
+		$scene_note = '' !== $given ? ' (for a scene: ' . mb_substr( $given, 0, 120 ) . ')' : '';
 		$user       = get_current_user_id();
 		$requests   = $this->plugin->piece_requests();
 		$ids        = [];
-		foreach ( $objects as $object ) {
-			$description = mb_substr( $object, 0, PieceRequest::MAX_LENGTH - mb_strlen( $scene_note ) ) . $scene_note;
-			$id          = $requests->create( 'objects', $description, $user );
+		foreach ( $objects as $piece ) {
+			// Short objects get a note about the scene; long ones (a split layer with style notes) keep their room.
+			$object      = $piece['description'];
+			$description = mb_strlen( $object . $scene_note ) <= PieceRequest::MAX_LENGTH ? $object . $scene_note : mb_substr( $object, 0, PieceRequest::MAX_LENGTH );
+			$reference   = $this->plugin->reference_images()->exists( $piece['reference'] ) ? $piece['reference'] : '';
+			$id          = $requests->create( $piece['category'], $description, $user, $reference );
 			if ( is_wp_error( $id ) ) {
 				foreach ( $ids as $done ) {
-					$requests->cancel( $done );
+					$made = $requests->get( $done );
+					if ( $requests->cancel( $done ) && null !== $made ) {
+						$this->plugin->reference_images()->delete( $made['reference'] );
+					}
 				}
 
 				return new \WP_Error( 'sprint_illustrations_invalid_plan', $id->get_error_message(), [ 'status' => 400 ] );
@@ -143,6 +214,50 @@ final class PlansController {
 		);
 
 		return new \WP_REST_Response( $this->present( $plan_id, (array) $this->plugin->scene_plans()->get( $plan_id ) ), 201 );
+	}
+
+	/**
+	 * Keep a drawn piece: it joins the library (the plugin's own assets when writable).
+	 *
+	 * @param \WP_REST_Request $request Request {id}: the piece request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function keep( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$row = $this->reviewable( (int) $request['id'] );
+		if ( is_wp_error( $row ) ) {
+			return $row;
+		}
+
+		$result = $this->plugin->piece_drafts()->accept( $row );
+		if ( ! $result['ok'] ) {
+			return new \WP_Error( 'sprint_illustrations_keep_failed', implode( ' ', $result['messages'] ), [ 'status' => 422 ] );
+		}
+		delete_transient( self::PREVIEW_TRANSIENT . $row['id'] );
+
+		return new \WP_REST_Response(
+			[
+				'piece' => $result['piece'],
+				'where' => $result['where'] ?? 'site',
+			]
+		);
+	}
+
+	/**
+	 * Discard a drawn piece (Try again on the Library page can re-queue it).
+	 *
+	 * @param \WP_REST_Request $request Request {id}: the piece request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function discard( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$row = $this->reviewable( (int) $request['id'] );
+		if ( is_wp_error( $row ) ) {
+			return $row;
+		}
+
+		$this->plugin->piece_drafts()->reject( $row );
+		delete_transient( self::PREVIEW_TRANSIENT . $row['id'] );
+
+		return new \WP_REST_Response( [ 'discarded' => true ] );
 	}
 
 	/**
@@ -201,6 +316,60 @@ final class PlansController {
 	}
 
 	/**
+	 * A piece request the current user may keep or discard and that is waiting for review.
+	 *
+	 * @param int $id Request ID.
+	 * @return array<string, mixed>|\WP_Error
+	 */
+	private function reviewable( int $id ): array|\WP_Error {
+		$row = $this->plugin->piece_requests()->get( $id );
+		if ( null === $row || ! $this->can_act( $row ) ) {
+			return new \WP_Error( 'sprint_illustrations_not_found', __( 'That request no longer exists.', 'sprint-illustrations' ), [ 'status' => 404 ] );
+		}
+		if ( 'review' !== $row['state'] ) {
+			return new \WP_Error( 'sprint_illustrations_not_in_review', __( 'That piece is not waiting for review.', 'sprint-illustrations' ), [ 'status' => 409 ] );
+		}
+
+		return $row;
+	}
+
+	/**
+	 * Whether the current user may keep or discard a request (its requester, or an admin).
+	 *
+	 * @param array<string, mixed> $row Request.
+	 * @return bool
+	 */
+	private function can_act( array $row ): bool {
+		return current_user_can( 'manage_options' ) || get_current_user_id() === (int) $row['author'];
+	}
+
+	/**
+	 * The piece alone as a sanitized SVG, cached until the request changes.
+	 *
+	 * @param array<string, mixed> $row Request in review.
+	 * @return string
+	 */
+	private function preview( array $row ): string {
+		$key    = self::PREVIEW_TRANSIENT . $row['id'];
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) && ( $cached['changed'] ?? '' ) === $row['changed'] ) {
+			return (string) $cached['svg'];
+		}
+
+		$svg = $this->plugin->piece_drafts()->preview( $row )['piece'];
+		set_transient(
+			$key,
+			[
+				'changed' => $row['changed'],
+				'svg'     => $svg,
+			],
+			HOUR_IN_SECONDS
+		);
+
+		return $svg;
+	}
+
+	/**
 	 * A plan the current user may use, or a 404.
 	 *
 	 * @param string $id Plan ID.
@@ -220,7 +389,7 @@ final class PlansController {
 	 *
 	 * @param string               $id   Plan ID.
 	 * @param array<string, mixed> $plan Stored plan.
-	 * @return array{id: string, description: string, template: string, title: string, requests: array<int, array{id: int, description: string, state: string, piece: string, note: string}>, ready: bool, waiting: int}
+	 * @return array{id: string, description: string, template: string, title: string, requests: array<int, array{id: int, description: string, category: string, state: string, piece: string, note: string, reference: string, can_act: bool, preview: string}>, ready: bool, waiting: int}
 	 */
 	private function present( string $id, array $plan ): array {
 		$repo     = $this->plugin->piece_requests();
@@ -231,9 +400,13 @@ final class PlansController {
 				$requests[] = [
 					'id'          => $row['id'],
 					'description' => $row['description'],
+					'category'    => $row['category'],
 					'state'       => $row['state'],
 					'piece'       => $row['piece'],
 					'note'        => $row['note'],
+					'reference'   => $this->plugin->reference_images()->url( $row['reference'] ),
+					'can_act'     => $this->can_act( $row ),
+					'preview'     => 'review' === $row['state'] ? $this->preview( $row ) : '',
 				];
 			}
 		}

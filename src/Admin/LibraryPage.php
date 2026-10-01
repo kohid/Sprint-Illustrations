@@ -18,6 +18,7 @@ use SprintIllustrations\Library\Template;
 use SprintIllustrations\Palette\Palette;
 use SprintIllustrations\Plugin;
 use SprintIllustrations\Rest\PiecePreviews;
+use SprintIllustrations\Rest\Permissions;
 
 /**
  * Tabs per category plus Templates, with a word search over labels and tags.
@@ -74,9 +75,17 @@ final class LibraryPage {
 			'sprint-illustrations-library',
 			'sprintIllustrationsLibrary',
 			[
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'action'  => PieceRequestPanel::STATES_ACTION,
-				'nonce'   => wp_create_nonce( PieceRequestPanel::STATES_ACTION ),
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'action'    => PieceRequestPanel::STATES_ACTION,
+				'nonce'     => wp_create_nonce( PieceRequestPanel::STATES_ACTION ),
+				'restUrl'   => rest_url( Permissions::NAMESPACE . '/references' ),
+				'restNonce' => wp_create_nonce( 'wp_rest' ),
+				'text'      => [
+					'working' => __( 'Adding the image…', 'sprint-illustrations' ),
+					'added'   => __( 'Image added.', 'sprint-illustrations' ),
+					'failed'  => __( 'That image couldn’t be added.', 'sprint-illustrations' ),
+					'nothing' => __( 'Nothing to paste: copy a screenshot or an image address first.', 'sprint-illustrations' ),
+				],
 			]
 		);
 	}

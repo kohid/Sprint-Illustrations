@@ -17,8 +17,13 @@ use SprintIllustrations\Palette\Color;
  */
 final class Paint {
 
-	public const SLOTS = [ 'primary', 'secondary', 'accent', 'neutral' ];
-	public const MAX   = 64;
+	public const SLOTS = [ 'primary', 'secondary', 'accent', 'neutral', 'skin', 'hair' ];
+
+	/**
+	 * Slots that take a single colour only (a gradient on skin or hair makes no sense).
+	 */
+	public const SOLID_ONLY = [ 'skin', 'hair' ];
+	public const MAX        = 64;
 
 	/**
 	 * Normalize a layer key => slot => paint map; invalid entries are dropped.
@@ -42,7 +47,7 @@ final class Paint {
 
 			$entry = [];
 			foreach ( self::SLOTS as $slot ) {
-				$paint = self::normalize_paint( $slots[ $slot ] ?? null );
+				$paint = self::normalize_paint( $slots[ $slot ] ?? null, in_array( $slot, self::SOLID_ONLY, true ) );
 				if ( null !== $paint ) {
 					$entry[ $slot ] = $paint;
 				}
@@ -58,14 +63,15 @@ final class Paint {
 	/**
 	 * One paint: a hex colour or a gradient.
 	 *
-	 * @param mixed $paint Candidate.
+	 * @param mixed $paint      Candidate.
+	 * @param bool  $solid_only Only a single colour is allowed.
 	 * @return string|array{from: string, to: string, angle: int}|null
 	 */
-	private static function normalize_paint( mixed $paint ): string|array|null {
+	private static function normalize_paint( mixed $paint, bool $solid_only = false ): string|array|null {
 		if ( is_string( $paint ) ) {
 			return Color::normalize_hex( $paint );
 		}
-		if ( ! is_array( $paint ) || ! isset( $paint['from'], $paint['to'] ) || ! is_string( $paint['from'] ) || ! is_string( $paint['to'] ) ) {
+		if ( $solid_only || ! is_array( $paint ) || ! isset( $paint['from'], $paint['to'] ) || ! is_string( $paint['from'] ) || ! is_string( $paint['to'] ) ) {
 			return null;
 		}
 

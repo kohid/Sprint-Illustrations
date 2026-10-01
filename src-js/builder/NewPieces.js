@@ -4,63 +4,298 @@
  * are kept in the Library the scene is built with them placed on the canvas.
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
-import { useCallback, useEffect, useState } from '@wordpress/element';
-import { Button, TextControl } from '@wordpress/components';
-import { buildPlan, createPlan, deletePlan, listPlans } from './api';
-
-const config = window.sprintIllustrationsBuilder || {};
-
-const STATES = {
-	queued: __( 'Waiting to be drawn', 'sprint-illustrations' ),
-	drawing: __( 'Being drawn', 'sprint-illustrations' ),
-	review: __( 'Ready for you to keep', 'sprint-illustrations' ),
-	done: __( 'Added to the library', 'sprint-illustrations' ),
-	discarded: __( 'Discarded', 'sprint-illustrations' ),
-	declined: __( 'Declined', 'sprint-illustrations' ),
-};
+import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
+import { Button, SelectControl, TextControl } from '@wordpress/components';
+import {
+	buildPlan,
+	createPlan,
+	deletePlan,
+	discardPiece,
+	keepPiece,
+	listPlans,
+	splitBrief,
+	uploadReference,
+} from './api';
 
 const POLL_MS = 8000;
 
-function Plan( { plan, busy, onBuild, onRemove } ) {
+// What a request draws. A character is drawn with skin and hair colours you can change afterwards.
+const KINDS = [
+	{ value: 'objects', label: __( 'Object', 'sprint-illustrations' ) },
+	{ value: 'characters', label: __( 'Character', 'sprint-illustrations' ) },
+	{ value: 'decor', label: __( 'Decor', 'sprint-illustrations' ) },
+	{ value: 'backgrounds', label: __( 'Background', 'sprint-illustrations' ) },
+];
+
+const kindLabel = ( value ) =>
+	KINDS.find( ( kind ) => kind.value === value )?.label || value;
+
+/**
+ * Optional reference image for the piece being added: paste a screenshot (Ctrl+V) or an image
+ * address, or choose a file. The image is stored first; the request then attaches it.
+ *
+ * @param {Object}   props         Props.
+ * @param {Object}   props.value   Stored image {name, url}, or null.
+ * @param {boolean}  props.busy    Whether an image is being added.
+ * @param {Function} props.onStore Called with {file} or {text}.
+ * @param {Function} props.onClear Remove the image.
+ * @return {Element} Field.
+ */
+function ReferenceField( { value, busy, onStore, onClear } ) {
+	const [ text, setText ] = useState( '' );
+	const fileInput = useRef( null );
+
+	if ( value ) {
+		return (
+			<div className="si-b-ref">
+				<img className="si-b-ref__thumb" src={ value.url } alt="" />
+				<span>
+					{ __( 'Reference image added.', 'sprint-illustrations' ) }
+				</span>
+				<Button
+					size="small"
+					icon="no-alt"
+					label={ __(
+						'Remove the reference image',
+						'sprint-illustrations'
+					) }
+					onClick={ onClear }
+				/>
+			</div>
+		);
+	}
+
+	const paste = ( event ) => {
+		const clip = event.clipboardData;
+		const images = [ ...( clip?.files || [] ) ].filter( ( file ) =>
+			file.type.startsWith( 'image/' )
+		);
+		if ( images.length ) {
+			event.preventDefault();
+			onStore( { file: images[ 0 ] } );
+			return;
+		}
+		const pasted = clip?.getData( 'text' ) || '';
+		if ( pasted ) {
+			event.preventDefault();
+			onStore( { text: pasted } );
+		}
+	};
+
+	return (
+		<div className="si-b-row si-b-ref-field">
+			<TextControl
+				__nextHasNoMarginBottom
+				__next40pxDefaultSize
+				label={ __(
+					'Reference image (optional)',
+					'sprint-illustrations'
+				) }
+				placeholder={ __(
+					'Paste a screenshot, or an image address',
+					'sprint-illustrations'
+				) }
+				value={ text }
+				disabled={ busy }
+				onChange={ setText }
+				onPaste={ paste }
+				onKeyDown={ ( event ) => {
+					if ( 'Enter' === event.key && text.trim() ) {
+						event.preventDefault();
+						onStore( { text: text.trim() } );
+						setText( '' );
+					}
+				} }
+			/>
+			<Button
+				variant="secondary"
+				__next40pxDefaultSize
+				isBusy={ busy }
+				disabled={ busy }
+				onClick={ () => fileInput.current?.click() }
+			>
+				{ __( 'Choose image', 'sprint-illustrations' ) }
+			</Button>
+			<input
+				ref={ fileInput }
+				type="file"
+				hidden
+				accept="image/png,image/jpeg,image/webp"
+				onChange={ ( event ) => {
+					const file = event.target.files?.[ 0 ];
+					event.target.value = '';
+					if ( file ) {
+						onStore( { file } );
+					}
+				} }
+			/>
+		</div>
+	);
+}
+const STEPS = [
+	{ state: 'queued', label: __( 'Requested', 'sprint-illustrations' ) },
+	{ state: 'drawing', label: __( 'Drawing', 'sprint-illustrations' ) },
+	{
+		state: 'review',
+		label: __( 'Ready for review', 'sprint-illustrations' ),
+	},
+	{ state: 'done', label: __( 'In the library', 'sprint-illustrations' ) },
+];
+
+/**
+ * Requested → Drawing → Ready for review → In the library, with the current step marked.
+ *
+ * @param {Object} props       Props.
+ * @param {string} props.state Request state.
+ * @return {Element|null} Track.
+ */
+function Track( { state } ) {
+	const current = STEPS.findIndex( ( step ) => step.state === state );
+	if ( current < 0 ) {
+		return null;
+	}
+	return (
+		<ol
+			className="si-b-track"
+			aria-label={ __( 'Progress', 'sprint-illustrations' ) }
+		>
+			{ STEPS.map( ( step, index ) => (
+				<li
+					key={ step.state }
+					className={ `si-b-track__step${
+						index < current || 'done' === state ? ' is-done' : ''
+					}${ index === current ? ' is-current' : '' }` }
+					aria-current={ index === current ? 'step' : undefined }
+				>
+					{ step.label }
+				</li>
+			) ) }
+		</ol>
+	);
+}
+
+function Request( { request, busy, onKeep, onDiscard } ) {
+	const text = request.description.replace( / \(for a scene:.*$/, '' );
+
+	return (
+		<li className={ `si-b-req is-${ request.state }` }>
+			<span className="si-b-req__text" title={ text }>
+				{ text }
+			</span>
+			<span className="si-b-badge si-b-badge--quiet">
+				{ kindLabel( request.category ) }
+			</span>
+			{ request.reference && (
+				<img
+					className="si-b-req__ref"
+					src={ request.reference }
+					alt={ __( 'Reference image', 'sprint-illustrations' ) }
+				/>
+			) }
+			<Track state={ request.state } />
+			{ ( 'discarded' === request.state ||
+				'declined' === request.state ) && (
+				<span className="si-b-muted">
+					{ 'declined' === request.state
+						? __( 'Declined.', 'sprint-illustrations' )
+						: __( 'Discarded.', 'sprint-illustrations' ) }{ ' ' }
+					{ request.note }
+				</span>
+			) }
+			{ 'review' === request.state && (
+				<div className="si-b-req__review">
+					{ request.preview && (
+						<span
+							className="si-b-req__art"
+							// Sanitized server-side (draft preview).
+							dangerouslySetInnerHTML={ {
+								__html: request.preview,
+							} }
+						/>
+					) }
+					{ request.can_act ? (
+						<span className="si-b-req__actions">
+							<Button
+								variant="primary"
+								size="compact"
+								isBusy={ busy }
+								disabled={ busy || ! request.preview }
+								onClick={ () => onKeep( request ) }
+							>
+								{ __( 'Keep', 'sprint-illustrations' ) }
+							</Button>
+							<Button
+								variant="tertiary"
+								size="compact"
+								isDestructive
+								disabled={ busy }
+								onClick={ () => onDiscard( request ) }
+							>
+								{ __( 'Discard', 'sprint-illustrations' ) }
+							</Button>
+						</span>
+					) : (
+						<span className="si-b-muted">
+							{ __(
+								'Waiting for the requester to keep it.',
+								'sprint-illustrations'
+							) }
+						</span>
+					) }
+				</div>
+			) }
+		</li>
+	);
+}
+
+function Plan( { plan, busy, working, onBuild, onRemove, onKeep, onDiscard } ) {
+	const total = plan.requests.length;
+	const added = plan.requests.filter( ( r ) => 'done' === r.state ).length;
+
 	return (
 		<li className="si-b-plan">
 			<p className="si-b-plan__title">{ plan.description }</p>
-			<ul className="si-b-plan__pieces">
+			<div className="si-b-progress">
+				<div
+					className="si-b-progress__bar"
+					role="progressbar"
+					aria-label={ __(
+						'Pieces in the library',
+						'sprint-illustrations'
+					) }
+					aria-valuemin={ 0 }
+					aria-valuemax={ total }
+					aria-valuenow={ added }
+				>
+					<span
+						style={ {
+							width: `${ total ? ( added / total ) * 100 : 0 }%`,
+						} }
+					/>
+				</div>
+				<span className="si-b-muted">
+					{ sprintf(
+						/* translators: 1: pieces added, 2: total pieces. */
+						__(
+							'%1$d of %2$d in the library',
+							'sprint-illustrations'
+						),
+						added,
+						total
+					) }
+				</span>
+			</div>
+			<ul className="si-b-reqs">
 				{ plan.requests.map( ( request ) => (
-					<li key={ request.id }>
-						<span className="si-b-plan__what">
-							{ request.description.replace(
-								/ \(for a scene:.*$/,
-								''
-							) }
-						</span>
-						<span
-							className={ `si-b-badge si-b-badge--${
-								'done' === request.state ? 'motion' : 'quiet'
-							}` }
-						>
-							{ STATES[ request.state ] || request.state }
-						</span>
-						{ request.note && (
-							<span className="si-b-muted">
-								{ ' ' }
-								{ request.note }
-							</span>
-						) }
-					</li>
+					<Request
+						key={ request.id }
+						request={ request }
+						busy={ working === request.id }
+						onKeep={ onKeep }
+						onDiscard={ onDiscard }
+					/>
 				) ) }
 			</ul>
-			{ plan.requests.some( ( r ) => 'review' === r.state ) &&
-				config.libraryUrl && (
-					<p className="si-b-muted">
-						<a href={ config.libraryUrl }>
-							{ __(
-								'Open the Library to keep or discard the drawings.',
-								'sprint-illustrations'
-							) }
-						</a>
-					</p>
-				) }
 			<div className="si-b-plan__bar">
 				<Button
 					variant="primary"
@@ -84,22 +319,51 @@ function Plan( { plan, busy, onBuild, onRemove } ) {
 	);
 }
 
-export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
+export default function NewPieces( {
+	state,
+	describe,
+	dispatch,
+	onBuilt,
+	onLibraryChanged,
+} ) {
 	const missing = state.missing || [];
 	const [ picked, setPicked ] = useState( [] );
 	const [ custom, setCustom ] = useState( '' );
+	const [ kind, setKind ] = useState( 'objects' );
+	const [ reference, setReference ] = useState( null );
+	const [ refBusy, setRefBusy ] = useState( false );
 	const [ plans, setPlans ] = useState( [] );
 	const [ sending, setSending ] = useState( false );
 	const [ building, setBuilding ] = useState( '' );
+	const [ working, setWorking ] = useState( 0 );
+	// Request IDs already in the library, so a piece kept anywhere refreshes the Library panel once.
+	const knownDone = useRef( null );
 
 	const notify = ( status, text ) =>
 		dispatch( { type: 'NOTICE', notice: { status, text } } );
 	const refresh = useCallback(
 		() =>
 			listPlans()
-				.then( setPlans )
+				.then( ( list ) => {
+					setPlans( list );
+					const done = new Set(
+						list.flatMap( ( plan ) =>
+							plan.requests
+								.filter( ( r ) => 'done' === r.state )
+								.map( ( r ) => r.id )
+						)
+					);
+					const fresh = [ ...done ].some(
+						( id ) =>
+							knownDone.current && ! knownDone.current.has( id )
+					);
+					knownDone.current = done;
+					if ( fresh ) {
+						onLibraryChanged();
+					}
+				} )
 				.catch( () => {} ),
-		[]
+		[ onLibraryChanged ]
 	);
 
 	useEffect( () => {
@@ -116,26 +380,114 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 		return () => window.clearInterval( timer );
 	}, [ plans, refresh ] );
 
+	// Picked entries are { text, category }; the suggested words are objects.
 	const toggle = ( word ) =>
 		setPicked( ( list ) =>
-			list.includes( word )
-				? list.filter( ( item ) => item !== word )
-				: [ ...list, word ]
+			list.some( ( item ) => item.text === word )
+				? list.filter( ( item ) => item.text !== word )
+				: [ ...list, { text: word, category: 'objects' } ]
 		);
+	// A long brief with numbered layers, (1) … (2) …, becomes one short request per layer.
+	const looksLikeBrief =
+		describe.length > 300 ||
+		/\(\s*1\s*\)|(^|\n)\s*1[.)]\s/.test( describe );
+	const split = () =>
+		splitBrief( describe )
+			.then( ( result ) => {
+				if ( ! result.layers.length ) {
+					notify(
+						'info',
+						__(
+							'No numbered layers found. Number them like (1) …, (2) … or 1. … 2. … and try again.',
+							'sprint-illustrations'
+						)
+					);
+					return;
+				}
+				setPicked(
+					result.layers.map( ( text ) => ( {
+						text,
+						category: 'objects',
+					} ) )
+				);
+				notify(
+					'success',
+					sprintf(
+						/* translators: %d: number of layer requests. */
+						__(
+							'Split into %d layer requests, each with your style notes. Remove any you do not want, then request the drawings.',
+							'sprint-illustrations'
+						),
+						result.layers.length
+					)
+				);
+			} )
+			.catch( ( error ) =>
+				notify(
+					'error',
+					error.message ||
+						__(
+							'Could not split the brief.',
+							'sprint-illustrations'
+						)
+				)
+			);
+	const storeReference = ( source ) => {
+		setRefBusy( true );
+		uploadReference( source )
+			.then( setReference )
+			.catch( ( error ) =>
+				notify(
+					'error',
+					error.message ||
+						__(
+							'That image couldn’t be added.',
+							'sprint-illustrations'
+						)
+				)
+			)
+			.finally( () => setRefBusy( false ) );
+	};
+	// A screenshot pasted into the piece field attaches straight away; other text pastes normally.
+	const pasteScreenshot = ( event ) => {
+		const image = [ ...( event.clipboardData?.files || [] ) ].find(
+			( file ) => file.type.startsWith( 'image/' )
+		);
+		if ( image ) {
+			event.preventDefault();
+			storeReference( { file: image } );
+		}
+	};
 	const addCustom = () => {
 		const text = custom.trim();
-		if ( text.length >= 3 && ! picked.includes( text ) ) {
-			setPicked( ( list ) => [ ...list, text ] );
+		if (
+			text.length >= 3 &&
+			! picked.some( ( item ) => item.text === text )
+		) {
+			setPicked( ( list ) => [
+				...list,
+				{
+					text,
+					category: kind,
+					reference: reference?.name || '',
+					referenceUrl: reference?.url || '',
+				},
+			] );
+			setReference( null );
 		}
 		setCustom( '' );
 	};
 
-	const request = () => {
+	const requestDrawings = () => {
 		setSending( true );
 		createPlan( {
-			content: describe,
-			objects: picked,
-			template: state.spec.template,
+			content: describe.trim(),
+			objects: picked.map( ( item ) => ( {
+				description: item.text,
+				category: item.category,
+				reference: item.reference || '',
+			} ) ),
+			template: state.spec.template || '',
 			keywords: state.spec.keywords
 				.split( ',' )
 				.map( ( word ) => word.trim() )
@@ -184,13 +536,46 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 			.finally( () => setBuilding( '' ) );
 	};
 
+	const keep = ( request ) => {
+		setWorking( request.id );
+		keepPiece( request.id )
+			.then( () => {
+				notify(
+					'success',
+					__(
+						'Added to the library. It is now in the Library panel.',
+						'sprint-illustrations'
+					)
+				);
+				return refresh();
+			} )
+			.catch( ( error ) =>
+				notify(
+					'error',
+					error.message ||
+						__(
+							'Could not keep the piece.',
+							'sprint-illustrations'
+						)
+				)
+			)
+			.finally( () => setWorking( 0 ) );
+	};
+	const discard = ( request ) => {
+		setWorking( request.id );
+		discardPiece( request.id )
+			.then( refresh )
+			.catch( () => {} )
+			.finally( () => setWorking( 0 ) );
+	};
+
 	const remove = ( plan ) =>
 		deletePlan( plan.id )
 			.then( refresh )
 			.catch( () => {} );
 
-	const canRequest =
-		describe.trim() && picked.length > 0 && state.spec.template;
+	// Only the objects are required: the description and template are optional context for the scene.
+	const canRequest = picked.length > 0;
 
 	return (
 		<section className="si-b-panel" aria-labelledby="si-b-newpieces">
@@ -222,7 +607,9 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 							type="button"
 							key={ word }
 							className="si-b-chip"
-							aria-pressed={ picked.includes( word ) }
+							aria-pressed={ picked.some(
+								( item ) => item.text === word
+							) }
 							onClick={ () => toggle( word ) }
 						>
 							{ word }
@@ -230,23 +617,43 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 					) ) }
 				</div>
 			) }
+			{ looksLikeBrief && (
+				<p>
+					<Button variant="secondary" onClick={ split }>
+						{ __(
+							'Split my description into layer requests',
+							'sprint-illustrations'
+						) }
+					</Button>
+				</p>
+			) }
 			<div className="si-b-row">
 				<TextControl
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
-					label={ __( 'Your own object', 'sprint-illustrations' ) }
+					label={ __( 'Your own piece', 'sprint-illustrations' ) }
 					placeholder={ __(
-						'e.g. a delivery drone with a parcel',
+						'e.g. a taxi driver in a flat cap, or a delivery drone',
 						'sprint-illustrations'
 					) }
 					value={ custom }
 					onChange={ setCustom }
+					onPaste={ pasteScreenshot }
 					onKeyDown={ ( event ) => {
 						if ( 'Enter' === event.key ) {
 							event.preventDefault();
 							addCustom();
 						}
 					} }
+				/>
+				<SelectControl
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+					label={ __( 'Kind of piece', 'sprint-illustrations' ) }
+					hideLabelFromVision
+					value={ kind }
+					options={ KINDS }
+					onChange={ setKind }
 				/>
 				<Button
 					variant="secondary"
@@ -257,20 +664,38 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 					{ __( 'Add', 'sprint-illustrations' ) }
 				</Button>
 			</div>
+			<ReferenceField
+				value={ reference }
+				busy={ refBusy }
+				onStore={ storeReference }
+				onClear={ () => setReference( null ) }
+			/>
 			{ picked.length > 0 && (
 				<ul className="si-b-picked">
 					{ picked.map( ( item ) => (
-						<li key={ item }>
-							{ item }
+						<li key={ item.text }>
+							<span>
+								{ item.referenceUrl && (
+									<img
+										className="si-b-picked__ref"
+										src={ item.referenceUrl }
+										alt=""
+									/>
+								) }
+								{ item.text }
+								<span className="si-b-badge si-b-badge--quiet">
+									{ kindLabel( item.category ) }
+								</span>
+							</span>
 							<Button
 								size="small"
 								icon="no-alt"
 								label={ sprintf(
 									/* translators: %s: object. */
 									__( 'Remove %s', 'sprint-illustrations' ),
-									item
+									item.text
 								) }
-								onClick={ () => toggle( item ) }
+								onClick={ () => toggle( item.text ) }
 							/>
 						</li>
 					) ) }
@@ -281,7 +706,7 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 				__next40pxDefaultSize
 				isBusy={ sending }
 				disabled={ ! canRequest || sending }
-				onClick={ request }
+				onClick={ requestDrawings }
 			>
 				{ sprintf(
 					/* translators: %d: number of objects. */
@@ -301,8 +726,11 @@ export default function NewPieces( { state, describe, dispatch, onBuilt } ) {
 							key={ plan.id }
 							plan={ plan }
 							busy={ building === plan.id }
+							working={ working }
 							onBuild={ build }
 							onRemove={ remove }
+							onKeep={ keep }
+							onDiscard={ discard }
 						/>
 					) ) }
 				</ul>
