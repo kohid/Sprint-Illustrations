@@ -30,6 +30,7 @@ use SprintIllustrations\Palette\PaletteSettings;
 use SprintIllustrations\Palette\PresetRepository;
 use SprintIllustrations\Render\Renderer;
 use SprintIllustrations\Rest\CharactersController;
+use SprintIllustrations\Rest\PortraitsController;
 use SprintIllustrations\Rest\ComposeController;
 use SprintIllustrations\Rest\IllustrationsController;
 use SprintIllustrations\Rest\LibraryController;
@@ -466,6 +467,7 @@ final class Plugin {
 		( new SuggestController( $this ) )->register();
 		( new PlansController( $this ) )->register();
 		( new CharactersController( $this ) )->register();
+		( new PortraitsController( $this ) )->register();
 		( new ReferencesController( $this ) )->register();
 		( new TemplatesController( $this ) )->register();
 		( new RequestsController( $this ) )->register();

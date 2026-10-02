@@ -22,6 +22,7 @@ final class Menu {
 	public const LIBRARY_SLUG = 'sprint-illustrations-library';
 
 	public const CHARACTERS_SLUG = 'sprint-illustrations-characters';
+	public const PORTRAITS_SLUG  = 'sprint-illustrations-portraits';
 
 	public const SETTINGS_SLUG = 'sprint-illustrations-settings';
 
@@ -47,6 +48,13 @@ final class Menu {
 	 * @var CharactersPage
 	 */
 	private CharactersPage $characters;
+
+	/**
+	 * Portrait studio page.
+	 *
+	 * @var PortraitsPage
+	 */
+	private PortraitsPage $portraits;
 
 	/**
 	 * Settings page.
@@ -77,6 +85,13 @@ final class Menu {
 	private string $characters_hook = '';
 
 	/**
+	 * Portraits page hook suffix.
+	 *
+	 * @var string
+	 */
+	private string $portraits_hook = '';
+
+	/**
 	 * Settings page hook suffix.
 	 *
 	 * @var string
@@ -99,6 +114,7 @@ final class Menu {
 		$this->builder    = new BuilderPage( $plugin );
 		$this->library    = new LibraryPage( $plugin );
 		$this->characters = new CharactersPage( $plugin );
+		$this->portraits  = new PortraitsPage( $plugin );
 		$this->settings   = new SettingsPage( $plugin );
 	}
 
@@ -146,6 +162,15 @@ final class Menu {
 			[ $this->characters, 'render' ]
 		);
 
+		$this->portraits_hook = (string) add_submenu_page(
+			self::SLUG,
+			__( 'Sprint Illustrations Portrait studio', 'sprint-illustrations' ),
+			__( 'Portraits', 'sprint-illustrations' ),
+			PortraitsPage::CAPABILITY,
+			self::PORTRAITS_SLUG,
+			[ $this->portraits, 'render' ]
+		);
+
 		$this->settings_hook = (string) add_submenu_page(
 			self::SLUG,
 			__( 'Sprint Illustrations Settings', 'sprint-illustrations' ),
@@ -183,6 +208,11 @@ final class Menu {
 
 		if ( $hook_suffix === $this->characters_hook ) {
 			$this->characters->enqueue();
+			return;
+		}
+
+		if ( $hook_suffix === $this->portraits_hook ) {
+			$this->portraits->enqueue();
 			return;
 		}
 

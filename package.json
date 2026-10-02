@@ -4,8 +4,8 @@
 	"description": "Build tooling for the Sprint Illustrations Builder screen.",
 	"license": "GPL-2.0-or-later",
 	"scripts": {
-		"build": "wp-scripts build builder=./src-js/builder/index.js characters=./src-js/characters/index.js --output-path=build",
-		"start": "wp-scripts start builder=./src-js/builder/index.js characters=./src-js/characters/index.js --output-path=build",
+		"build": "wp-scripts build builder=./src-js/builder/index.js characters=./src-js/characters/index.js portraits=./src-js/portraits/index.js --output-path=build",
+		"start": "wp-scripts start builder=./src-js/builder/index.js characters=./src-js/characters/index.js portraits=./src-js/portraits/index.js --output-path=build",
 		"lint:js": "wp-scripts lint-js src-js"
 	},
 	"devDependencies": {
