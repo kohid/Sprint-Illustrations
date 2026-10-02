@@ -80,6 +80,26 @@ final class Sketch {
 	}
 
 	/**
+	 * A thick round-ended limb between two points: a darker stroke underneath and the colour on top, so it
+	 * reads as a filled shape with an outline.
+	 *
+	 * @param array{0: float|int, 1: float|int} $from   Start.
+	 * @param array{0: float|int, 1: float|int} $to     End.
+	 * @param string                            $fill   Fill token.
+	 * @param string                            $edge   Outline token.
+	 * @param float                             $width  Thickness.
+	 * @param string                            $key    Names the stroke.
+	 * @return string
+	 */
+	public function limb( array $from, array $to, string $fill, string $edge, float $width, string $key ): string {
+		$points = $this->wobble( [ $from, $to ], 0.6, $key );
+		$d      = 'M' . G::pt( $points[0] ) . ' L' . G::pt( $points[1] );
+
+		return '<path class="slot-stroke-' . $edge . '" d="' . $d . '" fill="none" stroke-width="' . G::n( $width + 4.4 ) . '" stroke-linecap="round"/>'
+			. '<path class="slot-stroke-' . $fill . '" d="' . $d . '" fill="none" stroke-width="' . G::n( $width ) . '" stroke-linecap="round"/>';
+	}
+
+	/**
 	 * Fill and outline for a prepared path.
 	 *
 	 * @param string                                        $d      Path data.
