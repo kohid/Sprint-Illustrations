@@ -105,8 +105,8 @@ final class FigurePresets {
 		],
 	];
 
-	private const WOMAN_HAIR = [ 'bob', 'long', 'ponytail', 'bun', 'curly', 'short' ];
-	private const MAN_HAIR   = [ 'short', 'messy', 'curly', 'bald', 'short' ];
+	private const WOMAN_HAIR = [ 'bob', 'long', 'ponytail', 'bun', 'twintails', 'curly', 'short' ];
+	private const MAN_HAIR   = [ 'short', 'messy', 'sidepart', 'afro', 'curly', 'bald' ];
 
 	/**
 	 * Presets for the page.
@@ -197,7 +197,7 @@ final class FigurePresets {
 			}
 		}
 		// The frame and what is held belong to the page, not to the look.
-		foreach ( [ 'scene', 'scene_color', 'pose', 'carry', 'tilt' ] as $field ) {
+		foreach ( [ 'scene', 'scene_color', 'pose', 'carry', 'tilt', 'flip' ] as $field ) {
 			unset( $chosen[ $field ] );
 		}
 		$chosen['skin']      = $random->int( 0, FigureSpec::MAX_TONE );

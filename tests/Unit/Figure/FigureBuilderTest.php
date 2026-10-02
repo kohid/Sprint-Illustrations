@@ -151,7 +151,7 @@ final class FigureBuilderTest extends TestCase {
 	public function test_shuffle_is_deterministic_and_respects_the_hair_pool(): void {
 		$this->assertEquals( FigurePresets::shuffled( 7, 'woman' ), FigurePresets::shuffled( 7, 'woman' ) );
 		for ( $seed = 1; $seed <= 30; $seed++ ) {
-			$this->assertContains( FigurePresets::shuffled( $seed, 'man' )->get( 'hair' ), [ 'short', 'messy', 'curly', 'bald' ] );
+			$this->assertContains( FigurePresets::shuffled( $seed, 'man' )->get( 'hair' ), [ 'short', 'messy', 'sidepart', 'afro', 'curly', 'bald' ] );
 		}
 	}
 }

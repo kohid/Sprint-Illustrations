@@ -80,23 +80,56 @@ final class Sketch {
 	}
 
 	/**
-	 * A thick round-ended limb between two points: a darker stroke underneath and the colour on top, so it
-	 * reads as a filled shape with an outline.
+	 * A thick round-ended limb between two points: a slightly wider, darker, translucent stroke underneath and
+	 * the colour on top, so it reads as a flat shape with a soft edge.
 	 *
-	 * @param array{0: float|int, 1: float|int} $from   Start.
-	 * @param array{0: float|int, 1: float|int} $to     End.
-	 * @param string                            $fill   Fill token.
-	 * @param string                            $edge   Outline token.
-	 * @param float                             $width  Thickness.
-	 * @param string                            $key    Names the stroke.
+	 * @param array{0: float|int, 1: float|int} $from  Start.
+	 * @param array{0: float|int, 1: float|int} $to    End.
+	 * @param string                            $fill  Fill token.
+	 * @param string                            $edge  Edge token.
+	 * @param float                             $width Thickness.
+	 * @param string                            $key   Names the stroke.
 	 * @return string
 	 */
 	public function limb( array $from, array $to, string $fill, string $edge, float $width, string $key ): string {
-		$points = $this->wobble( [ $from, $to ], 0.6, $key );
+		$points = $this->wobble( [ $from, $to ], 0.5, $key );
 		$d      = 'M' . G::pt( $points[0] ) . ' L' . G::pt( $points[1] );
 
-		return '<path class="slot-stroke-' . $edge . '" d="' . $d . '" fill="none" stroke-width="' . G::n( $width + 4.4 ) . '" stroke-linecap="round"/>'
+		return '<path class="slot-stroke-' . $edge . '" d="' . $d . '" fill="none" stroke-width="' . G::n( $width + 2.4 ) . '" stroke-linecap="round" opacity="0.6"/>'
 			. '<path class="slot-stroke-' . $fill . '" d="' . $d . '" fill="none" stroke-width="' . G::n( $width ) . '" stroke-linecap="round"/>';
+	}
+
+	/**
+	 * A flat shape with a thin, soft edge (one pass, translucent line): the look of flat-colour illustration.
+	 *
+	 * @param array<int, array{0: float|int, 1: float|int}> $points Points around the shape.
+	 * @param string                                        $fill   Fill token.
+	 * @param string                                        $edge   Edge token, "" for none.
+	 * @param string                                        $key    Names the stroke.
+	 * @param float                                         $width  Edge width.
+	 * @param float                                         $amp    Wobble.
+	 * @return string
+	 */
+	public function soft( array $points, string $fill, string $edge, string $key, float $width = 1.3, float $amp = 0.7 ): string {
+		$d = G::closed( $this->wobble( $points, $amp, $key ) );
+
+		return '<path class="slot-' . $fill . ( '' !== $edge ? ' slot-stroke-' . $edge : '' ) . '" d="' . $d . '"'
+			. ( '' !== $edge ? ' stroke-width="' . G::n( $width ) . '" stroke-linejoin="round" stroke-opacity="0.55"' : '' ) . '/>';
+	}
+
+	/**
+	 * A translucent patch of colour without an edge: cel shading, highlights, blush.
+	 *
+	 * @param array<int, array{0: float|int, 1: float|int}> $points  Points around the patch.
+	 * @param string                                        $fill    Fill token.
+	 * @param float                                         $opacity Opacity.
+	 * @param string                                        $key     Names the shape.
+	 * @return string
+	 */
+	public function patch( array $points, string $fill, float $opacity, string $key ): string {
+		$d = G::closed( $this->wobble( $points, 0.4, $key ) );
+
+		return '<path class="slot-' . $fill . '" opacity="' . G::n( $opacity ) . '" d="' . $d . '"/>';
 	}
 
 	/**

@@ -24,6 +24,7 @@ use SprintIllustrations\Integrations\Block;
 use SprintIllustrations\Integrations\Elementor\ColorSource;
 use SprintIllustrations\Integrations\Elementor\Loader as ElementorLoader;
 use SprintIllustrations\Integrations\Elementor\Sync;
+use SprintIllustrations\Integrations\FigureStudio;
 use SprintIllustrations\Integrations\Shortcode;
 use SprintIllustrations\Palette\Palette;
 use SprintIllustrations\Palette\PaletteSettings;
@@ -475,6 +476,7 @@ final class Plugin {
 		( new RequestsController( $this ) )->register();
 		add_action( 'init', [ $this, 'register_assets' ], 5 );
 		( new Shortcode( $this ) )->register();
+		( new FigureStudio( $this ) )->register();
 		( new Block( $this ) )->register();
 		( new ElementorLoader() )->register();
 		add_action( 'init', [ self::class, 'activate' ] );

@@ -36,9 +36,11 @@ final class FiguresPage {
 	}
 
 	/**
-	 * Enqueue the app.
+	 * Enqueue the app (the admin page, or the front-end shortcode with its own settings).
+	 *
+	 * @param array<string, mixed> $extra Settings that override the admin defaults.
 	 */
-	public function enqueue(): void {
+	public function enqueue( array $extra = [] ): void {
 		if ( ! is_readable( $this->asset_file() ) ) {
 			return;
 		}
@@ -52,7 +54,10 @@ final class FiguresPage {
 		wp_localize_script(
 			'sprint-illustrations-figures',
 			'sprintIllustrationsFigures',
-			[
+			$extra + [
+				'front'         => false,
+				'canSave'       => current_user_can( 'edit_posts' ),
+				'shortcode'     => '[' . \SprintIllustrations\Integrations\FigureStudio::TAG . ']',
 				'builderUrl'    => admin_url( 'admin.php?page=' . Menu::SLUG ),
 				'libraryUrl'    => admin_url( 'admin.php?page=' . Menu::LIBRARY_SLUG . '&tab=characters' ),
 				'charactersUrl' => admin_url( 'admin.php?page=' . Menu::CHARACTERS_SLUG ),
@@ -76,7 +81,7 @@ final class FiguresPage {
 			return;
 		}
 
-		echo '<div id="si-figures"></div>';
+		echo '<div class="si-f-embed is-admin"><div id="si-figures"></div></div>';
 		echo '<noscript><div class="notice notice-warning"><p>' . esc_html__( 'The Cartoon figures needs JavaScript.', 'sprint-illustrations' ) . '</p></div></noscript>';
 		echo '</div>';
 	}

@@ -26,12 +26,12 @@ final class FiguresController {
 	/**
 	 * Fields a thumbnail row can be made for.
 	 */
-	private const VARIANT_FIELDS = [ 'pose', 'carry', 'face', 'eyes', 'brows', 'nose', 'mouth', 'cheeks', 'hair', 'headwear', 'eyewear', 'build', 'top', 'bottom', 'shoes', 'backpack', 'tilt', 'scene' ];
+	private const VARIANT_FIELDS = [ 'pose', 'carry', 'face', 'eyes', 'brows', 'nose', 'mouth', 'cheeks', 'hair', 'headwear', 'eyewear', 'build', 'top', 'bottom', 'shoes', 'backpack', 'tilt', 'flip', 'scene' ];
 
 	/**
 	 * Fields a shuffle leaves alone: the frame and pose belong to the page, not to the face.
 	 */
-	private const KEEP_ON_SHUFFLE = [ 'scene', 'scene_color', 'pose', 'carry', 'tilt' ];
+	private const KEEP_ON_SHUFFLE = [ 'scene', 'scene_color', 'pose', 'carry', 'tilt', 'flip' ];
 
 	/**
 	 * Tags a pose or scene adds to a saved figure.
@@ -67,7 +67,8 @@ final class FiguresController {
 	 * Routes.
 	 */
 	public function register_routes(): void {
-		$permission = [ Permissions::class, 'edit_posts' ];
+		$public = [ Permissions::class, 'studio' ];
+		$editor = [ Permissions::class, 'edit_posts' ];
 		foreach ( [
 			'options'  => 'GET',
 			'preview'  => 'POST',
@@ -82,7 +83,7 @@ final class FiguresController {
 				[
 					'methods'             => $method,
 					'callback'            => [ $this, $route ],
-					'permission_callback' => $permission,
+					'permission_callback' => 'save' === $route ? $editor : $public,
 				]
 			);
 		}

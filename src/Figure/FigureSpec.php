@@ -60,14 +60,17 @@ final class FigureSpec {
 	];
 
 	public const HAIRS = [
-		'short'    => 'Short',
-		'messy'    => 'Messy',
-		'bob'      => 'Bob',
-		'long'     => 'Long',
-		'ponytail' => 'Ponytail',
-		'bun'      => 'Bun',
-		'curly'    => 'Curly',
-		'bald'     => 'No hair',
+		'short'     => 'Short',
+		'messy'     => 'Messy',
+		'bob'       => 'Bob',
+		'long'      => 'Long',
+		'ponytail'  => 'Ponytail',
+		'bun'       => 'Bun',
+		'curly'     => 'Curly',
+		'afro'      => 'Afro puff',
+		'sidepart'  => 'Side part',
+		'twintails' => 'Pigtails',
+		'bald'      => 'No hair',
 	];
 
 	public const HEADWEAR = [
@@ -122,6 +125,7 @@ final class FigureSpec {
 		'cheer'    => 'Cheering',
 		'thinking' => 'Thinking',
 		'walk'     => 'Walking',
+		'point'    => 'Pointing',
 	];
 
 	public const CARRY = [
@@ -134,6 +138,11 @@ final class FigureSpec {
 	public const BACKPACK = [
 		'none'     => 'None',
 		'backpack' => 'Backpack',
+	];
+
+	public const FLIPS = [
+		'no'  => 'Facing as drawn',
+		'yes' => 'Mirrored',
 	];
 
 	public const TILTS = [
@@ -197,6 +206,7 @@ final class FigureSpec {
 			'backpack'       => self::BACKPACK,
 			'bag_color'      => $colors,
 			'tilt'           => self::TILTS,
+			'flip'           => self::FLIPS,
 			'scene'          => self::SCENES,
 			'scene_color'    => $colors,
 		];
@@ -231,6 +241,7 @@ final class FigureSpec {
 			'backpack'       => 'none',
 			'bag_color'      => 'neutral-light',
 			'tilt'           => 'none',
+			'flip'           => 'no',
 			'scene'          => 'splash',
 			'scene_color'    => 'neutral-light',
 		];

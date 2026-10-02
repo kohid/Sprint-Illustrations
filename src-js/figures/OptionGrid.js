@@ -6,21 +6,21 @@ import { __ } from '@wordpress/i18n';
 
 // Where to look for each field, as an SVG view box (the figure is 240 × 350).
 const CROPS = {
-	face: '50 30 140 140',
-	eyes: '70 85 100 45',
-	brows: '70 72 100 45',
+	face: '50 34 140 140',
+	eyes: '66 84 108 48',
+	brows: '66 70 108 48',
 	nose: '70 100 100 60',
-	mouth: '70 104 100 60',
-	cheeks: '60 90 120 70',
-	hair: '35 5 170 180',
-	headwear: '35 0 170 140',
-	eyewear: '60 80 120 60',
-	tilt: '35 5 170 180',
-	top: '30 128 180 130',
-	bottom: '40 212 160 130',
-	shoes: '50 286 140 58',
+	mouth: '70 108 100 60',
+	cheeks: '56 90 128 72',
+	hair: '30 4 180 190',
+	headwear: '30 0 180 150',
+	eyewear: '56 82 128 60',
+	tilt: '30 4 180 190',
+	top: '30 130 180 130',
+	bottom: '36 220 168 126',
+	shoes: '44 296 152 54',
 	backpack: '20 130 200 130',
-	carry: '40 140 160 120',
+	carry: '40 150 160 110',
 };
 
 /**

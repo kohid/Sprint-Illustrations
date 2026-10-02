@@ -22,6 +22,9 @@ final class Permissions {
 	public const DRAWER_ROLE = 'sprint_illustrations_drawer';
 	public const DRAWER_CAP  = 'sprint_illustrations_draw';
 
+	/** Public studio calls a visitor may make in a minute. */
+	public const STUDIO_LIMIT = 240;
+
 	/**
 	 * Base check for every route.
 	 *
@@ -68,5 +71,27 @@ final class Permissions {
 		return current_user_can( self::DRAWER_CAP ) || current_user_can( 'manage_options' )
 			? true
 			: new \WP_Error( 'sprint_illustrations_rest_forbidden', __( 'You are not allowed to draw pieces.', 'sprint-illustrations' ), [ 'status' => rest_authorization_required_code() ] );
+	}
+
+	/**
+	 * Public, read-only studio endpoints (the front-end figure builder): open to everyone, but each visitor
+	 * (by address) gets a limited number of calls a minute. Editors are not limited.
+	 *
+	 * @return true|\WP_Error
+	 */
+	public static function studio(): bool|\WP_Error {
+		if ( current_user_can( 'edit_posts' ) ) {
+			return true;
+		}
+
+		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( (string) $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$key     = 'si_studio_' . md5( $address . '|' . gmdate( 'YmdHi' ) );
+		$count   = (int) get_transient( $key );
+		if ( $count >= self::STUDIO_LIMIT ) {
+			return new \WP_Error( 'sprint_illustrations_rate_limited', __( 'Too many requests. Wait a moment and try again.', 'sprint-illustrations' ), [ 'status' => 429 ] );
+		}
+		set_transient( $key, $count + 1, 2 * MINUTE_IN_SECONDS );
+
+		return true;
 	}
 }
